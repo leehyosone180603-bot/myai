@@ -1,0 +1,38 @@
+name: 블로그 일일 자동 발행
+
+# 매일 00:10 KST(전날 15:10 UTC)에 대기열의 다음 글 1개를 발행합니다.
+# 참고: GitHub 예약(schedule) 워크플로는 기본 브랜치(main)에서만 실행됩니다.
+on:
+  schedule:
+    - cron: "10 15 * * *"
+  workflow_dispatch:   # 수동 실행(테스트)용
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 다음 글 발행 (대기열에서 1개)
+        run: node scripts/build-blog.js --publish-next
+
+      - name: 변경분 커밋 & 푸시
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "chore: 블로그 글 자동 발행 ($(TZ=Asia/Seoul date +%Y-%m-%d))"
+            git push
+          else
+            echo "발행할 새 글이 없습니다. 변경 없음."
+          fi
