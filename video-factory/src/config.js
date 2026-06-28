@@ -1,0 +1,76 @@
+// 환경설정 로더.  .env 파일을 (의존성 없이) 직접 파싱한다.
+import { readFileSync, existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+export const ROOT = join(__dirname, "..");
+
+// .env 를 process.env 에 병합 (이미 있는 환경변수는 덮어쓰지 않음)
+function loadDotEnv() {
+  const envPath = join(ROOT, ".env");
+  if (!existsSync(envPath)) return;
+  for (const raw of readFileSync(envPath, "utf8").split("\n")) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq === -1) continue;
+    const key = line.slice(0, eq).trim();
+    let val = line.slice(eq + 1).trim();
+    if (
+      (val.startsWith('"') && val.endsWith('"')) ||
+      (val.startsWith("'") && val.endsWith("'"))
+    ) {
+      val = val.slice(1, -1);
+    }
+    if (process.env[key] === undefined) process.env[key] = val;
+  }
+}
+loadDotEnv();
+
+const env = (k, fallback = "") =>
+  process.env[k] !== undefined && process.env[k] !== "" ? process.env[k] : fallback;
+
+export const config = {
+  textProvider: env("TEXT_PROVIDER", "xai"),
+
+  xai: {
+    apiKey: env("XAI_API_KEY"),
+    baseUrl: env("XAI_BASE_URL", "https://api.x.ai/v1"),
+    textModel: env("XAI_TEXT_MODEL", "grok-4.3"),
+    imageModel: env("XAI_IMAGE_MODEL", "grok-2-image"),
+    videoModel: env("XAI_VIDEO_MODEL", "grok-imagine-video-1.5"),
+  },
+  openai: {
+    apiKey: env("OPENAI_API_KEY"),
+    baseUrl: env("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+    textModel: env("OPENAI_TEXT_MODEL", "gpt-4o"),
+    imageModel: env("OPENAI_IMAGE_MODEL", "gpt-image-1"),
+  },
+  anthropic: {
+    apiKey: env("ANTHROPIC_API_KEY"),
+    baseUrl: env("ANTHROPIC_BASE_URL", "https://api.anthropic.com"),
+    textModel: env("ANTHROPIC_TEXT_MODEL", "claude-opus-4-8"),
+  },
+
+  channelName: env("CHANNEL_NAME", "호감의 심리학"),
+  channelPersona: env(
+    "CHANNEL_PERSONA",
+    "차분하고 신뢰감 있는 30대 남성 내레이터. 단정적이되 따뜻하고, 심리학 근거를 곁들여 설득력 있게 말한다."
+  ),
+  targetMinutes: Number(env("TARGET_MINUTES", "7")),
+  imageAspectRatio: env("IMAGE_ASPECT_RATIO", "16:9"),
+  videoAspectRatio: env("VIDEO_ASPECT_RATIO", "16:9"),
+  introClipSeconds: Number(env("INTRO_CLIP_SECONDS", "6")),
+};
+
+export function requireTextProvider() {
+  const p = config.textProvider;
+  const key = { xai: config.xai.apiKey, openai: config.openai.apiKey, anthropic: config.anthropic.apiKey }[p];
+  if (!key) {
+    throw new Error(
+      `TEXT_PROVIDER='${p}' 인데 해당 API 키가 비어 있습니다. .env 에 키를 설정하세요.`
+    );
+  }
+  return p;
+}

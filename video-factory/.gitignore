@@ -1,0 +1,8 @@
+node_modules/
+.env
+# 생성된 미디어(용량 큼)는 커밋하지 않음. 프롬프트/대본 텍스트는 커밋함.
+output/**/images/*.png
+output/**/images/*.jpg
+output/**/images/*.webp
+output/**/intro/*.mp4
+output/**/intro/*.mov

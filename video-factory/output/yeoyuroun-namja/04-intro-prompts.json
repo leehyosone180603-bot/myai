@@ -1,0 +1,29 @@
+{
+  "clips": [
+    {
+      "id": "intro-01",
+      "ko_desc": "여유로운 남자가 카페 의자에 천천히 기대며 미소 짓는 장면 (강한 첫 후킹)",
+      "prompt": "Cinematic slow push-in on a calm Korean man in his early 30s leaning back into a cafe chair with a subtle confident smile, warm golden light, shallow depth of field, gentle camera dolly forward, 6s, 16:9",
+      "from_image_id": "img-02"
+    },
+    {
+      "id": "intro-02",
+      "ko_desc": "한 명에게만 사람이 모이는 대비를 보여주는 빠른 컷",
+      "prompt": "Two Korean men in a warm cafe, soft focus pull revealing people naturally gravitating toward the calm one while the other stands alone, smooth rack focus, warm cinematic tone, 6s, 16:9",
+      "from_image_id": "img-01"
+    },
+    {
+      "id": "intro-03",
+      "ko_desc": "휴대폰 알림에도 평온한 표정 — '결과에 휘둘리지 않는' 비주얼 후킹",
+      "prompt": "Close-up of a Korean man calmly glancing at a buzzing phone then setting it down with a peaceful unbothered expression, subtle slow motion, warm light, shallow depth of field, 6s, 16:9",
+      "from_image_id": "img-03"
+    },
+    {
+      "id": "intro-04",
+      "ko_desc": "마주 앉은 남녀, 편안한 분위기로 끝맺는 인트로 마지막 클립",
+      "prompt": "A Korean man and woman talking comfortably across a cafe table, relaxed warm atmosphere, gentle ambient motion of steam rising from coffee, slow cinematic camera drift, 6s, 16:9",
+      "from_image_id": "img-04"
+    }
+  ],
+  "_note": "from_image_id 가 있으면 해당 이미지로 image-to-video, 없으면 text-to-video 로 생성. 파이프라인의 --videos 옵션이 자동 처리."
+}

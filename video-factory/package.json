@@ -1,0 +1,17 @@
+{
+  "name": "video-factory",
+  "version": "1.0.0",
+  "description": "벤치마크 영상 1개 → 제목·썸네일·설명·대본·이미지 프롬프트·인트로 영상 프롬프트(+옵션 렌더링)까지 한 번에 생성하는 유튜브 영상 제작 자동화 파이프라인",
+  "type": "module",
+  "bin": {
+    "video-factory": "src/index.js"
+  },
+  "scripts": {
+    "run": "node src/index.js run",
+    "plan": "node src/index.js plan"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "license": "MIT"
+}
