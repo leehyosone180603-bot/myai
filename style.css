@@ -190,6 +190,94 @@ input[type="text"]:focus {
   box-shadow: inset -2px -3px 4px rgba(0, 0, 0, 0.18), 0 0 0 2px #fff, 0 0 0 4px var(--muted);
 }
 
+/* 허브 홈 카드 그리드 */
+.tool-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.tool-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  color: var(--text);
+  transition: transform 0.08s ease, border-color 0.15s ease;
+}
+
+.tool-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+}
+
+.tc-icon { font-size: 1.8rem; line-height: 1; }
+.tc-body { display: flex; flex-direction: column; flex: 1; }
+.tc-body strong { font-size: 1.1rem; }
+.tc-body small { color: var(--muted); margin-top: 2px; }
+.tc-arrow { color: var(--muted); font-size: 1.2rem; }
+
+/* 뒤로가기 내비게이션 */
+.back-nav {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 16px 0;
+}
+
+.back-nav a {
+  color: var(--primary);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.back-nav a:hover { text-decoration: underline; }
+
+/* 체크박스 행 */
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.checkbox-row input { width: 18px; height: 18px; }
+.checkbox-row small { font-weight: 400; color: var(--muted); }
+
+/* 라디오/세그먼트 선택 */
+.segment {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.segment label {
+  flex: 1;
+  min-width: 120px;
+  display: block;
+  font-weight: 600;
+  text-align: center;
+  padding: 11px 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  cursor: pointer;
+  background: #fff;
+}
+
+.segment input { position: absolute; opacity: 0; pointer-events: none; }
+.segment input:checked + span { color: #fff; }
+.segment label:has(input:checked) {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
 /* 도구 간 내비게이션 */
 .site-nav {
   display: flex;

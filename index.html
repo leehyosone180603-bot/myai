@@ -3,34 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>로또 번호 추출기 - 무료 로또 6/45 자동 번호 생성</title>
-  <meta name="description" content="로또번호추출기 - 로또 6/45 번호를 무료로 자동 추출해 드립니다. 포함/제외 번호 설정, 여러 게임 동시 생성, 보너스 번호, 결과 복사 기능을 제공하는 간편한 로또 번호 생성기입니다.">
-  <meta name="keywords" content="로또번호추출기, 로또번호추출, 로또, 로또번호, 로또번호생성기, 로또645, 로또자동, 번호추첨, 무료로또, 로또번호생성">
+  <title>calcbox.kr - 무료 온라인 계산기 모음 (연봉·만나이·부가세·퇴직금·로또)</title>
+  <meta name="description" content="연봉 실수령액, 만 나이, 부가세, 퇴직금, 프리랜서 세금, 영업일, 전역일, 로또 번호까지 한 곳에서. 무료로 빠르게 계산하는 온라인 계산기 모음 calcbox.kr.">
+  <meta name="keywords" content="계산기, 무료계산기, 연봉계산기, 실수령액계산기, 만나이계산기, 부가세계산기, 퇴직금계산기, 프리랜서세금, 영업일계산기, 전역일계산기, 로또번호추출기">
   <meta name="robots" content="index, follow">
   <meta name="author" content="calcbox.kr">
-  <meta property="og:title" content="로또 번호 추출기 - 무료 로또 6/45 자동 번호 생성">
-  <meta property="og:description" content="로또 6/45 번호를 무료로 자동 추출해 드립니다. 포함/제외 설정, 보너스 번호, 여러 게임 동시 생성 지원.">
+  <meta property="og:title" content="calcbox.kr - 무료 온라인 계산기 모음">
+  <meta property="og:description" content="연봉·만나이·부가세·퇴직금·프리랜서세금·영업일·전역일·로또까지 무료 온라인 계산기 모음.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://calcbox.kr/">
-  <meta property="og:site_name" content="로또 번호 추출기">
+  <meta property="og:site_name" content="calcbox.kr">
   <link rel="canonical" href="https://calcbox.kr/">
 
   <!-- 검색엔진 소유확인 -->
   <meta name="google-site-verification" content="TRVoYNUTZlKvUouO9Ivt6AtnmkL8eIrpXNIF9vN3-xQ">
   <meta name="naver-site-verification" content="ee1670e4315101894d8680574f5cd2443b0a976a">
 
-  <!-- 구조화 데이터 (검색 결과 리치 표시용) -->
+  <!-- 구조화 데이터 -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "로또 번호 추출기",
+    "@type": "WebSite",
+    "name": "calcbox.kr",
     "url": "https://calcbox.kr/",
-    "description": "로또 6/45 번호를 무료로 자동 추출해 주는 번호 생성기. 포함/제외 번호 설정과 보너스 번호를 지원합니다.",
-    "applicationCategory": "UtilitiesApplication",
-    "operatingSystem": "Any",
-    "inLanguage": "ko",
-    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" }
+    "description": "무료 온라인 계산기 모음 - 연봉 실수령액, 만 나이, 부가세, 퇴직금, 프리랜서 세금, 영업일, 전역일, 로또 번호 추출기.",
+    "inLanguage": "ko"
   }
   </script>
 
@@ -38,19 +35,13 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885"
      crossorigin="anonymous"></script>
 
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
   <header class="site-header">
-    <h1>🎱 로또 번호 추출기</h1>
-    <p class="subtitle">로또 6/45 번호를 무료로 자동 생성해 드립니다</p>
+    <h1>🧮 calcbox.kr</h1>
+    <p class="subtitle">필요한 계산, 여기서 한 번에 — 무료 온라인 계산기 모음</p>
   </header>
-
-  <nav class="site-nav">
-    <a href="/" class="active">로또 추출기</a>
-    <a href="/age/">만 나이 계산기</a>
-    <a href="/salary/">연봉 실수령액</a>
-  </nav>
 
   <!-- 상단 광고 -->
   <div class="ad-container" aria-label="광고">
@@ -63,40 +54,53 @@
   </div>
 
   <main class="container">
-    <section class="card controls">
-      <div class="control-row">
-        <label for="gameCount">게임 수</label>
-        <select id="gameCount">
-          <option value="1">1게임</option>
-          <option value="2">2게임</option>
-          <option value="3">3게임</option>
-          <option value="4">4게임</option>
-          <option value="5" selected>5게임</option>
-        </select>
-      </div>
-
-      <div class="control-row">
-        <label for="includeInput">포함 번호 <small>(쉼표로 구분, 최대 5개, 공백으로 비워두어도 됩니다.)</small></label>
-        <input type="text" id="includeInput" placeholder="예: 7, 13, 22" autocomplete="off">
-      </div>
-
-      <div class="control-row">
-        <label for="excludeInput">제외 번호 <small>(쉼표로 구분, 공백으로 비워두어도 됩니다.)</small></label>
-        <input type="text" id="excludeInput" placeholder="예: 1, 45" autocomplete="off">
-      </div>
-
-      <p class="error" id="errorMsg" role="alert"></p>
-
-      <button id="generateBtn" class="btn-primary" type="button">번호 추출하기</button>
-    </section>
-
-    <section class="card results" id="resultsCard" hidden>
-      <div class="results-head">
-        <h2>추출 결과</h2>
-        <button id="copyBtn" class="btn-ghost" type="button">결과 복사</button>
-      </div>
-      <ul id="resultsList" class="results-list"></ul>
-    </section>
+    <nav class="tool-grid" aria-label="계산기 목록">
+      <a class="tool-card" href="/salary/">
+        <span class="tc-icon">💰</span>
+        <span class="tc-body"><strong>연봉 실수령액 계산기</strong><small>4대보험·세금 공제 후 월 실수령액</small></span>
+        <span class="tc-arrow">→</span>
+      </a>
+      <a class="tool-card" href="/age/">
+        <span class="tc-icon">🎂</span>
+        <span class="tc-body"><strong>만 나이 계산기</strong><small>생년월일로 만 나이·띠·다음 생일</small></span>
+        <span class="tc-arrow">→</span>
+      </a>
+      <a class="tool-card" href="/business-days/">
+        <span class="tc-icon">📅</span>
+        <span class="tc-body"><strong>영업일 계산기</strong><small>주말·공휴일을 제외한 영업일 수</small></span>
+        <span class="tc-arrow">→</span>
+      </a>
+      <a class="tool-card" href="/vat/">
+        <span class="tc-icon">🧾</span>
+        <span class="tc-body"><strong>부가세 계산기</strong><small>부가가치세 10% 빠르게 계산</small></span>
+        <span class="tc-arrow">→</span>
+      </a>
+      <a class="tool-card" href="/severance/">
+        <span class="tc-icon">💼</span>
+        <span class="tc-body"><strong>퇴직금 계산기</strong><small>평균임금 기준 예상 퇴직금</small></span>
+        <span class="tc-arrow">→</span>
+      </a>
+      <a class="tool-card" href="/freelancer/">
+        <span class="tc-icon">🧑‍💻</span>
+        <span class="tc-body"><strong>프리랜서 세금 계산기</strong><small>3.3% 원천징수 후 실수령액</small></span>
+        <span class="tc-arrow">→</span>
+      </a>
+      <a class="tool-card" href="/lotto-prize/">
+        <span class="tc-icon">🍀</span>
+        <span class="tc-body"><strong>로또 당첨금 실수령액</strong><small>당첨금 세금 공제 후 실수령액</small></span>
+        <span class="tc-arrow">→</span>
+      </a>
+      <a class="tool-card" href="/military/">
+        <span class="tc-icon">🎖️</span>
+        <span class="tc-body"><strong>전역일 계산기</strong><small>입대일 기준 전역일·D-day</small></span>
+        <span class="tc-arrow">→</span>
+      </a>
+      <a class="tool-card" href="/lotto/">
+        <span class="tc-icon">🎱</span>
+        <span class="tc-body"><strong>로또 번호 추출기</strong><small>로또 6/45 번호 자동 추출</small></span>
+        <span class="tc-arrow">→</span>
+      </a>
+    </nav>
 
     <!-- 본문 중간 광고 -->
     <div class="ad-container" aria-label="광고">
@@ -109,20 +113,24 @@
     </div>
 
     <section class="card info">
-      <h2>이용 안내</h2>
+      <h2>calcbox.kr 소개</h2>
+      <p>calcbox.kr은 일상과 업무에 자주 쓰이는 계산을 빠르고 간편하게 처리할 수 있는 무료 온라인 계산기 모음입니다. 회원가입이나 설치 없이, 브라우저에서 바로 사용할 수 있습니다.</p>
       <ul>
-        <li>로또 6/45는 <strong>1부터 45</strong>까지의 숫자 중 <strong>6개</strong>를 중복 없이 추첨하고, 추가로 <strong>보너스 번호 1개</strong>를 더 뽑습니다.</li>
-        <li><strong>포함 번호</strong>를 입력하면 해당 번호가 모든 게임에 반드시 포함됩니다.</li>
-        <li><strong>제외 번호</strong>로 지정한 숫자는 추첨에서 빠집니다.</li>
-        <li>본 사이트는 재미를 위한 도구이며, 당첨을 보장하지 않습니다.</li>
+        <li><strong>급여·세금</strong> — 연봉 실수령액, 부가세, 퇴직금, 프리랜서 세금 계산기</li>
+        <li><strong>날짜</strong> — 만 나이, 영업일, 전역일 계산기</li>
+        <li><strong>생활</strong> — 로또 번호 추출기, 로또 당첨금 실수령액 계산기</li>
       </ul>
+      <p>모든 계산 결과는 참고용이며, 세금·법률 등 정확한 금액은 관련 기관(국세청 홈택스 등)에서 확인하시기 바랍니다.</p>
     </section>
   </main>
 
   <footer class="site-footer">
-    <p>© <span id="year"></span> 로또 번호 추출기 · 본 서비스는 참고용이며 당첨을 보장하지 않습니다.</p>
+    <p>© <span id="year"></span> calcbox.kr · 무료 온라인 계산기 모음</p>
   </footer>
 
-  <script src="script.js?v=2"></script>
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+  </script>
 </body>
 </html>

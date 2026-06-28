@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>프리랜서 세금 계산기 - 3.3% 원천징수 후 실수령액 계산</title>
+  <meta name="description" content="프리랜서 지급액을 입력하면 3.3%(사업소득) 또는 8.8%(기타소득) 원천징수 세액과 실수령액을 계산해 드립니다. 소득세·지방소득세를 분리해 보여줍니다.">
+  <meta name="keywords" content="프리랜서세금계산기, 3.3%, 원천징수, 사업소득, 기타소득, 프리랜서실수령액, 세금계산">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="프리랜서 세금 계산기 - 3.3% 원천징수 계산">
+  <meta property="og:description" content="프리랜서 지급액의 3.3% 원천징수 세액과 실수령액을 계산.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://calcbox.kr/freelancer/">
+  <meta property="og:site_name" content="calcbox.kr">
+  <link rel="canonical" href="https://calcbox.kr/freelancer/">
+
+  <!-- Google AdSense 게시자 ID: ca-pub-7143828779500885 -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885"
+     crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" href="../style.css?v=4">
+</head>
+<body>
+  <nav class="back-nav"><a href="/">← calcbox.kr 전체 계산기</a></nav>
+
+  <header class="site-header">
+    <h1>🧑‍💻 프리랜서 세금 계산기</h1>
+    <p class="subtitle">3.3% 원천징수 후 실수령액 계산</p>
+  </header>
+
+  <div class="ad-container" aria-label="광고">
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7143828779500885"
+         data-ad-slot="0000000000" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+
+  <main class="container">
+    <section class="card controls">
+      <div class="control-row">
+        <label>소득 구분</label>
+        <div class="segment">
+          <label><input type="radio" name="kind" value="3.3" checked><span>사업소득 3.3%</span></label>
+          <label><input type="radio" name="kind" value="8.8"><span>기타소득 8.8%</span></label>
+        </div>
+      </div>
+
+      <div class="control-row">
+        <label for="amountInput">지급액 (세전, 원)</label>
+        <input type="text" id="amountInput" placeholder="예: 1,000,000" inputmode="numeric" autocomplete="off">
+      </div>
+
+      <p class="error" id="errorMsg" role="alert"></p>
+      <button id="calcBtn" class="btn-primary" type="button">실수령액 계산하기</button>
+    </section>
+
+    <section class="card results" id="resultsCard" hidden>
+      <div class="result-hero">
+        <p class="result-sub">실수령액</p>
+        <div class="big"><span id="netMain">0</span><small>원</small></div>
+      </div>
+      <table class="calc-table">
+        <tbody>
+          <tr><th>지급액 (세전)</th><td id="rGross"></td></tr>
+          <tr class="deduct"><th>소득세</th><td id="rIncome"></td></tr>
+          <tr class="deduct"><th>지방소득세</th><td id="rLocal"></td></tr>
+          <tr class="deduct"><th>원천징수 합계</th><td id="rTotal"></td></tr>
+          <tr class="total"><th>실수령액</th><td id="rNet"></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card info">
+      <h2>이용 안내</h2>
+      <ul>
+        <li><strong>사업소득 3.3%</strong> = 소득세 3% + 지방소득세 0.3%. 프리랜서·인적용역 대가에 가장 일반적으로 적용됩니다.</li>
+        <li><strong>기타소득 8.8%</strong> = 필요경비 60% 인정 후 소득세 20%(지방세 포함 22%) 적용 시의 실효세율입니다.</li>
+        <li>원천징수는 미리 떼는 세금으로, 실제 세액은 다음 해 <strong>종합소득세 신고(5월)</strong>로 정산됩니다.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer"><p>© <span id="year"></span> calcbox.kr · 프리랜서 세금 계산기</p></footer>
+  <script src="freelancer.js?v=1"></script>
+</body>
+</html>
