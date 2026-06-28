@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>영업일 계산기 - 주말·공휴일 제외 영업일 수 계산 | 한국인계산기</title>
+  <meta name="description" content="시작일과 종료일을 입력하면 주말과 공휴일을 제외한 영업일(평일) 수를 계산해 드립니다. 총 일수, 주말 제외 평일, 공휴일까지 제외한 영업일을 한 번에 확인하세요.">
+  <meta name="keywords" content="영업일계산기, 영업일, 평일계산기, 근무일수, 주말제외, 공휴일제외, 날짜계산기">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="영업일 계산기 - 주말·공휴일 제외 영업일 수">
+  <meta property="og:description" content="두 날짜 사이의 영업일(평일) 수를 주말·공휴일을 제외하고 계산.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://calcbox.kr/business-days/">
+  <meta property="og:site_name" content="한국인계산기">
+  <link rel="canonical" href="https://calcbox.kr/business-days/">
+
+  <!-- Google AdSense 게시자 ID: ca-pub-7143828779500885 -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885"
+     crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" href="../style.css?v=4">
+</head>
+<body>
+  <nav class="back-nav"><a href="/">← 한국인계산기 전체 계산기</a></nav>
+
+  <header class="site-header">
+    <h1>📅 영업일 계산기</h1>
+    <p class="subtitle">주말·공휴일을 제외한 영업일 수를 계산</p>
+  </header>
+
+  <div class="ad-container" aria-label="광고">
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7143828779500885"
+         data-ad-slot="0000000000" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+
+  <main class="container">
+    <section class="card controls">
+      <div class="control-row">
+        <label for="startInput">시작일</label>
+        <input type="date" id="startInput">
+      </div>
+      <div class="control-row">
+        <label for="endInput">종료일</label>
+        <input type="date" id="endInput">
+      </div>
+      <div class="control-row">
+        <label class="checkbox-row">
+          <input type="checkbox" id="holidayCheck" checked>
+          공휴일도 제외 <small>(2025~2026 주요 공휴일 기준)</small>
+        </label>
+      </div>
+
+      <p class="error" id="errorMsg" role="alert"></p>
+      <button id="calcBtn" class="btn-primary" type="button">영업일 계산하기</button>
+    </section>
+
+    <section class="card results" id="resultsCard" hidden>
+      <div class="result-hero">
+        <p class="result-sub">영업일</p>
+        <div class="big"><span id="bizMain">0</span><small>일</small></div>
+      </div>
+      <table class="calc-table">
+        <tbody>
+          <tr><th>전체 기간</th><td id="rTotal"></td></tr>
+          <tr><th>주말 (토·일)</th><td id="rWeekend"></td></tr>
+          <tr><th>공휴일 (평일)</th><td id="rHoliday"></td></tr>
+          <tr class="total"><th>영업일 (평일)</th><td id="rBiz"></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card info">
+      <h2>이용 안내</h2>
+      <ul>
+        <li>시작일과 종료일을 <strong>포함</strong>하여 계산합니다.</li>
+        <li>영업일 = 월~금 평일에서 공휴일을 제외한 날입니다.</li>
+        <li>공휴일은 2025~2026년 주요 법정공휴일(대체공휴일 일부 포함) 기준이며, 임시공휴일 등은 반영되지 않을 수 있습니다.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer"><p>© <span id="year"></span> 한국인계산기 · 영업일 계산기</p></footer>
+  <script src="business-days.js?v=1"></script>
+</body>
+</html>

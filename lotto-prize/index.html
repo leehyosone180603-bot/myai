@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로또 당첨금 실수령액 계산기 - 세금 공제 후 실수령액 | 한국인계산기</title>
+  <meta name="description" content="로또·복권 당첨금을 입력하면 세금(22%/33%)을 공제한 실수령액을 계산해 드립니다. 5만원 이하 비과세, 3억 초과분 33% 등 복권 당첨금 과세 기준을 반영합니다.">
+  <meta name="keywords" content="로또실수령액, 로또당첨금세금, 복권세금, 당첨금실수령, 로또세금계산기, 22%, 33%">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="로또 당첨금 실수령액 계산기">
+  <meta property="og:description" content="로또 당첨금에서 세금을 공제한 실수령액을 미리 계산해 보세요.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://calcbox.kr/lotto-prize/">
+  <meta property="og:site_name" content="한국인계산기">
+  <link rel="canonical" href="https://calcbox.kr/lotto-prize/">
+
+  <!-- Google AdSense 게시자 ID: ca-pub-7143828779500885 -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885"
+     crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" href="../style.css?v=4">
+</head>
+<body>
+  <nav class="back-nav"><a href="/">← 한국인계산기 전체 계산기</a></nav>
+
+  <header class="site-header">
+    <h1>🍀 로또 당첨금 실수령액 계산기</h1>
+    <p class="subtitle">당첨금 세금 공제 후 실수령액을 미리 확인</p>
+  </header>
+
+  <div class="ad-container" aria-label="광고">
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7143828779500885"
+         data-ad-slot="0000000000" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+
+  <main class="container">
+    <section class="card controls">
+      <div class="control-row">
+        <label for="amountInput">당첨금액 (원)</label>
+        <input type="text" id="amountInput" placeholder="예: 2,000,000,000" inputmode="numeric" autocomplete="off">
+      </div>
+      <p class="error" id="errorMsg" role="alert"></p>
+      <button id="calcBtn" class="btn-primary" type="button">실수령액 계산하기</button>
+    </section>
+
+    <section class="card results" id="resultsCard" hidden>
+      <div class="result-hero">
+        <p class="result-sub">세후 실수령액</p>
+        <div class="big"><span id="netMain">0</span><small>원</small></div>
+        <p class="result-sub" id="rateInfo"></p>
+      </div>
+      <table class="calc-table">
+        <tbody>
+          <tr><th>당첨금액</th><td id="rGross"></td></tr>
+          <tr class="deduct"><th>제세금 합계</th><td id="rTax"></td></tr>
+          <tr class="total"><th>실수령액</th><td id="rNet"></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card info">
+      <h2>복권 당첨금 과세 기준</h2>
+      <ul>
+        <li><strong>5만원 이하</strong>: 비과세 (세금 없음)</li>
+        <li><strong>5만원 초과 ~ 3억원 이하</strong>: 22% (소득세 20% + 지방소득세 2%)</li>
+        <li><strong>3억원 초과분</strong>: 33% (소득세 30% + 지방소득세 3%)</li>
+        <li>예: 20억 당첨 시 3억까지는 22%, 나머지 17억은 33%가 적용됩니다.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer"><p>© <span id="year"></span> 한국인계산기 · 로또 당첨금 실수령액 계산기</p></footer>
+  <script src="lotto-prize.js?v=1"></script>
+</body>
+</html>

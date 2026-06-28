@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>연봉 실수령액 계산기 - 4대보험·세금 공제 후 월 실수령액 | 한국인계산기</title>
+  <meta name="description" content="연봉을 입력하면 국민연금·건강보험·고용보험 4대보험과 소득세를 공제한 월 실수령액과 연 실수령액을 계산해 드립니다. 비과세액·부양가족 수도 반영합니다.">
+  <meta name="keywords" content="연봉실수령액계산기, 실수령액, 연봉계산기, 월급계산기, 4대보험, 소득세, 세후월급, 연봉실수령">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="연봉 실수령액 계산기 - 세후 월 실수령액">
+  <meta property="og:description" content="연봉에서 4대보험·세금을 공제한 월 실수령액을 바로 계산.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://calcbox.kr/salary/">
+  <meta property="og:site_name" content="한국인계산기">
+  <link rel="canonical" href="https://calcbox.kr/salary/">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "연봉 실수령액 계산기",
+    "url": "https://calcbox.kr/salary/",
+    "description": "연봉에서 4대보험과 소득세를 공제한 월 실수령액을 계산하는 무료 도구.",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Any",
+    "inLanguage": "ko",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" }
+  }
+  </script>
+
+  <!-- Google AdSense 게시자 ID: ca-pub-7143828779500885 -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885"
+     crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" href="../style.css?v=4">
+</head>
+<body>
+  <nav class="back-nav"><a href="/">← 한국인계산기 전체 계산기</a></nav>
+
+  <header class="site-header">
+    <h1>💰 연봉 실수령액 계산기</h1>
+    <p class="subtitle">4대보험·세금 공제 후 월 실수령액을 계산</p>
+  </header>
+
+  <div class="ad-container" aria-label="광고">
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7143828779500885"
+         data-ad-slot="0000000000"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+  </div>
+
+  <main class="container">
+    <section class="card controls">
+      <div class="control-row">
+        <label for="salaryInput">연봉 (원)</label>
+        <input type="text" id="salaryInput" placeholder="예: 40,000,000" inputmode="numeric" autocomplete="off">
+      </div>
+
+      <div class="control-row">
+        <label for="nontaxInput">월 비과세액 <small>(식대 등, 기본 20만원)</small></label>
+        <input type="text" id="nontaxInput" placeholder="200,000" inputmode="numeric" autocomplete="off">
+      </div>
+
+      <div class="control-row">
+        <label for="familyInput">부양가족 수 <small>(본인 포함)</small></label>
+        <select id="familyInput">
+          <option value="1" selected>1명 (본인)</option>
+          <option value="2">2명</option>
+          <option value="3">3명</option>
+          <option value="4">4명</option>
+          <option value="5">5명</option>
+          <option value="6">6명</option>
+        </select>
+      </div>
+
+      <p class="error" id="errorMsg" role="alert"></p>
+
+      <button id="calcBtn" class="btn-primary" type="button">실수령액 계산하기</button>
+    </section>
+
+    <section class="card results" id="resultsCard" hidden>
+      <div class="result-hero">
+        <p class="result-sub">월 실수령액</p>
+        <div class="big"><span id="netMonthly">0</span><small>원</small></div>
+        <p class="result-sub" id="netYearly"></p>
+      </div>
+      <table class="calc-table">
+        <tbody>
+          <tr><th>월 급여 (세전)</th><td id="rGross"></td></tr>
+          <tr class="deduct"><th>국민연금 (4.5%)</th><td id="rPension"></td></tr>
+          <tr class="deduct"><th>건강보험 (3.545%)</th><td id="rHealth"></td></tr>
+          <tr class="deduct"><th>장기요양 (건보의 12.95%)</th><td id="rCare"></td></tr>
+          <tr class="deduct"><th>고용보험 (0.9%)</th><td id="rEmploy"></td></tr>
+          <tr class="deduct"><th>소득세</th><td id="rIncomeTax"></td></tr>
+          <tr class="deduct"><th>지방소득세 (소득세의 10%)</th><td id="rLocalTax"></td></tr>
+          <tr class="deduct"><th>공제 합계</th><td id="rTotalDeduct"></td></tr>
+          <tr class="total"><th>월 실수령액</th><td id="rNet"></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card info">
+      <h2>이용 안내</h2>
+      <ul>
+        <li>본 계산기는 <strong>2025년 기준 4대보험 요율</strong>과 근로소득 간이세액 추정으로 계산한 <strong>근사치</strong>입니다.</li>
+        <li>소득세는 부양가족 수에 따라 달라지며, 실제 금액은 회사 급여규정·연말정산 결과에 따라 차이가 납니다.</li>
+        <li>국민연금은 기준소득월액 상·하한(약 39만~617만원)이 적용됩니다.</li>
+        <li>정확한 금액은 국세청 홈택스 또는 회사 급여명세서를 확인하세요.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>© <span id="year"></span> 한국인계산기 · 연봉 실수령액 계산기 (요율은 매년 변동될 수 있습니다)</p>
+  </footer>
+
+  <script src="salary.js?v=1"></script>
+</body>
+</html>
