@@ -347,6 +347,71 @@ input[type="text"]:focus {
 .calc-table tr.total td { color: var(--primary); font-weight: 800; font-size: 1.1rem; }
 .calc-table tr.deduct td { color: var(--error); }
 
+/* 블로그 */
+.post {
+  max-width: 720px;
+}
+.post h1 { font-size: 1.7rem; line-height: 1.35; margin: 0 0 8px; }
+.post .post-meta { color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+.post h2 {
+  font-size: 1.3rem;
+  margin: 32px 0 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.post h3 { font-size: 1.1rem; margin: 22px 0 8px; }
+.post p { margin: 12px 0; }
+.post ul, .post ol { padding-left: 22px; }
+.post li { margin: 6px 0; }
+.post strong { color: var(--text); }
+.post .lead { font-size: 1.08rem; color: #444; }
+.post .cta {
+  display: inline-block;
+  margin: 8px 0;
+  padding: 13px 22px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  border-radius: 10px;
+  text-decoration: none;
+}
+.post .cta:hover { background: var(--primary-dark); }
+.post .callout {
+  background: #f0f4ff;
+  border: 1px solid #d6e0ff;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin: 16px 0;
+  font-size: 0.97rem;
+}
+.post .toc {
+  background: #fafbff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 16px 0 24px;
+}
+.post .toc strong { display: block; margin-bottom: 6px; }
+.post .toc a { color: var(--primary); text-decoration: none; }
+.post .toc a:hover { text-decoration: underline; }
+
+/* 블로그 글 목록 */
+.post-list { list-style: none; padding: 0; margin: 0; }
+.post-list li { margin-bottom: 12px; }
+.post-list a {
+  display: block;
+  padding: 18px 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  color: var(--text);
+}
+.post-list a:hover { border-color: var(--primary); }
+.post-list strong { font-size: 1.1rem; display: block; }
+.post-list small { color: var(--muted); display: block; margin-top: 4px; }
+
 .info h2 { margin-top: 0; font-size: 1.2rem; }
 .info ul { padding-left: 20px; margin: 0; }
 .info li { margin-bottom: 8px; }
