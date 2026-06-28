@@ -178,6 +178,18 @@ input[type="text"]:focus {
 .ball.c4 { background: #aaaaaa; } /* 31-40 */
 .ball.c5 { background: #b0d840; } /* 41-45 */
 
+.plus {
+  font-weight: 700;
+  font-size: 1.4rem;
+  color: var(--muted);
+  margin: 0 2px;
+}
+
+/* 보너스 번호는 점선 테두리로 구분 */
+.ball.bonus {
+  box-shadow: inset -2px -3px 4px rgba(0, 0, 0, 0.18), 0 0 0 2px #fff, 0 0 0 4px var(--muted);
+}
+
 .info h2 { margin-top: 0; font-size: 1.2rem; }
 .info ul { padding-left: 20px; margin: 0; }
 .info li { margin-bottom: 8px; }

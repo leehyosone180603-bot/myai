@@ -47,7 +47,7 @@
     return Math.floor(Math.random() * maxExclusive);
   }
 
-  // 한 게임 생성: 포함 번호 고정 + 풀에서 나머지 추첨
+  // 한 게임 생성: 포함 번호 고정 + 풀에서 나머지 추첨 + 보너스 1개
   function generateGame(include, excludeSet) {
     var picks = include.slice();
     var pool = [];
@@ -59,7 +59,10 @@
       picks.push(pool[idx]);
       pool.splice(idx, 1);
     }
-    return picks.sort(function (a, b) { return a - b; });
+    picks.sort(function (a, b) { return a - b; });
+    // 보너스 번호: 본번호에 포함되지 않은 나머지 숫자 중 1개
+    var bonus = pool.length > 0 ? pool[randomInt(pool.length)] : null;
+    return { numbers: picks, bonus: bonus };
   }
 
   function colorClass(n) {
@@ -81,12 +84,28 @@
       label.textContent = String.fromCharCode(65 + i); // A, B, C ...
       li.appendChild(label);
 
-      game.forEach(function (num) {
+      game.numbers.forEach(function (num) {
         var ball = document.createElement("span");
         ball.className = "ball " + colorClass(num);
         ball.textContent = num;
         li.appendChild(ball);
       });
+
+      // 보너스 번호 표시 (+ 기호와 함께)
+      if (game.bonus !== null) {
+        var plus = document.createElement("span");
+        plus.className = "plus";
+        plus.textContent = "+";
+        plus.setAttribute("aria-label", "보너스");
+        li.appendChild(plus);
+
+        var bonusBall = document.createElement("span");
+        bonusBall.className = "ball bonus " + colorClass(game.bonus);
+        bonusBall.textContent = game.bonus;
+        bonusBall.title = "보너스 번호";
+        li.appendChild(bonusBall);
+      }
+
       resultsList.appendChild(li);
     });
     resultsCard.hidden = false;
@@ -111,8 +130,8 @@
       });
 
       var available = MAX - exclude.length;
-      if (available < PICK) {
-        throw new Error("제외 번호가 너무 많아 6개를 뽑을 수 없습니다.");
+      if (available < PICK + 1) {
+        throw new Error("제외 번호가 너무 많아 본번호 6개와 보너스 1개를 뽑을 수 없습니다.");
       }
 
       var count = parseInt(document.getElementById("gameCount").value, 10) || 1;
@@ -132,8 +151,14 @@
     document.querySelectorAll(".result-row").forEach(function (row) {
       var label = row.querySelector(".game-label").textContent;
       var nums = [];
-      row.querySelectorAll(".ball").forEach(function (b) { nums.push(b.textContent); });
-      lines.push(label + ": " + nums.join(", "));
+      var bonus = null;
+      row.querySelectorAll(".ball").forEach(function (b) {
+        if (b.classList.contains("bonus")) bonus = b.textContent;
+        else nums.push(b.textContent);
+      });
+      var line = label + ": " + nums.join(", ");
+      if (bonus !== null) line += " + " + bonus;
+      lines.push(line);
     });
     var text = lines.join("\n");
     if (navigator.clipboard && navigator.clipboard.writeText) {
