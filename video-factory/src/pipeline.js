@@ -90,29 +90,64 @@ export async function runAll(slug, benchmarkText, { generateImages = false, gene
   return { slug, analysis, pkg, images, intro };
 }
 
+// 이미지 슬롯에 이미 파일이 있으면 그 경로 반환(업로드본/생성본 재사용용)
+const IMG_EXTS = [".png", ".jpg", ".jpeg", ".webp"];
+export function existingImagePath(dir, id) {
+  for (const e of IMG_EXTS) {
+    const p = join(dir, "images", `${id}${e}`);
+    if (existsSync(p)) return p;
+  }
+  return null;
+}
+
+// 슬롯 1개를 실제로 생성(덮어쓰기)
+async function renderImageById(dir, images, img) {
+  const full = `${img.prompt} ${images.style_token || ""} ${P.NO_TEXT_NEGATIVE}`.trim();
+  const out = await generateImage(full);
+  const path = join(dir, "images", `${img.id}.png`);
+  if (out.b64) writeFileSync(path, Buffer.from(out.b64, "base64"));
+  else if (out.url) writeFileSync(path, Buffer.from(await (await fetch(out.url)).arrayBuffer()));
+  else throw new Error("이미지 응답이 비어 있습니다");
+  return path;
+}
+
+// 비어 있는 슬롯만 생성(이미 있는 이미지는 재사용 → 비용 절약). 업로드한 내 이미지도 그대로 보존.
 export async function renderImages(dir, images, onLog) {
   const emit = mkEmit(onLog);
   const list = images.images || [];
   const done = [];
+  let made = 0,
+    reused = 0;
   for (const img of list) {
+    if (existingImagePath(dir, img.id)) {
+      emit(`↩ 기존 이미지 재사용: ${img.id}`);
+      reused++;
+      done.push(img.id);
+      continue;
+    }
     emit(`이미지 생성: ${img.id}`);
     try {
-      // 말풍선/글자 금지어를 항상 덧붙여 강제(프롬프트에 빠져 있어도 안전)
-      const full = `${img.prompt} ${images.style_token || ""} ${P.NO_TEXT_NEGATIVE}`.trim();
-      const out = await generateImage(full);
-      const path = join(dir, "images", `${img.id}.png`);
-      if (out.b64) {
-        writeFileSync(path, Buffer.from(out.b64, "base64"));
-      } else if (out.url) {
-        writeFileSync(path, Buffer.from(await (await fetch(out.url)).arrayBuffer()));
-      }
-      done.push(`${img.id}.png`);
+      await renderImageById(dir, images, img);
+      made++;
+      done.push(img.id);
     } catch (e) {
       emit(`  ⚠ ${img.id} 실패: ${e.message}`);
     }
   }
-  emit(`✓ 이미지 ${done.length}/${list.length}장 생성`);
+  emit(`✓ 이미지 ${done.length}/${list.length}장 (신규 ${made}, 재사용 ${reused})`);
   return done;
+}
+
+// 슬롯 1개 강제 다시 생성 (UI '↻ 다시' 버튼)
+export async function renderOneImage(slug, id, onLog) {
+  const emit = mkEmit(onLog);
+  const dir = outDir(slug);
+  const r = readResult(slug);
+  const img = (r.images?.images || []).find((x) => x.id === id);
+  if (!img) throw new Error(`이미지 슬롯 ${id} 를 찾을 수 없습니다.`);
+  emit(`이미지 다시 생성: ${id}`);
+  await renderImageById(dir, r.images, img);
+  return { id };
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -121,10 +156,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // 없으면 클립 프롬프트로 이미지를 즉석 생성한다. (grok-imagine 은 image-to-video 만 지원)
 async function ensureClipImage(dir, clip, images, emit) {
   const styleToken = images?.style_token || "";
-  const candidate = clip.from_image_id ? join(dir, "images", `${clip.from_image_id}.png`) : null;
-  if (candidate && existsSync(candidate)) {
-    return readFileSync(candidate).toString("base64");
+  // 업로드/생성된 기존 이미지가 있으면 그대로 재사용(비용 0)
+  const existing = clip.from_image_id ? existingImagePath(dir, clip.from_image_id) : null;
+  if (existing) {
+    emit(`  · ${clip.id}: 기존 이미지(${clip.from_image_id}) 재사용`);
+    return readFileSync(existing).toString("base64");
   }
+  const candidate = clip.from_image_id ? join(dir, "images", `${clip.from_image_id}.png`) : null;
   emit(`  · ${clip.id}: 입력 이미지가 없어 즉석 생성`);
   const out = await generateImage(`${clip.prompt} ${styleToken}`.trim());
   if (out.b64) {

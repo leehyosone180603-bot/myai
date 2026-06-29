@@ -260,6 +260,27 @@ async function doRun(){
 
 function copyBtn(text){ return `<button class="ghost sm" onclick='copy(${JSON.stringify(text)})'>복사</button>`; }
 
+function fileToDataUrl(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=rej; fr.readAsDataURL(file); }); }
+function refreshImg(id){ const el=document.getElementById("imgview-"+id); if(el){ el.src=`/output/${CURRENT.slug}/images/${id}.png?t=`+Date.now(); el.style.visibility="visible"; el.style.display="block"; } }
+async function uploadImage(id, input){
+  const f=input.files && input.files[0]; if(!f) return;
+  toast("업로드 중…");
+  try{
+    const dataUrl=await fileToDataUrl(f);
+    const r=await api("/api/upload-image",{slug:CURRENT.slug,id,dataUrl});
+    if(r.error) return toast("실패: "+r.error);
+    refreshImg(id); toast(id+" 내 이미지로 교체됨");
+  }catch(e){ toast("실패: "+e.message); }
+  input.value="";
+}
+async function regenImage(id){
+  if(!HEALTH?.hasKey) return toast("API 키를 먼저 설정하세요");
+  toast(id+" 다시 생성 중…(비용 발생)");
+  const r=await api("/api/render-one",{slug:CURRENT.slug,id});
+  if(r.error) return toast("실패: "+r.error);
+  refreshImg(id); toast(id+" 새로 생성됨");
+}
+
 function renderResults(r){
   $("resultCard").style.display="block";
   const p=r.pkg||{}, im=r.images||{}, intro=r.intro||{};
@@ -272,10 +293,18 @@ function renderResults(r){
   h+=`<h3>🎬 대본 (${(p.chapters||[]).length}챕터) ${copyBtn((p.chapters||[]).map(c=>`[${c.timecode||""}] ${c.title}\n${c.script}`).join("\n\n"))}</h3>`;
   (p.chapters||[]).forEach(c=>{ h+=`<div class="chapter"><div class="ct">${esc(c.timecode||"")} · ${esc(c.title||"")}</div><div class="cs">${esc(c.script||"")}</div></div>`; });
 
-  h+=`<h3>🎨 이미지 프롬프트 (${(im.images||[]).length}장)</h3><div class="grid">`;
+  h+=`<h3>🎨 이미지 프롬프트 (${(im.images||[]).length}장)</h3>`;
+  h+=`<div class="hint" style="margin:-4px 0 8px">📁 <b>내 이미지</b>로 올리면 그 슬롯은 생성을 건너뜁니다(기존 이미지 재사용·비용 0). 인트로 영상도 이 이미지를 재료로 씁니다.</div>`;
+  h+=`<div class="grid">`;
   (im.images||[]).forEach(x=>{
     const src=`/output/${r.slug}/images/${x.id}.png?t=${Date.now()}`;
-    h+=`<div class="media"><img src="${src}" onerror="this.style.display='none'"/><b>${esc(x.id)}</b> · ${esc(x.chapter||"")}<div class="mp">${esc(x.ko_desc||"")}</div>${copyBtn(x.prompt+" "+(im.style_token||""))}</div>`;
+    h+=`<div class="media">
+      <img id="imgview-${esc(x.id)}" src="${src}" onerror="this.style.visibility='hidden'"/>
+      <b>${esc(x.id)}</b> · ${esc(x.chapter||"")}<div class="mp">${esc(x.ko_desc||"")}</div>
+      ${copyBtn(x.prompt+" "+(im.style_token||""))}
+      <label class="ghost sm" style="display:inline-block;cursor:pointer;margin-top:4px">📁 내 이미지<input type="file" accept="image/*" style="display:none" onchange="uploadImage('${esc(x.id)}', this)"></label>
+      <button class="ghost sm" onclick="regenImage('${esc(x.id)}')">↻ 다시</button>
+    </div>`;
   });
   h+=`</div>`;
 

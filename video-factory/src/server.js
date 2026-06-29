@@ -2,11 +2,11 @@
 // video-factory UI 서버.  의존성 0 (Node 내장 http).
 // 브라우저에서 클릭만으로 자막 수집 → 대본/메타데이터/이미지·인트로 프롬프트 생성 → 미디어 렌더링.
 import { createServer } from "node:http";
-import { readFileSync, existsSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join, normalize } from "node:path";
 import { config, ROOT, saveEnv, requireTextProvider } from "./config.js";
-import { runAll, renderImages, renderVideos, readResult, outDir, generateNarration } from "./pipeline.js";
+import { runAll, renderImages, renderVideos, renderOneImage, readResult, outDir, generateNarration } from "./pipeline.js";
 import { fetchTranscript, toBenchmarkMd, youtubeId } from "./transcript.js";
 import { listModels, listVoices } from "./clients.js";
 
@@ -140,6 +140,32 @@ const server = createServer(async (req, res) => {
         return send(res, 200, { models });
       } catch (e) {
         return send(res, 200, { models: [], error: e.message });
+      }
+    }
+
+    // 내 이미지 업로드(기존 그록 이미지 재사용): 슬롯 id 에 저장
+    if (path === "/api/upload-image" && req.method === "POST") {
+      const b = await readBody(req);
+      const slug = sanitizeSlug(b.slug);
+      const id = String(b.id || "").replace(/[^\w-]/g, "");
+      const m = String(b.dataUrl || "").match(/^data:image\/\w+;base64,(.+)$/s);
+      if (!slug || !id || !m) return send(res, 400, { error: "slug, id, 이미지 dataUrl 이 필요합니다." });
+      const dir = outDir(slug);
+      // 같은 슬롯의 다른 확장자 파일이 있으면 통일을 위해 png 로 저장(다른 확장자는 남아도 png 우선)
+      writeFileSync(join(dir, "images", `${id}.png`), Buffer.from(m[1], "base64"));
+      return send(res, 200, { ok: true, file: `images/${id}.png` });
+    }
+
+    // 이미지 슬롯 1개 다시 생성
+    if (path === "/api/render-one" && req.method === "POST") {
+      const b = await readBody(req);
+      try {
+        requireTextProvider();
+        const slug = sanitizeSlug(b.slug);
+        await renderOneImage(slug, String(b.id || ""));
+        return send(res, 200, { ok: true });
+      } catch (e) {
+        return send(res, 200, { error: e.message });
       }
     }
 
