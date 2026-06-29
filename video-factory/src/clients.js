@@ -87,6 +87,29 @@ export function parseLooseJson(raw) {
   return JSON.parse(s);
 }
 
+// ── 사용 가능한 모델 목록 조회 ────────────────────────────────
+// xAI 의 여러 모델 목록 엔드포인트를 모아 id 배열로 돌려준다(계정이 접근 가능한 것만 나옴).
+export async function listModels() {
+  const headers = { Authorization: `Bearer ${config.xai.apiKey}` };
+  const endpoints = ["/models", "/language-models", "/image-generation-models"];
+  const ids = new Set();
+  for (const ep of endpoints) {
+    try {
+      const r = await fetch(`${config.xai.baseUrl}${ep}`, { headers });
+      if (!r.ok) continue;
+      const j = await r.json();
+      const arr = j.data || j.models || [];
+      for (const m of arr) {
+        const id = m.id || m.name;
+        if (id) ids.add(id);
+      }
+    } catch {
+      /* 무시하고 다음 엔드포인트 */
+    }
+  }
+  return [...ids].sort();
+}
+
 // ── 이미지 생성 ──────────────────────────────────────────────
 // prompt → 이미지 1장 (base64 또는 url). 반환: { b64?, url? }
 export async function generateImage(prompt) {

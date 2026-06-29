@@ -8,6 +8,7 @@ import { dirname, join, normalize } from "node:path";
 import { config, ROOT, saveEnv, requireTextProvider } from "./config.js";
 import { runAll, renderImages, renderVideos, readResult, outDir } from "./pipeline.js";
 import { fetchTranscript, toBenchmarkMd, youtubeId } from "./transcript.js";
+import { listModels } from "./clients.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UI_DIR = join(ROOT, "ui");
@@ -107,6 +108,15 @@ const server = createServer(async (req, res) => {
       if (b.targetMinutes) map.TARGET_MINUTES = String(b.targetMinutes);
       if (Object.keys(map).length) saveEnv(map);
       return send(res, 200, health());
+    }
+
+    if (path === "/api/models" && req.method === "GET") {
+      try {
+        const models = await listModels();
+        return send(res, 200, { models });
+      } catch (e) {
+        return send(res, 200, { models: [], error: e.message });
+      }
     }
 
     if (path === "/api/fetch" && req.method === "POST") {

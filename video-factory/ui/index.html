@@ -78,9 +78,11 @@
     <label>API 키 <span class="hint">(저장하면 .env 에 보관, 화면엔 다시 안 보임)</span></label>
     <input id="apiKey" type="password" placeholder="여기에 API 키를 붙여넣기" />
     <div class="row">
-      <div><label>이미지 모델 (xAI)</label><input id="imageModel" placeholder="grok-2-image" /></div>
+      <div><label>이미지 모델 (xAI)</label><input id="imageModel" placeholder="grok-imagine-image-quality" /></div>
       <div><label>인트로 영상 모델 (xAI)</label><input id="videoModel" placeholder="grok-imagine-video-1.5" /></div>
     </div>
+    <button class="ghost sm" style="margin-top:10px" onclick="loadModels()">🔍 내 계정에서 쓸 수 있는 모델 보기</button>
+    <div id="modelList" class="hint" style="margin-top:8px"></div>
     <details style="margin-top:12px">
       <summary>채널 톤·길이 설정 (선택)</summary>
       <label>채널명</label><input id="channelName" />
@@ -171,6 +173,21 @@ async function loadHealth(){
   $("channelName").value=HEALTH.channelName||"";
   $("channelPersona").value=HEALTH.channelPersona||"";
   $("targetMinutes").value=HEALTH.targetMinutes||7;
+}
+
+async function loadModels(){
+  if(!HEALTH?.hasKey){ return toast("먼저 API 키를 저장하세요"); }
+  $("modelList").textContent="불러오는 중…";
+  const r = await api("/api/models", null, "GET");
+  if(!r.models || !r.models.length){ $("modelList").innerHTML='<span style="color:var(--warn)">목록을 못 불러왔어요. 키를 확인하세요. '+esc(r.error||"")+'</span>'; return; }
+  $("modelList").innerHTML = "모델을 클릭하면 알맞은 칸(대본/이미지/영상)에 자동 입력됩니다:<br>" +
+    r.models.map(m=>`<button class="ghost sm" style="margin:3px" onclick='pickModel(${JSON.stringify(m)})'>${esc(m)}</button>`).join("");
+}
+function pickModel(id){
+  if(/image/i.test(id)) $("imageModel").value=id;
+  else if(/video/i.test(id)) $("videoModel").value=id;
+  else $("textModel").value=id;
+  toast(id+" 적용 (저장 누르기)");
 }
 
 async function saveSettings(){

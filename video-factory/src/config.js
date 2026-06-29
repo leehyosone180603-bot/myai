@@ -39,7 +39,7 @@ function buildConfig() {
       apiKey: env("XAI_API_KEY"),
       baseUrl: env("XAI_BASE_URL", "https://api.x.ai/v1"),
       textModel: env("XAI_TEXT_MODEL", "grok-4.3"),
-      imageModel: env("XAI_IMAGE_MODEL", "grok-2-image"),
+      imageModel: env("XAI_IMAGE_MODEL", "grok-imagine-image-quality"),
       videoModel: env("XAI_VIDEO_MODEL", "grok-imagine-video-1.5"),
     },
     openai: {
