@@ -79,7 +79,7 @@ export async function runAll(slug, benchmarkText, { generateImages = false, gene
   emit(`✓ 이미지 프롬프트 ${images.images?.length ?? 0}장`);
 
   emit("인트로 영상 프롬프트 생성 중...");
-  const intro = await generateJson({ system: P.introSystem, user: P.introPrompt(pkg) });
+  const intro = await generateJson({ system: P.introSystem, user: P.introPrompt(pkg, images) });
   writeJson(dir, "04-intro-prompts.json", intro);
   emit(`✓ 인트로 클립 ${intro.clips?.length ?? 0}개`);
 
@@ -152,26 +152,36 @@ export async function renderOneImage(slug, id, onLog) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// 클립에 쓸 입력 이미지(base64)를 확보한다. from_image_id 로 생성된 이미지가 있으면 그걸,
-// 없으면 클립 프롬프트로 이미지를 즉석 생성한다. (grok-imagine 은 image-to-video 만 지원)
+// 클립에 쓸 입력 이미지(base64)를 확보한다. 그림체 통일이 핵심:
+// 반드시 '영상용 이미지 세트'의 컷에서 출발한다(있으면 재사용, 없으면 그 컷의 이미지 프롬프트로 생성).
+// 클립의 모션 프롬프트로 이미지를 만들지 않는다(그림체가 흔들리므로).
 async function ensureClipImage(dir, clip, images, emit) {
   const styleToken = images?.style_token || "";
-  // 업로드/생성된 기존 이미지가 있으면 그대로 재사용(비용 0)
-  const existing = clip.from_image_id ? existingImagePath(dir, clip.from_image_id) : null;
-  if (existing) {
-    emit(`  · ${clip.id}: 기존 이미지(${clip.from_image_id}) 재사용`);
-    return readFileSync(existing).toString("base64");
+  const imgList = images?.images || [];
+  // from_image_id 가 유효하면 그걸, 아니면 첫 번째 이미지 컷으로 폴백(스타일 통일 보장)
+  let refId = clip.from_image_id && imgList.some((i) => i.id === clip.from_image_id) ? clip.from_image_id : imgList[0]?.id;
+
+  if (refId) {
+    const existing = existingImagePath(dir, refId);
+    if (existing) {
+      emit(`  · ${clip.id}: 영상용 이미지(${refId}) 재사용`);
+      return readFileSync(existing).toString("base64");
+    }
   }
-  const candidate = clip.from_image_id ? join(dir, "images", `${clip.from_image_id}.png`) : null;
-  emit(`  · ${clip.id}: 입력 이미지가 없어 즉석 생성`);
-  const out = await generateImage(`${clip.prompt} ${styleToken}`.trim());
+  // 없으면 '그 컷의 이미지 프롬프트'로 통일 스타일 생성 (모션 프롬프트 아님)
+  const imgDef = imgList.find((i) => i.id === refId);
+  const sceneText = imgDef?.prompt || clip.ko_desc || clip.prompt;
+  emit(`  · ${clip.id}: 입력 이미지 생성(${refId || "scene"}, 그림체 통일)`);
+  const full = `${sceneText} ${styleToken} ${P.NO_TEXT_NEGATIVE}`.trim();
+  const out = await generateImage(full);
+  const savePath = join(dir, "images", `${refId || clip.id}.png`);
   if (out.b64) {
-    if (candidate) writeFileSync(candidate, Buffer.from(out.b64, "base64"));
+    writeFileSync(savePath, Buffer.from(out.b64, "base64"));
     return out.b64;
   }
   if (out.url) {
     const buf = Buffer.from(await (await fetch(out.url)).arrayBuffer());
-    if (candidate) writeFileSync(candidate, buf);
+    writeFileSync(savePath, buf);
     return buf.toString("base64");
   }
   throw new Error("입력 이미지 생성 실패");
@@ -186,7 +196,9 @@ export async function renderVideos(dir, intro, images, onLog) {
     emit(`인트로 영상 생성: ${clip.id} (${i + 1}/${list.length})`);
     try {
       const imageB64 = await ensureClipImage(dir, clip, images, emit);
-      const out = await generateVideo(clip.prompt, {
+      // 모션만 주고, 입력 이미지의 그림체를 유지하도록 명시(영상 그림체 통일)
+      const motionPrompt = `${clip.prompt}. Keep the exact same art style, colors, and character design as the input image. Do not change the illustration style or make it photorealistic.`;
+      const out = await generateVideo(motionPrompt, {
         seconds: config.introClipSeconds,
         imageB64,
       });

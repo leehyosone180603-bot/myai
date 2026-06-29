@@ -115,18 +115,26 @@ JSON 스키마:
   ]
 }`;
 
-// 4단계: 영상 초입용 짧은 인트로 클립 프롬프트(Grok Imagine)
+// 4단계: 영상 초입용 짧은 인트로 클립 프롬프트(Grok Imagine, 이미지→영상)
 export const introSystem = `너는 유튜브 인트로(0~15초) 연출가다.
-영상 시작에 깔릴 5~8초짜리 짧은 영상 클립들의 생성 프롬프트를 만든다.
-손이 멈추게 만드는 시각적 후킹이 목표(움직임/표정/분위기). 출력은 JSON 하나.`;
+인트로 클립은 '이미지→영상' 방식으로 만든다(영상 그림체 = 입력 이미지 그림체).
+[그림체 통일 — 매우 중요]
+- 각 클립은 반드시 제공된 '사용 가능한 이미지' 중 하나에서 출발한다(from_image_id 필수).
+- prompt 에는 그림체/스타일/사실적 묘사를 절대 넣지 마라. 스타일은 이미지가 결정한다.
+- prompt 는 오직 '움직임·카메라 무빙·분위기'만 영어로 짧게 (예: slow push-in, gentle parallax, subtle motion).
+출력은 JSON 하나.`;
 
-export const introPrompt = (pkg) => `아래 영상의 도입부에 깔 짧은 인트로 영상 클립 3~5개의 생성 프롬프트를 만들어라.
-각 클립은 약 ${config.introClipSeconds}초, 화면비 ${config.videoAspectRatio}.
-text-to-video 와 image-to-video 둘 다 쓸 수 있게 'prompt'(영문, 카메라 무빙 포함)와 'from_image_id'(연결할 이미지 id, 없으면 null)를 준다.
+export const introPrompt = (pkg, images) => {
+  const list = (images?.images || []).map((i) => `- ${i.id}: ${i.ko_desc || i.chapter || ""}`).join("\n");
+  return `아래 영상의 도입부에 깔 짧은 인트로 클립 3~5개를 만들어라. 각 클립 약 ${config.introClipSeconds}초.
 
-<package>
-${JSON.stringify({ thumbnail_title: pkg.thumbnail_title, hook: pkg.chapters?.[0]?.script?.slice(0, 300) }, null, 2)}
-</package>
+[필수] 각 클립의 from_image_id 는 아래 '사용 가능한 이미지' id 중에서 고른다(가장 후킹 강한 컷 위주).
+prompt 는 그림체 설명 없이 카메라/움직임만 영어로 쓴다.
+
+사용 가능한 이미지(id - 설명):
+${list || "(이미지 없음 — 이 경우에만 prompt 에 장면을 묘사)"}
+
+도입 대본 참고: ${pkg.chapters?.[0]?.script?.slice(0, 200) || ""}
 
 JSON 스키마:
 {
@@ -134,8 +142,9 @@ JSON 스키마:
     {
       "id": "intro-01",
       "ko_desc": "무엇을 보여주는 클립인지(한국어)",
-      "prompt": "영문 영상 생성 프롬프트(피사체+동작+카메라 무빙+분위기, ${config.introClipSeconds}s, ${config.videoAspectRatio})",
-      "from_image_id": null
+      "prompt": "영문 카메라/움직임 묘사만 (그림체 묘사 금지, 약 ${config.introClipSeconds}s)",
+      "from_image_id": "img-01"
     }
   ]
 }`;
+};
