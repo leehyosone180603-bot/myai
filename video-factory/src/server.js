@@ -171,12 +171,28 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, "127.0.0.1", () => {
-  const link = `http://localhost:${PORT}`;
-  console.log(`\n  🎬 video-factory UI 실행 중`);
-  console.log(`  브라우저에서 열어주세요 →  ${link}\n`);
+// 포트가 이미 쓰이고 있으면(이전 창이 켜져 있는 경우 등) 다음 포트로 자동 이동.
+let port = PORT;
+function listen() {
+  server.listen(port, "127.0.0.1");
+}
+server.on("listening", () => {
+  const link = `http://localhost:${port}`;
+  console.log(`\n  video-factory UI is running`);
+  console.log(`  Open in your browser ->  ${link}\n`);
   tryOpen(link);
 });
+server.on("error", (e) => {
+  if (e.code === "EADDRINUSE" && port < PORT + 15) {
+    console.log(`  port ${port} busy, trying ${port + 1} ...`);
+    port += 1;
+    setTimeout(listen, 200);
+  } else {
+    console.error("server error:", e.message);
+    process.exit(1);
+  }
+});
+listen();
 
 // OS별 브라우저 자동 열기 (실패해도 무시)
 function tryOpen(link) {
