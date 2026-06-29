@@ -7,6 +7,8 @@
     "video-factory": "src/index.js"
   },
   "scripts": {
+    "ui": "node src/server.js",
+    "start": "node src/server.js",
     "run": "node src/index.js run",
     "plan": "node src/index.js plan"
   },

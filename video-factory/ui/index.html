@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>🎬 영상 제작 자동화 — video-factory</title>
+<style>
+  :root{ --bg:#0f1115; --card:#171a21; --line:#272b35; --txt:#e8eaed; --sub:#9aa0aa; --accent:#7c5cff; --accent2:#00c2a8; --warn:#ffb020; --bad:#ff5d5d; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--txt); font-family:"Pretendard",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif; line-height:1.6; }
+  header{ padding:22px 24px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:14px; position:sticky; top:0; background:rgba(15,17,21,.92); backdrop-filter:blur(6px); z-index:10; }
+  header h1{ font-size:18px; margin:0; }
+  .badge{ font-size:12px; padding:4px 10px; border-radius:999px; border:1px solid var(--line); color:var(--sub); }
+  .badge.ok{ color:#0f1115; background:var(--accent2); border-color:var(--accent2); font-weight:700; }
+  .badge.no{ color:#0f1115; background:var(--warn); border-color:var(--warn); font-weight:700; }
+  main{ max-width:980px; margin:0 auto; padding:24px 18px 80px; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; margin-bottom:18px; }
+  .card h2{ font-size:15px; margin:0 0 14px; display:flex; align-items:center; gap:8px; }
+  .step{ width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700; }
+  label{ display:block; font-size:13px; color:var(--sub); margin:12px 0 5px; }
+  input,textarea,select{ width:100%; background:#0d0f14; border:1px solid var(--line); color:var(--txt); border-radius:9px; padding:10px 12px; font-size:14px; font-family:inherit; }
+  textarea{ resize:vertical; min-height:120px; line-height:1.7; }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .row > *{ flex:1; min-width:140px; }
+  button{ background:var(--accent); color:#fff; border:none; border-radius:9px; padding:11px 16px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
+  button:hover{ filter:brightness(1.1); }
+  button.ghost{ background:transparent; border:1px solid var(--line); color:var(--txt); }
+  button.sm{ padding:6px 10px; font-size:12px; }
+  button:disabled{ opacity:.5; cursor:not-allowed; }
+  .btn-primary{ width:100%; padding:15px; font-size:16px; background:linear-gradient(90deg,var(--accent),#9a7bff); margin-top:8px; }
+  .hint{ font-size:12px; color:var(--sub); margin-top:6px; }
+  .check{ display:flex; align-items:center; gap:8px; }
+  .check input{ width:auto; }
+  details summary{ cursor:pointer; color:var(--sub); font-size:13px; }
+  #log{ background:#0a0c10; border:1px solid var(--line); border-radius:9px; padding:12px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12.5px; color:#bcd; white-space:pre-wrap; max-height:240px; overflow:auto; display:none; }
+  .result h3{ font-size:14px; color:var(--accent2); margin:18px 0 8px; border-top:1px dashed var(--line); padding-top:16px; }
+  .pill{ background:#0d0f14; border:1px solid var(--line); border-radius:9px; padding:10px 12px; margin:6px 0; font-size:14px; display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+  .pill .t{ flex:1; }
+  .thumb{ font-size:20px; font-weight:800; white-space:pre-line; line-height:1.25; }
+  .chapter{ background:#0d0f14; border:1px solid var(--line); border-radius:9px; padding:12px 14px; margin:8px 0; }
+  .chapter .ct{ font-weight:700; color:#cdb8ff; font-size:13.5px; margin-bottom:4px; }
+  .chapter .cs{ font-size:13.5px; color:#d6d9de; white-space:pre-wrap; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; }
+  .media{ background:#0d0f14; border:1px solid var(--line); border-radius:9px; padding:10px; font-size:12px; }
+  .media img,.media video{ width:100%; border-radius:6px; display:block; margin-bottom:6px; background:#000; }
+  .media .mp{ color:var(--sub); font-size:11.5px; max-height:64px; overflow:auto; }
+  .toast{ position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--accent2); color:#03110e; padding:10px 18px; border-radius:999px; font-weight:700; font-size:13px; opacity:0; transition:.25s; pointer-events:none; }
+  .toast.show{ opacity:1; }
+  .err{ color:var(--bad); font-size:13px; margin-top:8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎬 영상 제작 자동화</h1>
+  <span id="statusBadge" class="badge">상태 확인 중…</span>
+  <span style="flex:1"></span>
+  <button class="ghost sm" onclick="toggleSettings()">⚙️ 설정</button>
+</header>
+
+<main>
+  <!-- 설정 -->
+  <section class="card" id="settingsCard" style="display:none">
+    <h2>⚙️ 설정 (API 키)</h2>
+    <div class="row">
+      <div>
+        <label>AI 제공자</label>
+        <select id="provider">
+          <option value="xai">xAI (Grok) — 권장</option>
+          <option value="openai">OpenAI</option>
+          <option value="anthropic">Anthropic</option>
+        </select>
+      </div>
+      <div>
+        <label>대본 생성 모델</label>
+        <input id="textModel" placeholder="grok-4.3" />
+      </div>
+    </div>
+    <label>API 키 <span class="hint">(저장하면 .env 에 보관, 화면엔 다시 안 보임)</span></label>
+    <input id="apiKey" type="password" placeholder="여기에 API 키를 붙여넣기" />
+    <div class="row">
+      <div><label>이미지 모델 (xAI)</label><input id="imageModel" placeholder="grok-2-image" /></div>
+      <div><label>인트로 영상 모델 (xAI)</label><input id="videoModel" placeholder="grok-imagine-video-1.5" /></div>
+    </div>
+    <details style="margin-top:12px">
+      <summary>채널 톤·길이 설정 (선택)</summary>
+      <label>채널명</label><input id="channelName" />
+      <label>내레이터 페르소나 (대본 문체)</label><textarea id="channelPersona" style="min-height:70px"></textarea>
+      <label>목표 영상 길이(분)</label><input id="targetMinutes" type="number" min="1" />
+    </details>
+    <button style="margin-top:14px" onclick="saveSettings()">설정 저장</button>
+    <div id="settingsErr" class="err"></div>
+  </section>
+
+  <!-- 1. 벤치마크 입력 -->
+  <section class="card">
+    <h2><span class="step">1</span> 벤치마크 영상 넣기</h2>
+    <label>유튜브 링크로 자막 자동 가져오기 <span class="hint">(yt-dlp 설치 + 외부망 필요)</span></label>
+    <div class="row">
+      <input id="url" placeholder="https://www.youtube.com/watch?v=..." style="flex:3" />
+      <button class="ghost" style="flex:1" onclick="doFetch()">자막 가져오기</button>
+    </div>
+    <div id="fetchMsg" class="hint"></div>
+    <label style="margin-top:16px">또는 자막을 직접 붙여넣기 <span class="hint">(유튜브 ⋯더보기 → 스크립트 표시 → 복사)</span></label>
+    <textarea id="benchmark" placeholder="여기에 영상 자막(대본)을 붙여넣으세요"></textarea>
+  </section>
+
+  <!-- 2. 생성 -->
+  <section class="card">
+    <h2><span class="step">2</span> 영상 콘텐츠 만들기</h2>
+    <div class="row">
+      <div style="flex:2"><label>저장 폴더 이름(slug)</label><input id="slug" placeholder="예: yeoyuroun-namja (비우면 자동)" /></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <label class="check" style="flex:1"><input type="checkbox" id="optImages" /> 이미지도 실제 생성 (비용↑)</label>
+      <label class="check" style="flex:1"><input type="checkbox" id="optVideos" /> 인트로 영상도 실제 생성 (비용↑·느림)</label>
+    </div>
+    <button class="btn-primary" id="runBtn" onclick="doRun()">✨ 분석 → 대본 → 프롬프트 생성</button>
+    <pre id="log"></pre>
+    <div id="runErr" class="err"></div>
+  </section>
+
+  <!-- 3. 결과 -->
+  <section class="card result" id="resultCard" style="display:none">
+    <h2><span class="step">3</span> 결과물</h2>
+    <div id="result"></div>
+    <div style="margin-top:18px" class="row">
+      <button class="ghost" onclick="doRender(true,false)">🖼️ 이미지 생성</button>
+      <button class="ghost" onclick="doRender(false,true)">🎞️ 인트로 영상 생성</button>
+    </div>
+    <pre id="log2" style="display:none"></pre>
+  </section>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let HEALTH = null, CURRENT = null;
+
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),1600); }
+function copy(text){ navigator.clipboard.writeText(text).then(()=>toast("복사됨")); }
+function esc(s){ return (s||"").replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function toggleSettings(){ const c=$("settingsCard"); c.style.display = c.style.display==="none"?"block":"none"; }
+
+async function api(path, body, method="POST"){
+  const r = await fetch(path, { method, headers:{'Content-Type':'application/json'}, body: body?JSON.stringify(body):undefined });
+  return r.json();
+}
+
+// ndjson 스트림 읽기
+async function stream(path, body, onEvent){
+  const r = await fetch(path, { method:"POST", headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  const reader = r.body.getReader(); const dec = new TextDecoder(); let buf="";
+  while(true){
+    const {value,done} = await reader.read(); if(done) break;
+    buf += dec.decode(value,{stream:true});
+    let i; while((i=buf.indexOf("\n"))>=0){ const line=buf.slice(0,i); buf=buf.slice(i+1); if(line.trim()) onEvent(JSON.parse(line)); }
+  }
+  if(buf.trim()) onEvent(JSON.parse(buf));
+}
+
+async function loadHealth(){
+  HEALTH = await api("/api/health", null, "GET");
+  const b=$("statusBadge");
+  if(HEALTH.hasKey){ b.textContent="✓ "+HEALTH.provider+" 연결됨"; b.className="badge ok"; }
+  else { b.textContent="⚠ API 키 필요 — 설정에서 입력"; b.className="badge no"; }
+  $("provider").value=HEALTH.provider;
+  $("textModel").value=HEALTH.models.text||"";
+  $("imageModel").value=HEALTH.models.image||"";
+  $("videoModel").value=HEALTH.models.video||"";
+  $("channelName").value=HEALTH.channelName||"";
+  $("channelPersona").value=HEALTH.channelPersona||"";
+  $("targetMinutes").value=HEALTH.targetMinutes||7;
+}
+
+async function saveSettings(){
+  $("settingsErr").textContent="";
+  const body={ provider:$("provider").value, apiKey:$("apiKey").value.trim(), textModel:$("textModel").value.trim(),
+    imageModel:$("imageModel").value.trim(), videoModel:$("videoModel").value.trim(),
+    channelName:$("channelName").value.trim(), channelPersona:$("channelPersona").value.trim(), targetMinutes:Number($("targetMinutes").value)||7 };
+  HEALTH = await api("/api/settings", body);
+  $("apiKey").value="";
+  await loadHealth(); toast("설정 저장됨");
+}
+
+async function doFetch(){
+  const url=$("url").value.trim(); if(!url) return toast("링크를 입력하세요");
+  $("fetchMsg").textContent="자막 가져오는 중…(yt-dlp)";
+  const r = await api("/api/fetch", { url });
+  if(r.error){ $("fetchMsg").innerHTML='<span style="color:var(--warn)">'+esc(r.error)+'</span>'; return; }
+  $("benchmark").value = r.text;
+  if(!$("slug").value) $("slug").value = r.id;
+  $("fetchMsg").textContent = `✓ 자막 ${r.text.length}자 가져옴 (언어: ${r.lang})`;
+}
+
+async function doRun(){
+  const benchmark=$("benchmark").value.trim();
+  if(!benchmark) return toast("자막을 넣어주세요");
+  if(!HEALTH?.hasKey){ toggleSettings(); return toast("먼저 API 키를 설정하세요"); }
+  $("runErr").textContent=""; const log=$("log"); log.style.display="block"; log.textContent="";
+  $("runBtn").disabled=true;
+  try{
+    await stream("/api/run", { benchmark, slug:$("slug").value.trim(), images:$("optImages").checked, videos:$("optVideos").checked }, (ev)=>{
+      if(ev.type==="log") log.textContent += ev.msg+"\n";
+      else if(ev.type==="error"){ $("runErr").textContent="❌ "+ev.msg; }
+      else if(ev.type==="done"){ CURRENT=ev.result; renderResults(ev.result); }
+      log.scrollTop=log.scrollHeight;
+    });
+  }catch(e){ $("runErr").textContent="❌ "+e.message; }
+  $("runBtn").disabled=false;
+}
+
+function copyBtn(text){ return `<button class="ghost sm" onclick='copy(${JSON.stringify(text)})'>복사</button>`; }
+
+function renderResults(r){
+  $("resultCard").style.display="block";
+  const p=r.pkg||{}, im=r.images||{}, intro=r.intro||{};
+  let h="";
+  h+=`<h3>📌 영상 제목 후보</h3>`;
+  (p.video_title_options||[]).forEach(t=>{ h+=`<div class="pill"><span class="t">${esc(t)}</span>${copyBtn(t)}</div>`; });
+  h+=`<h3>🖼️ 썸네일 문구</h3><div class="pill"><span class="t thumb">${esc(p.thumbnail_title||"")}</span>${copyBtn(p.thumbnail_title||"")}</div>`;
+  if(p.thumbnail_subtext) h+=`<div class="hint">보조: ${esc(p.thumbnail_subtext)}</div>`;
+  h+=`<h3>📝 설명글 ${copyBtn(p.description||"")}</h3><div class="chapter"><div class="cs">${esc(p.description||"")}</div></div>`;
+  h+=`<h3>🎬 대본 (${(p.chapters||[]).length}챕터) ${copyBtn((p.chapters||[]).map(c=>`[${c.timecode||""}] ${c.title}\n${c.script}`).join("\n\n"))}</h3>`;
+  (p.chapters||[]).forEach(c=>{ h+=`<div class="chapter"><div class="ct">${esc(c.timecode||"")} · ${esc(c.title||"")}</div><div class="cs">${esc(c.script||"")}</div></div>`; });
+
+  h+=`<h3>🎨 이미지 프롬프트 (${(im.images||[]).length}장)</h3><div class="grid">`;
+  (im.images||[]).forEach(x=>{
+    const src=`/output/${r.slug}/images/${x.id}.png?t=${Date.now()}`;
+    h+=`<div class="media"><img src="${src}" onerror="this.style.display='none'"/><b>${esc(x.id)}</b> · ${esc(x.chapter||"")}<div class="mp">${esc(x.ko_desc||"")}</div>${copyBtn(x.prompt+" "+(im.style_token||""))}</div>`;
+  });
+  h+=`</div>`;
+
+  h+=`<h3>🎞️ 인트로 영상 프롬프트 (${(intro.clips||[]).length}개)</h3><div class="grid">`;
+  (intro.clips||[]).forEach(x=>{
+    const src=`/output/${r.slug}/intro/${x.id}.mp4?t=${Date.now()}`;
+    h+=`<div class="media"><video src="${src}" controls onerror="this.style.display='none'"></video><b>${esc(x.id)}</b><div class="mp">${esc(x.ko_desc||"")}</div>${copyBtn(x.prompt)}</div>`;
+  });
+  h+=`</div>`;
+  h+=`<div class="hint" style="margin-top:14px">📁 모든 파일은 <code>output/${esc(r.slug)}/</code> 폴더에 저장되었습니다.</div>`;
+  $("result").innerHTML=h;
+  $("resultCard").scrollIntoView({behavior:"smooth"});
+}
+
+async function doRender(images, videos){
+  if(!CURRENT?.slug) return toast("먼저 콘텐츠를 생성하세요");
+  if(!HEALTH?.hasKey) return toast("API 키가 필요합니다");
+  const log=$("log2"); log.style.display="block"; log.textContent="";
+  await stream("/api/render", { slug:CURRENT.slug, images, videos }, (ev)=>{
+    if(ev.type==="log") log.textContent+=ev.msg+"\n";
+    else if(ev.type==="error") log.textContent+="❌ "+ev.msg+"\n";
+    else if(ev.type==="done") toast("렌더링 완료");
+    log.scrollTop=log.scrollHeight;
+  });
+  // 렌더 후 미디어 다시 로드
+  const fresh = await api("/api/result?slug="+encodeURIComponent(CURRENT.slug), null, "GET");
+  fresh.slug=CURRENT.slug; CURRENT=fresh; renderResults(fresh);
+}
+
+loadHealth();
+</script>
+</body>
+</html>

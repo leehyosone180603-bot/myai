@@ -1,0 +1,192 @@
+#!/usr/bin/env node
+// video-factory UI 서버.  의존성 0 (Node 내장 http).
+// 브라우저에서 클릭만으로 자막 수집 → 대본/메타데이터/이미지·인트로 프롬프트 생성 → 미디어 렌더링.
+import { createServer } from "node:http";
+import { readFileSync, existsSync, statSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join, normalize } from "node:path";
+import { config, ROOT, saveEnv, requireTextProvider } from "./config.js";
+import { runAll, renderImages, renderVideos, readResult, outDir } from "./pipeline.js";
+import { fetchTranscript, toBenchmarkMd, youtubeId } from "./transcript.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const UI_DIR = join(ROOT, "ui");
+const PORT = Number(process.env.PORT || 4399);
+
+const MIME = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".webp": "image/webp",
+  ".mp4": "video/mp4",
+  ".json": "application/json; charset=utf-8",
+};
+
+const send = (res, code, body, type = "application/json; charset=utf-8") => {
+  res.writeHead(code, { "Content-Type": type });
+  res.end(typeof body === "string" || Buffer.isBuffer(body) ? body : JSON.stringify(body));
+};
+
+const readBody = (req) =>
+  new Promise((resolve) => {
+    let d = "";
+    req.on("data", (c) => (d += c));
+    req.on("end", () => {
+      try {
+        resolve(d ? JSON.parse(d) : {});
+      } catch {
+        resolve({});
+      }
+    });
+  });
+
+function health() {
+  const p = config.textProvider;
+  const key = { xai: config.xai.apiKey, openai: config.openai.apiKey, anthropic: config.anthropic.apiKey }[p];
+  return {
+    provider: p,
+    hasKey: !!key,
+    models: {
+      text: config[p]?.textModel,
+      image: config.xai.imageModel,
+      video: config.xai.videoModel,
+    },
+    channelName: config.channelName,
+    channelPersona: config.channelPersona,
+    targetMinutes: config.targetMinutes,
+  };
+}
+
+// 스트리밍(ndjson) 시작
+function startStream(res) {
+  res.writeHead(200, { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-cache" });
+  return (obj) => res.write(JSON.stringify(obj) + "\n");
+}
+
+function serveStatic(res, filePath) {
+  if (!existsSync(filePath) || !statSync(filePath).isFile()) return send(res, 404, "Not found", "text/plain");
+  const ext = filePath.slice(filePath.lastIndexOf("."));
+  res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" });
+  res.end(readFileSync(filePath));
+}
+
+const server = createServer(async (req, res) => {
+  const url = new URL(req.url, `http://localhost:${PORT}`);
+  const path = url.pathname;
+  try {
+    // ── 정적: UI ──
+    if (req.method === "GET" && (path === "/" || path === "/index.html")) {
+      return serveStatic(res, join(UI_DIR, "index.html"));
+    }
+    // ── 정적: 생성된 미디어 미리보기 ──
+    if (req.method === "GET" && path.startsWith("/output/")) {
+      const rel = normalize(decodeURIComponent(path.replace(/^\/output\//, "")));
+      if (rel.includes("..")) return send(res, 400, "bad path", "text/plain");
+      return serveStatic(res, join(ROOT, "output", rel));
+    }
+
+    // ── API ──
+    if (path === "/api/health" && req.method === "GET") return send(res, 200, health());
+
+    if (path === "/api/settings" && req.method === "POST") {
+      const b = await readBody(req);
+      const map = {};
+      if (b.provider) map.TEXT_PROVIDER = b.provider;
+      if (b.apiKey) {
+        if ((b.provider || config.textProvider) === "xai") map.XAI_API_KEY = b.apiKey;
+        else if (b.provider === "openai") map.OPENAI_API_KEY = b.apiKey;
+        else if (b.provider === "anthropic") map.ANTHROPIC_API_KEY = b.apiKey;
+      }
+      if (b.textModel) map[`${(b.provider || config.textProvider).toUpperCase()}_TEXT_MODEL`] = b.textModel;
+      if (b.imageModel) map.XAI_IMAGE_MODEL = b.imageModel;
+      if (b.videoModel) map.XAI_VIDEO_MODEL = b.videoModel;
+      if (b.channelName) map.CHANNEL_NAME = b.channelName;
+      if (b.channelPersona) map.CHANNEL_PERSONA = b.channelPersona;
+      if (b.targetMinutes) map.TARGET_MINUTES = String(b.targetMinutes);
+      if (Object.keys(map).length) saveEnv(map);
+      return send(res, 200, health());
+    }
+
+    if (path === "/api/fetch" && req.method === "POST") {
+      const b = await readBody(req);
+      if (!b.url) return send(res, 400, { error: "url 이 필요합니다." });
+      try {
+        const langs = (b.lang || "ko,ko-orig,en").split(",").map((s) => s.trim());
+        const r = fetchTranscript(b.url, { langs });
+        return send(res, 200, { id: r.id, lang: r.lang, text: r.text });
+      } catch (e) {
+        return send(res, 200, { error: e.message });
+      }
+    }
+
+    if (path === "/api/result" && req.method === "GET") {
+      const slug = url.searchParams.get("slug");
+      if (!slug) return send(res, 400, { error: "slug 필요" });
+      return send(res, 200, readResult(slug));
+    }
+
+    if (path === "/api/run" && req.method === "POST") {
+      const b = await readBody(req);
+      const emit = startStream(res);
+      try {
+        requireTextProvider();
+        if (!b.benchmark || !b.benchmark.trim()) throw new Error("대본/벤치마크 내용이 비어 있습니다.");
+        const slug = b.slug?.trim() || youtubeId(b.benchmark) || "video";
+        const result = await runAll(slug, b.benchmark, {
+          generateImages: !!b.images,
+          generateVideos: !!b.videos,
+          onLog: (msg) => emit({ type: "log", msg }),
+        });
+        emit({ type: "done", result });
+      } catch (e) {
+        emit({ type: "error", msg: e.message });
+      }
+      return res.end();
+    }
+
+    if (path === "/api/render" && req.method === "POST") {
+      const b = await readBody(req);
+      const emit = startStream(res);
+      try {
+        requireTextProvider();
+        const slug = b.slug?.trim();
+        if (!slug) throw new Error("slug 가 필요합니다.");
+        const r = readResult(slug);
+        const dir = outDir(slug);
+        const out = {};
+        if (b.images && r.images) out.images = await renderImages(dir, r.images, (msg) => emit({ type: "log", msg }));
+        if (b.videos && r.intro) out.videos = await renderVideos(dir, r.intro, r.images, (msg) => emit({ type: "log", msg }));
+        emit({ type: "done", result: out });
+      } catch (e) {
+        emit({ type: "error", msg: e.message });
+      }
+      return res.end();
+    }
+
+    return send(res, 404, { error: "not found" });
+  } catch (e) {
+    return send(res, 500, { error: e.message });
+  }
+});
+
+server.listen(PORT, "127.0.0.1", () => {
+  const link = `http://localhost:${PORT}`;
+  console.log(`\n  🎬 video-factory UI 실행 중`);
+  console.log(`  브라우저에서 열어주세요 →  ${link}\n`);
+  tryOpen(link);
+});
+
+// OS별 브라우저 자동 열기 (실패해도 무시)
+function tryOpen(link) {
+  import("node:child_process").then(({ spawn }) => {
+    const cmd =
+      process.platform === "win32" ? ["cmd", ["/c", "start", "", link]]
+      : process.platform === "darwin" ? ["open", [link]]
+      : ["xdg-open", [link]];
+    try {
+      spawn(cmd[0], cmd[1], { stdio: "ignore", detached: true }).on("error", () => {});
+    } catch {}
+  });
+}

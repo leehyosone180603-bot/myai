@@ -1,5 +1,5 @@
 // 환경설정 로더.  .env 파일을 (의존성 없이) 직접 파싱한다.
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -31,38 +31,71 @@ loadDotEnv();
 const env = (k, fallback = "") =>
   process.env[k] !== undefined && process.env[k] !== "" ? process.env[k] : fallback;
 
-export const config = {
-  textProvider: env("TEXT_PROVIDER", "xai"),
+function buildConfig() {
+  return {
+    textProvider: env("TEXT_PROVIDER", "xai"),
 
-  xai: {
-    apiKey: env("XAI_API_KEY"),
-    baseUrl: env("XAI_BASE_URL", "https://api.x.ai/v1"),
-    textModel: env("XAI_TEXT_MODEL", "grok-4.3"),
-    imageModel: env("XAI_IMAGE_MODEL", "grok-2-image"),
-    videoModel: env("XAI_VIDEO_MODEL", "grok-imagine-video-1.5"),
-  },
-  openai: {
-    apiKey: env("OPENAI_API_KEY"),
-    baseUrl: env("OPENAI_BASE_URL", "https://api.openai.com/v1"),
-    textModel: env("OPENAI_TEXT_MODEL", "gpt-4o"),
-    imageModel: env("OPENAI_IMAGE_MODEL", "gpt-image-1"),
-  },
-  anthropic: {
-    apiKey: env("ANTHROPIC_API_KEY"),
-    baseUrl: env("ANTHROPIC_BASE_URL", "https://api.anthropic.com"),
-    textModel: env("ANTHROPIC_TEXT_MODEL", "claude-opus-4-8"),
-  },
+    xai: {
+      apiKey: env("XAI_API_KEY"),
+      baseUrl: env("XAI_BASE_URL", "https://api.x.ai/v1"),
+      textModel: env("XAI_TEXT_MODEL", "grok-4.3"),
+      imageModel: env("XAI_IMAGE_MODEL", "grok-2-image"),
+      videoModel: env("XAI_VIDEO_MODEL", "grok-imagine-video-1.5"),
+    },
+    openai: {
+      apiKey: env("OPENAI_API_KEY"),
+      baseUrl: env("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+      textModel: env("OPENAI_TEXT_MODEL", "gpt-4o"),
+      imageModel: env("OPENAI_IMAGE_MODEL", "gpt-image-1"),
+    },
+    anthropic: {
+      apiKey: env("ANTHROPIC_API_KEY"),
+      baseUrl: env("ANTHROPIC_BASE_URL", "https://api.anthropic.com"),
+      textModel: env("ANTHROPIC_TEXT_MODEL", "claude-opus-4-8"),
+    },
 
-  channelName: env("CHANNEL_NAME", "호감의 심리학"),
-  channelPersona: env(
-    "CHANNEL_PERSONA",
-    "차분하고 신뢰감 있는 30대 남성 내레이터. 단정적이되 따뜻하고, 심리학 근거를 곁들여 설득력 있게 말한다."
-  ),
-  targetMinutes: Number(env("TARGET_MINUTES", "7")),
-  imageAspectRatio: env("IMAGE_ASPECT_RATIO", "16:9"),
-  videoAspectRatio: env("VIDEO_ASPECT_RATIO", "16:9"),
-  introClipSeconds: Number(env("INTRO_CLIP_SECONDS", "6")),
-};
+    channelName: env("CHANNEL_NAME", "호감의 심리학"),
+    channelPersona: env(
+      "CHANNEL_PERSONA",
+      "차분하고 신뢰감 있는 30대 남성 내레이터. 단정적이되 따뜻하고, 심리학 근거를 곁들여 설득력 있게 말한다."
+    ),
+    targetMinutes: Number(env("TARGET_MINUTES", "7")),
+    imageAspectRatio: env("IMAGE_ASPECT_RATIO", "16:9"),
+    videoAspectRatio: env("VIDEO_ASPECT_RATIO", "16:9"),
+    introClipSeconds: Number(env("INTRO_CLIP_SECONDS", "6")),
+  };
+}
+
+// 다른 모듈이 import 하는 싱글턴. UI에서 설정을 바꾸면 rebuildConfig() 로 제자리 갱신된다.
+export const config = buildConfig();
+
+export function rebuildConfig() {
+  Object.assign(config, buildConfig());
+  return config;
+}
+
+// .env 파일에 key=value 들을 병합 저장하고, process.env + config 를 즉시 갱신한다.
+export function saveEnv(updates) {
+  const envPath = join(ROOT, ".env");
+  const lines = existsSync(envPath) ? readFileSync(envPath, "utf8").split("\n") : [];
+  const seen = new Set();
+  const next = lines.map((line) => {
+    const t = line.trim();
+    if (!t || t.startsWith("#") || !t.includes("=")) return line;
+    const key = t.slice(0, t.indexOf("=")).trim();
+    if (key in updates) {
+      seen.add(key);
+      return `${key}=${updates[key]}`;
+    }
+    return line;
+  });
+  for (const [k, v] of Object.entries(updates)) {
+    if (!seen.has(k)) next.push(`${k}=${v}`);
+  }
+  writeFileSync(envPath, next.join("\n").replace(/\n+$/, "") + "\n");
+  for (const [k, v] of Object.entries(updates)) process.env[k] = String(v);
+  rebuildConfig();
+}
 
 export function requireTextProvider() {
   const p = config.textProvider;
