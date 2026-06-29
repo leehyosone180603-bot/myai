@@ -102,36 +102,66 @@ function pickBest(files, langs) {
   return files[0];
 }
 
+// yt-dlp 실행 후보(깨진 .exe launcher 자동 우회).
+// YTDLP_PATH 가 지정되면 그것부터, 이후 표준 후보들을 순서대로 시도한다.
+function ytdlpCandidates(ytdlpPath) {
+  const list = [];
+  if (ytdlpPath) list.push(ytdlpPath.trim().split(/\s+/));
+  list.push(["yt-dlp"], ["python", "-m", "yt_dlp"], ["py", "-m", "yt_dlp"], ["python3", "-m", "yt_dlp"]);
+  return list;
+}
+
+// 후보가 "실행 자체 불가"(미설치/깨진 launcher/모듈없음)인지 판단 → 다음 후보로 넘어갈지 결정
+function isUnrunnable(err) {
+  const msg = (err.stderr || err.message || "").toString();
+  return (
+    err.code === "ENOENT" ||
+    /Fatal error in launcher/i.test(msg) ||
+    /No module named/i.test(msg) ||
+    /is not recognized|cannot find the path|지정된 경로|찾을 수 없습니다/i.test(msg)
+  );
+}
+
 /**
  * 유튜브 URL → 정제된 대본 텍스트.
  * @param {string} url
  * @param {{langs?: string[], ytdlpPath?: string}} opts
  * @returns {{ id: string, lang: string, text: string }}
  */
-export function fetchTranscript(url, { langs = ["ko", "ko-orig", "en"], ytdlpPath = process.env.YTDLP_PATH || "yt-dlp" } = {}) {
+export function fetchTranscript(url, { langs = ["ko", "ko-orig", "en"], ytdlpPath = process.env.YTDLP_PATH || "" } = {}) {
   const id = youtubeId(url) || "video";
   const dir = mkdtempSync(join(tmpdir(), "vf-sub-"));
   try {
-    try {
-      execFileSync(
-        ytdlpPath,
-        [
-          "--skip-download",
-          "--write-subs",
-          "--write-auto-subs",
-          "--sub-langs", langs.join(","),
-          "--sub-format", "vtt/srt/json3/best",
-          "-o", join(dir, "%(id)s.%(ext)s"),
-          url,
-        ],
-        { stdio: ["ignore", "ignore", "pipe"] }
-      );
-    } catch (e) {
-      const msg = (e.stderr || e.message || "").toString();
-      if (e.code === "ENOENT") {
-        throw new Error("yt-dlp 가 설치되어 있지 않습니다.  설치: pip install -U yt-dlp");
+    const ytArgs = [
+      "--skip-download",
+      "--write-subs",
+      "--write-auto-subs",
+      "--sub-langs", langs.join(","),
+      "--sub-format", "vtt/srt/json3/best",
+      "-o", join(dir, "%(id)s.%(ext)s"),
+      url,
+    ];
+    const candidates = ytdlpCandidates(ytdlpPath);
+    let lastErr = null,
+      ran = false;
+    for (const cmd of candidates) {
+      try {
+        execFileSync(cmd[0], [...cmd.slice(1), ...ytArgs], { stdio: ["ignore", "ignore", "pipe"] });
+        ran = true;
+        break; // 정상 실행됨
+      } catch (e) {
+        lastErr = e;
+        if (isUnrunnable(e)) continue; // 다음 후보로
+        // 실행은 됐는데 yt-dlp 자체가 실패(네트워크 차단/자막 없음 등)
+        throw new Error(`yt-dlp 실행 실패(네트워크 차단/자막 없음 등):\n${(e.stderr || e.message || "").toString().slice(0, 500)}`);
       }
-      throw new Error(`yt-dlp 실행 실패(네트워크 차단/자막 없음 등):\n${msg.slice(0, 500)}`);
+    }
+    if (!ran) {
+      throw new Error(
+        "yt-dlp 를 실행할 수 없습니다. PowerShell 에서 `python -m yt_dlp --version` 이 되는지 확인하세요.\n" +
+          "설치: python -m pip install -U yt-dlp\n" +
+          (lastErr ? `(마지막 오류: ${(lastErr.stderr || lastErr.message || "").toString().slice(0, 200)})` : "")
+      );
     }
 
     const subs = readdirSync(dir).filter((f) => /\.(vtt|srt|json3|json)$/.test(f));
