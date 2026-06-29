@@ -2,23 +2,32 @@
 // 텍스트는 provider 교체 가능(xai|openai|anthropic), 이미지·영상은 xAI(OpenAI 이미지도 지원).
 import { config } from "./config.js";
 
-async function postJson(url, headers, body) {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...headers },
-    body: JSON.stringify(body),
-  });
-  const text = await res.text();
-  let json;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    json = { raw: text };
-  }
-  if (!res.ok) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// 429(rate limit)면 점점 더 기다리며 재시도한다.
+async function postJson(url, headers, body, { retries = 4 } = {}) {
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...headers },
+      body: JSON.stringify(body),
+    });
+    const text = await res.text();
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      json = { raw: text };
+    }
+    if (res.ok) return json;
+    if (res.status === 429 && attempt < retries) {
+      const retryAfter = Number(res.headers.get("retry-after"));
+      const wait = retryAfter > 0 ? retryAfter * 1000 : Math.min(30000, 4000 * 2 ** attempt);
+      await sleep(wait);
+      continue;
+    }
     throw new Error(`HTTP ${res.status} ${url}\n${JSON.stringify(json, null, 2)}`);
   }
-  return json;
 }
 
 // ── 텍스트 생성 ──────────────────────────────────────────────
@@ -100,8 +109,15 @@ export async function generateImage(prompt) {
 }
 
 // ── 영상 생성 (Grok Imagine, 비동기 폴링) ─────────────────────
-// 엔드포인트/필드명은 xAI 문서 업데이트에 따라 달라질 수 있어 env 로 모델만 바꾸면 되게 둠.
-export async function generateVideo(prompt, { seconds, aspectRatio, imageB64 } = {}) {
+// grok-imagine-video 계열은 text-to-video 미지원 → 반드시 입력 이미지(image-to-video)가 필요.
+// 이미지는 data URI(data:image/png;base64,...) 로 전달. 필드명은 모델에 따라 다를 수 있어
+// XAI_VIDEO_IMAGE_FIELD 로 바꿀 수 있게 둠(기본 image_url).
+export async function generateVideo(prompt, { seconds, aspectRatio, imageB64, imageUrl } = {}) {
+  const imageField = process.env.XAI_VIDEO_IMAGE_FIELD || "image_url";
+  const imageValue = imageUrl || (imageB64 ? `data:image/png;base64,${imageB64}` : null);
+  if (!imageValue) {
+    throw new Error("이 영상 모델은 이미지→영상만 지원합니다. 먼저 '이미지 생성'을 한 뒤 인트로 영상을 만들어 주세요.");
+  }
   const start = await postJson(
     `${config.xai.baseUrl}/videos/generations`,
     { Authorization: `Bearer ${config.xai.apiKey}` },
@@ -110,7 +126,7 @@ export async function generateVideo(prompt, { seconds, aspectRatio, imageB64 } =
       prompt,
       duration: seconds ?? config.introClipSeconds,
       aspect_ratio: aspectRatio ?? config.videoAspectRatio,
-      ...(imageB64 ? { image: imageB64 } : {}),
+      [imageField]: imageValue,
     }
   );
 

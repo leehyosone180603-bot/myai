@@ -67,7 +67,7 @@ export async function runAll(slug, benchmarkText, { generateImages = false, gene
   emit("✓ 분석 완료 (주제·목차·약점)");
 
   emit("업그레이드 대본/메타데이터 생성 중... (시간이 좀 걸려요)");
-  const pkg = await generateJson({ system: P.writeSystem, user: P.writePrompt(analysis), maxTokens: 8000 });
+  const pkg = await generateJson({ system: P.writeSystem, user: P.writePrompt(analysis), maxTokens: 12000 });
   writeJson(dir, "02-content-package.json", pkg);
   writeFileSync(join(dir, "content.md"), packageToMarkdown(analysis, pkg));
   emit("✓ 제목·썸네일·설명·대본 완료");
@@ -113,16 +113,43 @@ export async function renderImages(dir, images, onLog) {
   return done;
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// 클립에 쓸 입력 이미지(base64)를 확보한다. from_image_id 로 생성된 이미지가 있으면 그걸,
+// 없으면 클립 프롬프트로 이미지를 즉석 생성한다. (grok-imagine 은 image-to-video 만 지원)
+async function ensureClipImage(dir, clip, images, emit) {
+  const styleToken = images?.style_token || "";
+  const candidate = clip.from_image_id ? join(dir, "images", `${clip.from_image_id}.png`) : null;
+  if (candidate && existsSync(candidate)) {
+    return readFileSync(candidate).toString("base64");
+  }
+  emit(`  · ${clip.id}: 입력 이미지가 없어 즉석 생성`);
+  const out = await generateImage(`${clip.prompt} ${styleToken}`.trim());
+  if (out.b64) {
+    if (candidate) writeFileSync(candidate, Buffer.from(out.b64, "base64"));
+    return out.b64;
+  }
+  if (out.url) {
+    const buf = Buffer.from(await (await fetch(out.url)).arrayBuffer());
+    if (candidate) writeFileSync(candidate, buf);
+    return buf.toString("base64");
+  }
+  throw new Error("입력 이미지 생성 실패");
+}
+
 export async function renderVideos(dir, intro, images, onLog) {
   const emit = mkEmit(onLog);
   const list = intro.clips || [];
   const done = [];
-  for (const clip of list) {
-    emit(`인트로 영상 생성: ${clip.id}`);
+  for (let i = 0; i < list.length; i++) {
+    const clip = list[i];
+    emit(`인트로 영상 생성: ${clip.id} (${i + 1}/${list.length})`);
     try {
+      const imageB64 = await ensureClipImage(dir, clip, images, emit);
       const out = await generateVideo(clip.prompt, {
         seconds: config.introClipSeconds,
         aspectRatio: config.videoAspectRatio,
+        imageB64,
       });
       if (out.url) {
         writeFileSync(join(dir, "intro", `${clip.id}.mp4`), Buffer.from(await (await fetch(out.url)).arrayBuffer()));
@@ -134,6 +161,7 @@ export async function renderVideos(dir, intro, images, onLog) {
     } catch (e) {
       emit(`  ⚠ ${clip.id} 실패: ${e.message}`);
     }
+    if (i < list.length - 1) await sleep(5000); // rate limit 완화용 간격
   }
   emit(`✓ 인트로 영상 ${done.length}/${list.length}개 생성`);
   return done;
