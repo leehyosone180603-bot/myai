@@ -121,7 +121,7 @@ export function fetchTranscript(url, { langs = ["ko", "ko-orig", "en"], ytdlpPat
   const id = youtubeId(url) || "video";
   const dir = mkdtempSync(join(tmpdir(), "vf-sub-"));
   try {
-    const ytArgs = [
+    const baseArgs = [
       "--skip-download",
       "--write-subs",
       "--write-auto-subs",
@@ -130,23 +130,28 @@ export function fetchTranscript(url, { langs = ["ko", "ko-orig", "en"], ytdlpPat
       "-o", join(dir, "%(id)s.%(ext)s"),
       url,
     ];
-    // 후보를 순서대로 시도. 어떤 후보가 실패(미설치/깨진 launcher/모듈없음 등)하면
-    // 조용히 다음 후보로 넘어가고, 하나라도 정상 실행되면 멈춘다.
+    // 최신 yt-dlp 는 유튜브 추출에 JS 런타임이 필요. 이 프로그램을 돌리는 Node 실행파일을 직접 지정.
+    // 구버전(옵션 미지원)을 위해 옵션 없는 변형도 폴백으로 둔다.
+    const jsRuntimeArg = process.env.YTDLP_JS_RUNTIME || `node:${process.execPath}`;
+    const argVariants = [["--js-runtimes", jsRuntimeArg, ...baseArgs], baseArgs];
+
+    // 실행 후보(깨진 .exe launcher 자동 우회) × 인자 변형을 순서대로 시도.
     const candidates = ytdlpCandidates(ytdlpPath);
     let lastErr = null,
       ran = false;
-    for (const cmd of candidates) {
-      try {
-        execFileSync(cmd[0], [...cmd.slice(1), ...ytArgs], { stdio: ["ignore", "ignore", "pipe"] });
-        ran = true;
-        break; // 정상 실행됨 (자막이 없는 영상이면 파일이 안 생겨도 throw 는 안 남)
-      } catch (e) {
-        lastErr = e;
-        continue; // 다음 실행 후보로
+    outer: for (const cmd of candidates) {
+      for (const args of argVariants) {
+        try {
+          execFileSync(cmd[0], [...cmd.slice(1), ...args], { stdio: ["ignore", "ignore", "pipe"] });
+          ran = true;
+          break outer; // 정상 실행됨 (자막 없는 영상이면 파일이 안 생겨도 throw 는 안 남)
+        } catch (e) {
+          lastErr = e;
+        }
       }
     }
     if (!ran) {
-      const detail = (lastErr?.stderr || lastErr?.message || "").toString().slice(0, 300);
+      const detail = (lastErr?.stderr || lastErr?.message || "").toString().slice(0, 400);
       throw new Error(
         "yt-dlp 를 실행할 수 없습니다. (yt-dlp / python -m yt_dlp / py -m yt_dlp 모두 실패)\n" +
           "PowerShell 에서 `python -m yt_dlp --version` 이 되는지 확인하세요.\n" +
