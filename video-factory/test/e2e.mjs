@@ -87,7 +87,7 @@ const mock = createServer(async (req, res) => {
     return sendJson(res, { data: [{ b64_json: PNG_1x1 }] });
   }
 
-  // xAI video generation (image-to-video)
+  // xAI video generation (image-to-video) — 비동기: request_id 발급
   if (path === "/v1/videos/generations") {
     const body = await readJson(req);
     captured.push({
@@ -97,7 +97,12 @@ const mock = createServer(async (req, res) => {
       imageUrlPrefix: (body.image?.url || "").slice(0, 22),
       duration: body.duration,
     });
-    return sendJson(res, { url: "http://127.0.0.1:" + PORT + "/fake.mp4" });
+    return sendJson(res, { request_id: "vidjob-1" });
+  }
+  // 폴링: GET /v1/videos/{request_id} → done + url
+  if (path === "/v1/videos/vidjob-1") {
+    captured.push({ ep: "video-poll" });
+    return sendJson(res, { status: "done", url: "http://127.0.0.1:" + PORT + "/fake.mp4" });
   }
 
   // ElevenLabs voices
@@ -189,6 +194,7 @@ const vid = captured.find((c) => c.ep === "video");
 ok(vid?.imageIsObject, "video 요청의 image 가 객체({url}) 형식");
 ok(vid?.imageUrlPrefix.startsWith("data:image/png;base64"), `video image.url 이 data URI (${vid?.imageUrlPrefix}...)`);
 ok(vid?.model === "vid-test", "video 모델명 전달됨");
+ok(captured.some((c) => c.ep === "video-poll"), "video 폴링이 GET /videos/{request_id} 로 감 (폴링 경로 검증)");
 const img = captured.find((c) => c.ep === "image");
 ok(img?.model === "img-test" && img?.hasPrompt, "image 요청에 모델명+프롬프트 포함");
 const tcall = captured.find((c) => c.ep === "tts");

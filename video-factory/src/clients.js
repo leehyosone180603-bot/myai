@@ -184,25 +184,26 @@ export async function generateVideo(prompt, { seconds, imageB64, imageUrl } = {}
   );
 
   // 동기 응답이면 바로 URL 반환
-  const directUrl = start?.data?.[0]?.url || start?.url || start?.video?.url;
+  const directUrl = start?.url || start?.video?.url || start?.data?.[0]?.url;
   if (directUrl) return { url: directUrl };
 
-  // 비동기면 id 로 폴링
-  const id = start?.id || start?.request_id || start?.data?.[0]?.id;
+  // 비동기(deferred): request_id 로 GET /videos/{request_id} 폴링 (status: done/failed/expired)
+  const id = start?.request_id || start?.id || start?.data?.[0]?.id;
   if (!id) return { raw: start };
 
-  for (let i = 0; i < 60; i++) {
-    await new Promise((r) => setTimeout(r, 5000));
-    const res = await fetch(`${config.xai.baseUrl}/videos/generations/${id}`, {
+  const pickUrl = (j) => j?.url || j?.video?.url || j?.result?.url || j?.data?.[0]?.url;
+  for (let i = 0; i < 90; i++) {
+    await sleep(4000);
+    const res = await fetch(`${config.xai.baseUrl}/videos/${id}`, {
       headers: { Authorization: `Bearer ${config.xai.apiKey}` },
     });
+    if (!res.ok) continue;
     const job = await res.json();
-    const status = job.status || job.state;
-    const url = job?.data?.[0]?.url || job?.url || job?.video?.url;
+    const status = (job.status || job.state || "").toString().toLowerCase();
+    const url = pickUrl(job);
     if (url) return { url };
-    if (status && /fail|error|cancel/i.test(status)) {
-      throw new Error(`영상 생성 실패: ${JSON.stringify(job)}`);
-    }
+    if (status === "done") return { raw: job }; // done 인데 url 위치를 못 찾으면 원본 저장(점검용)
+    if (/fail|expir|error|cancel/.test(status)) throw new Error(`영상 생성 실패 (status=${status})`);
   }
   throw new Error("영상 생성 폴링 타임아웃");
 }
