@@ -83,6 +83,16 @@
     </div>
     <button class="ghost sm" style="margin-top:10px" onclick="loadModels()">🔍 내 계정에서 쓸 수 있는 모델 보기</button>
     <div id="modelList" class="hint" style="margin-top:8px"></div>
+
+    <hr style="border:none;border-top:1px solid var(--line);margin:18px 0" />
+    <label>🎙️ ElevenLabs (TTS 음성) API 키 <span class="hint">(대본을 음성+자막으로 만들 때 사용)</span></label>
+    <input id="elevenKey" type="password" placeholder="ElevenLabs API 키 붙여넣기" />
+    <div class="row">
+      <div><label>TTS 모델</label><input id="ttsModel" placeholder="eleven_multilingual_v2" /></div>
+      <div><label>보이스(목소리)</label><select id="voiceSelect"><option value="">— 목록 불러오기 후 선택 —</option></select></div>
+    </div>
+    <button class="ghost sm" style="margin-top:8px" onclick="loadVoices()">🔊 보이스 목록 불러오기</button>
+    <span id="voiceMsg" class="hint"></span>
     <details style="margin-top:12px">
       <summary>채널 톤·길이 설정 (선택)</summary>
       <label>채널명</label><input id="channelName" />
@@ -130,8 +140,11 @@
     <div style="margin-top:18px" class="row">
       <button class="ghost" onclick="doRender(true,false)">🖼️ 이미지 생성</button>
       <button class="ghost" onclick="doRender(false,true)">🎞️ 인트로 영상 생성</button>
+      <button class="ghost" onclick="doTts()">🎙️ 음성 + 자막(SRT) 생성</button>
     </div>
     <pre id="log2" style="display:none"></pre>
+    <div id="ttsOut"></div>
+    <pre id="log3" style="display:none"></pre>
   </section>
 </main>
 
@@ -176,6 +189,19 @@ async function loadHealth(){
   $("channelPersona").value=HEALTH.channelPersona||"";
   $("targetMinutes").value=HEALTH.targetMinutes||7;
   $("imageStyle").value=HEALTH.imageStyle||"";
+  $("ttsModel").value=HEALTH.tts?.model||"eleven_multilingual_v2";
+  if(HEALTH.tts?.voiceId){ const sel=$("voiceSelect"); if(![...sel.options].some(o=>o.value===HEALTH.tts.voiceId)){ const o=document.createElement("option"); o.value=HEALTH.tts.voiceId; o.textContent="현재 보이스: "+HEALTH.tts.voiceId; sel.appendChild(o);} sel.value=HEALTH.tts.voiceId; }
+}
+
+async function loadVoices(){
+  if(!HEALTH?.tts?.hasKey){ return toast("먼저 ElevenLabs 키를 입력하고 '설정 저장'을 누르세요"); }
+  $("voiceMsg").textContent="불러오는 중…";
+  const r = await api("/api/voices", null, "GET");
+  if(!r.voices || !r.voices.length){ $("voiceMsg").innerHTML='<span style="color:var(--warn)">목록을 못 불러왔어요. 키 저장 후 다시. '+esc(r.error||"")+'</span>'; return; }
+  const sel=$("voiceSelect"); sel.innerHTML="";
+  r.voices.forEach(v=>{ const o=document.createElement("option"); o.value=v.id; const lang=v.labels?.language?` · ${v.labels.language}`:""; o.textContent=`${v.name}${lang}`; sel.appendChild(o); });
+  if(HEALTH?.tts?.voiceId) sel.value=HEALTH.tts.voiceId;
+  $("voiceMsg").textContent=`${r.voices.length}개 보이스 (선택 후 설정 저장)`;
 }
 
 async function loadModels(){
@@ -198,9 +224,10 @@ async function saveSettings(){
   const body={ provider:$("provider").value, apiKey:$("apiKey").value.trim(), textModel:$("textModel").value.trim(),
     imageModel:$("imageModel").value.trim(), videoModel:$("videoModel").value.trim(),
     channelName:$("channelName").value.trim(), channelPersona:$("channelPersona").value.trim(), targetMinutes:Number($("targetMinutes").value)||7,
-    imageStyle:$("imageStyle").value.trim() };
+    imageStyle:$("imageStyle").value.trim(),
+    elevenKey:$("elevenKey").value.trim(), ttsModel:$("ttsModel").value.trim(), voiceId:$("voiceSelect").value };
   HEALTH = await api("/api/settings", body);
-  $("apiKey").value="";
+  $("apiKey").value=""; $("elevenKey").value="";
   await loadHealth(); toast("설정 저장됨");
 }
 
@@ -276,6 +303,31 @@ async function doRender(images, videos){
   // 렌더 후 미디어 다시 로드
   const fresh = await api("/api/result?slug="+encodeURIComponent(CURRENT.slug), null, "GET");
   fresh.slug=CURRENT.slug; CURRENT=fresh; renderResults(fresh);
+}
+
+async function doTts(){
+  if(!CURRENT?.slug) return toast("먼저 콘텐츠를 생성하세요");
+  if(!HEALTH?.tts?.hasKey){ toggleSettings(); return toast("ElevenLabs 키를 설정·저장하세요"); }
+  if(!HEALTH?.tts?.voiceId) return toast("⚙️설정에서 보이스를 고르고 저장하세요");
+  const log=$("log3"); log.style.display="block"; log.textContent="";
+  await stream("/api/tts", { slug:CURRENT.slug }, (ev)=>{
+    if(ev.type==="log") log.textContent+=ev.msg+"\n";
+    else if(ev.type==="error") log.textContent+="❌ "+ev.msg+"\n";
+    else if(ev.type==="done") showTts(ev.result);
+    log.scrollTop=log.scrollHeight;
+  });
+}
+function showTts(r){
+  const base="/output/"+CURRENT.slug+"/";
+  $("ttsOut").innerHTML=`<div class="media" style="margin-top:12px">
+    <b>🎙️ 내레이션 음성 + 자막</b>
+    <audio src="${base}audio/narration.mp3?t=${Date.now()}" controls style="width:100%;margin-top:8px"></audio>
+    <div style="margin-top:8px">
+      <a href="${base}audio/narration.mp3" download style="text-decoration:none"><button class="ghost sm">⬇️ 음성 mp3</button></a>
+      <a href="${base}narration.srt" download style="text-decoration:none"><button class="ghost sm">⬇️ 자막 srt</button></a>
+      <span class="hint" style="margin-left:6px">자막 ${r.lines}줄 · 편집기에 끌어넣으면 타이밍 자동</span>
+    </div></div>`;
+  toast("음성+자막 생성 완료");
 }
 
 loadHealth();

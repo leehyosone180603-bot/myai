@@ -2,7 +2,8 @@
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { config, ROOT } from "./config.js";
-import { generateJson, generateImage, generateVideo } from "./clients.js";
+import { generateJson, generateImage, generateVideo, ttsWithTimestamps } from "./clients.js";
+import { buildSegments, formatSrt } from "./srt.js";
 import * as P from "./prompts.js";
 
 // onLog 가 있으면 UI로, 없으면 콘솔로 진행상황을 보낸다.
@@ -166,6 +167,38 @@ export async function renderVideos(dir, intro, images, onLog) {
   }
   emit(`✓ 인트로 영상 ${done.length}/${list.length}개 생성`);
   return done;
+}
+
+// ── TTS 음성 + 자막(SRT) 생성 ─────────────────────────────────
+// 대본(챕터별)을 ElevenLabs 로 읽어 음성을 만들고, 글자 타임스탬프로 자막을 생성한다.
+// 챕터별로 생성해 이어 붙이고, 자막 시간은 누적 오프셋으로 맞춘다.
+export async function generateNarration(slug, { voiceId, model, onLog } = {}) {
+  const emit = mkEmit(onLog);
+  const dir = outDir(slug);
+  mkdirSync(join(dir, "audio"), { recursive: true });
+  const r = readResult(slug);
+  const chunks = (r.pkg?.chapters || []).map((c) => (c.script || "").trim()).filter(Boolean);
+  if (!chunks.length) throw new Error("대본이 없습니다. 먼저 콘텐츠(✨생성)를 만들어 주세요.");
+
+  const audioBuffers = [];
+  const lines = [];
+  let offset = 0;
+  for (let i = 0; i < chunks.length; i++) {
+    emit(`음성 생성: ${i + 1}/${chunks.length} 챕터`);
+    const { audioB64, alignment } = await ttsWithTimestamps(chunks[i], { voiceId, model });
+    if (audioB64) audioBuffers.push(Buffer.from(audioB64, "base64"));
+    for (const s of buildSegments(alignment)) {
+      lines.push({ text: s.text, start: s.start + offset, end: s.end + offset });
+    }
+    const ends = alignment?.character_end_times_seconds || [];
+    offset += ends.length ? ends[ends.length - 1] : 0; // 다음 챕터 자막 시작 오프셋(= 누적 음성 길이)
+  }
+
+  writeFileSync(join(dir, "audio", "narration.mp3"), Buffer.concat(audioBuffers));
+  writeFileSync(join(dir, "narration.srt"), formatSrt(lines));
+  writeFileSync(join(dir, "narration.txt"), chunks.join("\n\n"));
+  emit(`✓ 음성(audio/narration.mp3) + 자막(narration.srt, ${lines.length}줄) 생성 완료`);
+  return { slug, audio: "audio/narration.mp3", srt: "narration.srt", txt: "narration.txt", lines: lines.length };
 }
 
 export function readBenchmark(path) {

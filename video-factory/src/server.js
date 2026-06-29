@@ -6,9 +6,9 @@ import { readFileSync, existsSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join, normalize } from "node:path";
 import { config, ROOT, saveEnv, requireTextProvider } from "./config.js";
-import { runAll, renderImages, renderVideos, readResult, outDir } from "./pipeline.js";
+import { runAll, renderImages, renderVideos, readResult, outDir, generateNarration } from "./pipeline.js";
 import { fetchTranscript, toBenchmarkMd, youtubeId } from "./transcript.js";
-import { listModels } from "./clients.js";
+import { listModels, listVoices } from "./clients.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UI_DIR = join(ROOT, "ui");
@@ -22,6 +22,9 @@ const MIME = {
   ".jpg": "image/jpeg",
   ".webp": "image/webp",
   ".mp4": "video/mp4",
+  ".mp3": "audio/mpeg",
+  ".srt": "text/plain; charset=utf-8",
+  ".txt": "text/plain; charset=utf-8",
   ".json": "application/json; charset=utf-8",
 };
 
@@ -58,6 +61,11 @@ function health() {
     channelPersona: config.channelPersona,
     targetMinutes: config.targetMinutes,
     imageStyle: config.imageStyle,
+    tts: {
+      hasKey: !!config.elevenlabs.apiKey,
+      model: config.elevenlabs.model,
+      voiceId: config.elevenlabs.voiceId,
+    },
   };
 }
 
@@ -108,6 +116,9 @@ const server = createServer(async (req, res) => {
       if (b.channelPersona) map.CHANNEL_PERSONA = b.channelPersona;
       if (b.targetMinutes) map.TARGET_MINUTES = String(b.targetMinutes);
       if (b.imageStyle !== undefined) map.IMAGE_STYLE = b.imageStyle;
+      if (b.elevenKey) map.ELEVENLABS_API_KEY = b.elevenKey;
+      if (b.voiceId) map.ELEVENLABS_VOICE_ID = b.voiceId;
+      if (b.ttsModel) map.ELEVENLABS_MODEL = b.ttsModel;
       if (Object.keys(map).length) saveEnv(map);
       return send(res, 200, health());
     }
@@ -119,6 +130,29 @@ const server = createServer(async (req, res) => {
       } catch (e) {
         return send(res, 200, { models: [], error: e.message });
       }
+    }
+
+    if (path === "/api/voices" && req.method === "GET") {
+      try {
+        return send(res, 200, { voices: await listVoices() });
+      } catch (e) {
+        return send(res, 200, { voices: [], error: e.message });
+      }
+    }
+
+    if (path === "/api/tts" && req.method === "POST") {
+      const b = await readBody(req);
+      const emit = startStream(res);
+      try {
+        if (!config.elevenlabs.apiKey) throw new Error("ElevenLabs API 키가 없습니다. ⚙️설정에서 입력하세요.");
+        const slug = b.slug?.trim();
+        if (!slug) throw new Error("slug 가 필요합니다.");
+        const result = await generateNarration(slug, { onLog: (msg) => emit({ type: "log", msg }) });
+        emit({ type: "done", result });
+      } catch (e) {
+        emit({ type: "error", msg: e.message });
+      }
+      return res.end();
     }
 
     if (path === "/api/fetch" && req.method === "POST") {

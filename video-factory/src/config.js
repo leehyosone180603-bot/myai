@@ -53,6 +53,13 @@ function buildConfig() {
       baseUrl: env("ANTHROPIC_BASE_URL", "https://api.anthropic.com"),
       textModel: env("ANTHROPIC_TEXT_MODEL", "claude-opus-4-8"),
     },
+    // TTS(음성) — ElevenLabs
+    elevenlabs: {
+      apiKey: env("ELEVENLABS_API_KEY"),
+      baseUrl: env("ELEVENLABS_BASE_URL", "https://api.elevenlabs.io/v1"),
+      model: env("ELEVENLABS_MODEL", "eleven_multilingual_v2"),
+      voiceId: env("ELEVENLABS_VOICE_ID", ""),
+    },
 
     channelName: env("CHANNEL_NAME", "호감의 심리학"),
     channelPersona: env(

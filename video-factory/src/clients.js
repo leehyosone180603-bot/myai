@@ -87,6 +87,37 @@ export function parseLooseJson(raw) {
   return JSON.parse(s);
 }
 
+// ── TTS (ElevenLabs) ─────────────────────────────────────────
+// 보이스 목록 조회 (UI 보이스 선택용)
+export async function listVoices() {
+  const r = await fetch(`${config.elevenlabs.baseUrl}/voices`, {
+    headers: { "xi-api-key": config.elevenlabs.apiKey },
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status} voices`);
+  const j = await r.json();
+  return (j.voices || []).map((v) => ({
+    id: v.voice_id,
+    name: v.name,
+    labels: v.labels || {},
+    preview: v.preview_url || "",
+  }));
+}
+
+// 텍스트 → 음성(mp3 base64) + 글자별 타임스탬프(자막 생성용)
+export async function ttsWithTimestamps(text, { voiceId, model } = {}) {
+  const vid = voiceId || config.elevenlabs.voiceId;
+  if (!vid) throw new Error("보이스가 선택되지 않았습니다. ⚙️설정에서 ElevenLabs 보이스를 고르세요.");
+  const r = await fetch(`${config.elevenlabs.baseUrl}/text-to-speech/${vid}/with-timestamps?output_format=mp3_44100_128`, {
+    method: "POST",
+    headers: { "xi-api-key": config.elevenlabs.apiKey, "Content-Type": "application/json" },
+    body: JSON.stringify({ text, model_id: model || config.elevenlabs.model }),
+  });
+  const txt = await r.text();
+  if (!r.ok) throw new Error(`HTTP ${r.status} TTS\n${txt.slice(0, 400)}`);
+  const j = JSON.parse(txt);
+  return { audioB64: j.audio_base64, alignment: j.alignment || j.normalized_alignment };
+}
+
 // ── 사용 가능한 모델 목록 조회 ────────────────────────────────
 // xAI 의 여러 모델 목록 엔드포인트를 모아 id 배열로 돌려준다(계정이 접근 가능한 것만 나옴).
 export async function listModels() {
