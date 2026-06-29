@@ -9,6 +9,7 @@
   "scripts": {
     "ui": "node src/server.js",
     "start": "node src/server.js",
+    "test": "node test/e2e.mjs",
     "run": "node src/index.js run",
     "plan": "node src/index.js plan"
   },
