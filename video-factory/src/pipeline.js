@@ -150,7 +150,6 @@ export async function renderVideos(dir, intro, images, onLog) {
       const imageB64 = await ensureClipImage(dir, clip, images, emit);
       const out = await generateVideo(clip.prompt, {
         seconds: config.introClipSeconds,
-        aspectRatio: config.videoAspectRatio,
         imageB64,
       });
       if (out.url) {

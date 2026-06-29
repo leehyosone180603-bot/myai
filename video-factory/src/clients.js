@@ -166,21 +166,20 @@ export async function generateImage(prompt) {
 // grok-imagine-video 계열은 text-to-video 미지원 → 반드시 입력 이미지(image-to-video)가 필요.
 // 이미지는 data URI(data:image/png;base64,...) 로 전달. 필드명은 모델에 따라 다를 수 있어
 // XAI_VIDEO_IMAGE_FIELD 로 바꿀 수 있게 둠(기본 image_url).
-export async function generateVideo(prompt, { seconds, aspectRatio, imageB64, imageUrl } = {}) {
-  const imageField = process.env.XAI_VIDEO_IMAGE_FIELD || "image_url";
+export async function generateVideo(prompt, { seconds, imageB64, imageUrl } = {}) {
   const imageValue = imageUrl || (imageB64 ? `data:image/png;base64,${imageB64}` : null);
   if (!imageValue) {
     throw new Error("이 영상 모델은 이미지→영상만 지원합니다. 먼저 '이미지 생성'을 한 뒤 인트로 영상을 만들어 주세요.");
   }
+  // xAI 영상 API: 이미지는 image: { url } 중첩 객체. url 에 data URI(base64) 가능.
   const start = await postJson(
     `${config.xai.baseUrl}/videos/generations`,
     { Authorization: `Bearer ${config.xai.apiKey}` },
     {
       model: config.xai.videoModel,
       prompt,
+      image: { url: imageValue },
       duration: seconds ?? config.introClipSeconds,
-      aspect_ratio: aspectRatio ?? config.videoAspectRatio,
-      [imageField]: imageValue,
     }
   );
 

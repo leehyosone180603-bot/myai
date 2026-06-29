@@ -33,6 +33,17 @@ const send = (res, code, body, type = "application/json; charset=utf-8") => {
   res.end(typeof body === "string" || Buffer.isBuffer(body) ? body : JSON.stringify(body));
 };
 
+// 폴더명으로 안전한 slug (윈도우 금지문자 제거, 끝 마침표/공백 제거, 공백→하이픈)
+function sanitizeSlug(s) {
+  return (
+    String(s || "")
+      .replace(/[\\/:*?"<>|]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/^[.\s]+|[.\s]+$/g, "")
+      .slice(0, 80) || "video"
+  );
+}
+
 const readBody = (req) =>
   new Promise((resolve) => {
     let d = "";
@@ -145,7 +156,7 @@ const server = createServer(async (req, res) => {
       const emit = startStream(res);
       try {
         if (!config.elevenlabs.apiKey) throw new Error("ElevenLabs API 키가 없습니다. ⚙️설정에서 입력하세요.");
-        const slug = b.slug?.trim();
+        const slug = sanitizeSlug(b.slug?.trim());
         if (!slug) throw new Error("slug 가 필요합니다.");
         const result = await generateNarration(slug, { onLog: (msg) => emit({ type: "log", msg }) });
         emit({ type: "done", result });
@@ -168,7 +179,7 @@ const server = createServer(async (req, res) => {
     }
 
     if (path === "/api/result" && req.method === "GET") {
-      const slug = url.searchParams.get("slug");
+      const slug = sanitizeSlug(url.searchParams.get("slug"));
       if (!slug) return send(res, 400, { error: "slug 필요" });
       return send(res, 200, readResult(slug));
     }
@@ -179,7 +190,7 @@ const server = createServer(async (req, res) => {
       try {
         requireTextProvider();
         if (!b.benchmark || !b.benchmark.trim()) throw new Error("대본/벤치마크 내용이 비어 있습니다.");
-        const slug = b.slug?.trim() || youtubeId(b.benchmark) || "video";
+        const slug = sanitizeSlug(b.slug?.trim() || youtubeId(b.benchmark) || "video");
         const result = await runAll(slug, b.benchmark, {
           generateImages: !!b.images,
           generateVideos: !!b.videos,
@@ -197,7 +208,7 @@ const server = createServer(async (req, res) => {
       const emit = startStream(res);
       try {
         requireTextProvider();
-        const slug = b.slug?.trim();
+        const slug = sanitizeSlug(b.slug?.trim());
         if (!slug) throw new Error("slug 가 필요합니다.");
         const r = readResult(slug);
         const dir = outDir(slug);
