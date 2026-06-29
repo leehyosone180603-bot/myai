@@ -29,10 +29,11 @@ cd video-factory
 cp .env.example .env
 #   .env 를 열어 XAI_API_KEY 를 채우세요. (모델명도 콘솔에서 최신값으로 확인)
 
-# 2) 벤치마크 입력 만들기
-#   benchmark/<이름>.md 에 분석할 영상 정보를 적습니다.
-#   자막(스크립트)을 통째로 붙여 넣을수록 결과가 좋아집니다.
-#   예시: benchmark/yeoyuroun-namja.md
+# 2) 벤치마크 입력 준비 — 두 가지 방법
+#  (A) URL 자동 수집: yt-dlp 로 유튜브 자막을 받아옵니다 (외부망 + yt-dlp 필요)
+node src/index.js run --url "https://www.youtube.com/watch?v=VIDEO_ID" --slug 내영상
+#  (B) 수동 입력: 자막을 benchmark/<이름>.md 에 직접 붙여넣고 사용
+#      (자동 수집이 막힌 환경/자막 없는 영상용. 예시: benchmark/yeoyuroun-namja.md)
 
 # 3) 분석만 먼저 확인 (주제 + 목차)
 node src/index.js plan --input benchmark/yeoyuroun-namja.md
@@ -42,7 +43,23 @@ node src/index.js run --input benchmark/yeoyuroun-namja.md --slug yeoyuroun-namj
 
 # 5) 이미지·인트로 영상까지 실제로 렌더링 (API 비용 발생)
 node src/index.js run --input benchmark/yeoyuroun-namja.md --slug yeoyuroun-namja --images --videos
+
+# (자막만 따로 받기)
+node src/index.js fetch --url "https://www.youtube.com/watch?v=VIDEO_ID"
 ```
+
+## 자막 자동 수집 (`--url`)
+
+`downsub.com` 같은 사이트가 내부적으로 하는 일(유튜브 자막 트랙 다운로드)을 원천 도구 **yt-dlp** 로 직접 수행합니다. 중간 사이트 스크래핑보다 안정적입니다.
+
+```bash
+pip install -U yt-dlp        # 최초 1회 설치
+node src/index.js run --url "https://youtu.be/VIDEO_ID" --slug 내영상
+```
+
+- 한국어 자막 → 한국어 자동자막 → 영어 순으로 가져옵니다 (`--lang ko,en` 으로 변경 가능).
+- 받은 자막은 정제(중복 줄 제거, `[음악]`·타임코드·태그 삭제) 후 `benchmark/<id>.md` 에 저장되고 곧바로 분석에 사용됩니다.
+- ⚠️ **외부망이 차단된 환경(예: 일부 원격 세션)에서는 동작하지 않습니다.** 그럴 땐 (B) 수동 입력을 쓰세요 — 영상 페이지의 `...더보기 → 스크립트 표시`에서 복사해 붙여넣으면 됩니다.
 
 > Node 18.17+ 필요 (네이티브 `fetch` 사용, 외부 의존성 0).
 
@@ -87,8 +104,8 @@ benchmark/<name>.md
 
 ## 새 영상 만들 때 (재사용 방법)
 
-1. `benchmark/새이름.md` 에 벤치마크 영상 정보(가능하면 자막 전체)를 붙여넣기
-2. `node src/index.js run --input benchmark/새이름.md --slug 새이름`
+1. 벤치마크 확보 — URL 자동 수집 `--url "유튜브주소"` 또는 자막을 `benchmark/새이름.md` 에 붙여넣기
+2. `node src/index.js run --url "유튜브주소" --slug 새이름`  (또는 `--input benchmark/새이름.md`)
 3. `output/새이름/content.md` 검토 후 필요시 수정
 4. `--images --videos` 로 미디어 렌더링
 
