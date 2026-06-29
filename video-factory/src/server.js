@@ -57,6 +57,7 @@ function health() {
     channelName: config.channelName,
     channelPersona: config.channelPersona,
     targetMinutes: config.targetMinutes,
+    imageStyle: config.imageStyle,
   };
 }
 
@@ -106,6 +107,7 @@ const server = createServer(async (req, res) => {
       if (b.channelName) map.CHANNEL_NAME = b.channelName;
       if (b.channelPersona) map.CHANNEL_PERSONA = b.channelPersona;
       if (b.targetMinutes) map.TARGET_MINUTES = String(b.targetMinutes);
+      if (b.imageStyle !== undefined) map.IMAGE_STYLE = b.imageStyle;
       if (Object.keys(map).length) saveEnv(map);
       return send(res, 200, health());
     }

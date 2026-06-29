@@ -60,6 +60,11 @@ function buildConfig() {
       "차분하고 신뢰감 있는 30대 남성 내레이터. 단정적이되 따뜻하고, 심리학 근거를 곁들여 설득력 있게 말한다."
     ),
     targetMinutes: Number(env("TARGET_MINUTES", "7")),
+    // 이미지 그림체/분위기 (영어). 벤치마크의 웹툰풍과 다르게, 보기 편한 부드러운 스타일이 기본.
+    imageStyle: env(
+      "IMAGE_STYLE",
+      "soft modern flat illustration, warm pastel color palette, clean minimal background, gentle soft lighting, calm cozy mood, simple rounded shapes, smooth subtle shading, tasteful negative space"
+    ),
     imageAspectRatio: env("IMAGE_ASPECT_RATIO", "16:9"),
     videoAspectRatio: env("VIDEO_ASPECT_RATIO", "16:9"),
     introClipSeconds: Number(env("INTRO_CLIP_SECONDS", "6")),

@@ -88,6 +88,8 @@
       <label>채널명</label><input id="channelName" />
       <label>내레이터 페르소나 (대본 문체)</label><textarea id="channelPersona" style="min-height:70px"></textarea>
       <label>목표 영상 길이(분)</label><input id="targetMinutes" type="number" min="1" />
+      <label>이미지 그림체/분위기 <span class="hint">(영어로. 비우면 기본 스타일. 예: cinematic 3d render, pixar style / watercolor storybook)</span></label>
+      <textarea id="imageStyle" style="min-height:60px"></textarea>
     </details>
     <button style="margin-top:14px" onclick="saveSettings()">설정 저장</button>
     <div id="settingsErr" class="err"></div>
@@ -173,6 +175,7 @@ async function loadHealth(){
   $("channelName").value=HEALTH.channelName||"";
   $("channelPersona").value=HEALTH.channelPersona||"";
   $("targetMinutes").value=HEALTH.targetMinutes||7;
+  $("imageStyle").value=HEALTH.imageStyle||"";
 }
 
 async function loadModels(){
@@ -194,7 +197,8 @@ async function saveSettings(){
   $("settingsErr").textContent="";
   const body={ provider:$("provider").value, apiKey:$("apiKey").value.trim(), textModel:$("textModel").value.trim(),
     imageModel:$("imageModel").value.trim(), videoModel:$("videoModel").value.trim(),
-    channelName:$("channelName").value.trim(), channelPersona:$("channelPersona").value.trim(), targetMinutes:Number($("targetMinutes").value)||7 };
+    channelName:$("channelName").value.trim(), channelPersona:$("channelPersona").value.trim(), targetMinutes:Number($("targetMinutes").value)||7,
+    imageStyle:$("imageStyle").value.trim() };
   HEALTH = await api("/api/settings", body);
   $("apiKey").value="";
   await loadHealth(); toast("설정 저장됨");

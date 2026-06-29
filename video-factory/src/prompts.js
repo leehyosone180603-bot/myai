@@ -70,27 +70,42 @@ ${JSON.stringify(analysis, null, 2)}
 };
 
 // 3단계: 대본 → 장면별 이미지 생성 프롬프트
+// 핵심 규칙: (1) 말풍선/글자/자막 절대 금지  (2) 대화 대사가 아니라 '장면'을 묘사
+export const NO_TEXT_NEGATIVE =
+  "no text, no letters, no words, no speech bubbles, no dialogue balloons, no captions, no subtitles, no comic panels, no panel borders, no watermark, no logo, no signage";
+
 export const imageSystem = `너는 영상용 일러스트레이션 아트 디렉터다.
 대본 흐름에 맞춰 장면별 이미지 생성 프롬프트를 만든다.
-스타일 일관성이 생명이다. 모든 프롬프트에 동일한 스타일 토큰을 포함시킨다.
-이미지 프롬프트 본문은 영어로(생성 품질), 설명은 한국어로 쓴다. 출력은 JSON 하나.`;
+[매우 중요한 규칙]
+- 이미지에는 글자/텍스트/자막/말풍선/만화 칸이 절대 없어야 한다. 인물이 대화하는 내용이어도 '말풍선'이나 '글자'를 그리지 말 것.
+- 대사를 적지 말고, 그 순간의 '장면'(표정·몸짓·상황·배경)만 시각적으로 묘사하라.
+- 한 장면당 하나의 깔끔한 단일 일러스트(만화 컷 분할 X).
+- 모든 프롬프트 끝에 반드시 다음을 붙인다: "${NO_TEXT_NEGATIVE}".
+- 모든 이미지에 동일한 스타일 토큰을 포함해 그림체를 통일한다.
+이미지 프롬프트 본문은 영어, 설명(ko_desc)은 한국어. 출력은 JSON 하나만.`;
 
 export const imagePrompt = (pkg) => `아래 콘텐츠 패키지의 챕터 흐름에 맞춰 이미지 ${Math.max(8, config.targetMinutes + 2)}장의 생성 프롬프트를 만들어라.
-화면비는 ${config.imageAspectRatio}. 썸네일과 톤이 어울리는 따뜻한 시네마틱 일러스트(반실사 웹툰풍, 한국인 인물, 부드러운 조명)로 통일하라.
+화면비 ${config.imageAspectRatio}. 그림체/분위기는 아래 스타일로 통일하라(보기 편하고 부드러운 톤):
+스타일: "${config.imageStyle}"
 
 <package>
 ${JSON.stringify({ thumbnail_title: pkg.thumbnail_title, chapters: pkg.chapters?.map((c) => ({ title: c.title, gist: (c.script || "").slice(0, 200) })) }, null, 2)}
 </package>
 
+규칙(반드시):
+- 각 prompt 는 그 챕터 내용을 표현하는 '장면' 묘사 (한국인 인물, 표정·몸짓·상황 중심).
+- 말풍선/글자/자막/만화칸 금지. prompt 끝에 항상 "${NO_TEXT_NEGATIVE}" 를 붙일 것.
+- style_token 에는 위 스타일 문구를 그대로 넣을 것.
+
 JSON 스키마:
 {
-  "style_token": "모든 이미지에 공통으로 붙일 스타일 설명(영어)",
+  "style_token": "위 스타일 문구(영어) + 16:9",
   "images": [
     {
       "id": "img-01",
       "chapter": "연결되는 챕터 제목",
-      "ko_desc": "이 컷이 무엇을 보여주는지(한국어)",
-      "prompt": "영문 이미지 생성 프롬프트 (style_token 포함, 16:9)"
+      "ko_desc": "이 컷이 무엇을 보여주는지(한국어, 대사 아님)",
+      "prompt": "영문 장면 묘사 + style_token + '${NO_TEXT_NEGATIVE}'"
     }
   ]
 }`;

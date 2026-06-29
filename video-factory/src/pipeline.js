@@ -96,7 +96,8 @@ export async function renderImages(dir, images, onLog) {
   for (const img of list) {
     emit(`이미지 생성: ${img.id}`);
     try {
-      const full = `${img.prompt} ${images.style_token || ""}`.trim();
+      // 말풍선/글자 금지어를 항상 덧붙여 강제(프롬프트에 빠져 있어도 안전)
+      const full = `${img.prompt} ${images.style_token || ""} ${P.NO_TEXT_NEGATIVE}`.trim();
       const out = await generateImage(full);
       const path = join(dir, "images", `${img.id}.png`);
       if (out.b64) {
