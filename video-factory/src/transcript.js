@@ -111,17 +111,6 @@ function ytdlpCandidates(ytdlpPath) {
   return list;
 }
 
-// 후보가 "실행 자체 불가"(미설치/깨진 launcher/모듈없음)인지 판단 → 다음 후보로 넘어갈지 결정
-function isUnrunnable(err) {
-  const msg = (err.stderr || err.message || "").toString();
-  return (
-    err.code === "ENOENT" ||
-    /Fatal error in launcher/i.test(msg) ||
-    /No module named/i.test(msg) ||
-    /is not recognized|cannot find the path|지정된 경로|찾을 수 없습니다/i.test(msg)
-  );
-}
-
 /**
  * 유튜브 URL → 정제된 대본 텍스트.
  * @param {string} url
@@ -141,6 +130,8 @@ export function fetchTranscript(url, { langs = ["ko", "ko-orig", "en"], ytdlpPat
       "-o", join(dir, "%(id)s.%(ext)s"),
       url,
     ];
+    // 후보를 순서대로 시도. 어떤 후보가 실패(미설치/깨진 launcher/모듈없음 등)하면
+    // 조용히 다음 후보로 넘어가고, 하나라도 정상 실행되면 멈춘다.
     const candidates = ytdlpCandidates(ytdlpPath);
     let lastErr = null,
       ran = false;
@@ -148,19 +139,18 @@ export function fetchTranscript(url, { langs = ["ko", "ko-orig", "en"], ytdlpPat
       try {
         execFileSync(cmd[0], [...cmd.slice(1), ...ytArgs], { stdio: ["ignore", "ignore", "pipe"] });
         ran = true;
-        break; // 정상 실행됨
+        break; // 정상 실행됨 (자막이 없는 영상이면 파일이 안 생겨도 throw 는 안 남)
       } catch (e) {
         lastErr = e;
-        if (isUnrunnable(e)) continue; // 다음 후보로
-        // 실행은 됐는데 yt-dlp 자체가 실패(네트워크 차단/자막 없음 등)
-        throw new Error(`yt-dlp 실행 실패(네트워크 차단/자막 없음 등):\n${(e.stderr || e.message || "").toString().slice(0, 500)}`);
+        continue; // 다음 실행 후보로
       }
     }
     if (!ran) {
+      const detail = (lastErr?.stderr || lastErr?.message || "").toString().slice(0, 300);
       throw new Error(
-        "yt-dlp 를 실행할 수 없습니다. PowerShell 에서 `python -m yt_dlp --version` 이 되는지 확인하세요.\n" +
-          "설치: python -m pip install -U yt-dlp\n" +
-          (lastErr ? `(마지막 오류: ${(lastErr.stderr || lastErr.message || "").toString().slice(0, 200)})` : "")
+        "yt-dlp 를 실행할 수 없습니다. (yt-dlp / python -m yt_dlp / py -m yt_dlp 모두 실패)\n" +
+          "PowerShell 에서 `python -m yt_dlp --version` 이 되는지 확인하세요.\n" +
+          (detail ? `(마지막 오류: ${detail})` : "")
       );
     }
 
