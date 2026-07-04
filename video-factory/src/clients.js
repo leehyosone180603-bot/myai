@@ -88,12 +88,37 @@ export function parseLooseJson(raw) {
 }
 
 // ── TTS (ElevenLabs) ─────────────────────────────────────────
+// ElevenLabs 오류 응답을 사람이 이해할 수 있는 원인으로 변환
+function elevenReason(status, body) {
+  let detail = body;
+  try {
+    const j = JSON.parse(body);
+    detail = j?.detail?.message || j?.detail?.status || j?.detail || j?.message || body;
+    if (typeof detail === "object") detail = JSON.stringify(detail);
+  } catch {
+    /* body 가 JSON 이 아니면 그대로 */
+  }
+  const d = String(detail);
+  if (status === 401 || /invalid.?api.?key|api_key/i.test(d))
+    return `키가 거부됨. 확인: ①생성 팝업에서 '전체 키'를 복사했는지(목록의 가려진 키 ●●●는 안 됨) ②키 권한에 'Text to Speech'와 'Voices'가 포함됐는지 ③맞는 계정 키인지. (원문: ${d.slice(0, 100)})`;
+  if (/missing_permission|permission|unauthorized/i.test(d))
+    return `키 권한 부족 — 'Text to Speech'·'Voices' 권한 포함해 새 키를 발급하세요. (원문: ${d.slice(0, 100)})`;
+  if (status === 429 || /quota|credit|limit/i.test(d))
+    return `크레딧 부족/한도초과 — 잔액을 충전하세요. (원문: ${d.slice(0, 100)})`;
+  return d.slice(0, 200) || "알 수 없는 오류";
+}
+
 // 보이스 목록 조회 (UI 보이스 선택용)
 export async function listVoices() {
+  if (!config.elevenlabs.apiKey) throw new Error("ElevenLabs API 키가 비어 있습니다. ⚙️설정에서 키를 저장하세요.");
   const r = await fetch(`${config.elevenlabs.baseUrl}/voices`, {
     headers: { "xi-api-key": config.elevenlabs.apiKey },
   });
-  if (!r.ok) throw new Error(`HTTP ${r.status} voices`);
+  if (!r.ok) {
+    const body = await r.text().catch(() => "");
+    // ElevenLabs 는 이유를 body 에 담아줌(invalid_api_key / missing_permissions 등)
+    throw new Error(`HTTP ${r.status} — ${elevenReason(r.status, body)}`);
+  }
   const j = await r.json();
   return (j.voices || []).map((v) => ({
     id: v.voice_id,
@@ -113,7 +138,7 @@ export async function ttsWithTimestamps(text, { voiceId, model } = {}) {
     body: JSON.stringify({ text, model_id: model || config.elevenlabs.model }),
   });
   const txt = await r.text();
-  if (!r.ok) throw new Error(`HTTP ${r.status} TTS\n${txt.slice(0, 400)}`);
+  if (!r.ok) throw new Error(`음성 생성 실패 (HTTP ${r.status}) — ${elevenReason(r.status, txt)}`);
   const j = JSON.parse(txt);
   return { audioB64: j.audio_base64, alignment: j.alignment || j.normalized_alignment };
 }
