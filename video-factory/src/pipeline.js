@@ -100,9 +100,31 @@ export function existingImagePath(dir, id) {
   return null;
 }
 
+// 등장인물(cast) 고정 외모 블록 — 모든 이미지에 주입해 인물 일관성 유지
+function castBlock(images) {
+  const cast = images?.cast;
+  if (!cast) return "";
+  let entries = [];
+  if (Array.isArray(cast)) {
+    entries = cast.map((c) => `${c.name || c.ref || c.role || "character"}: ${c.description || c.desc || c}`);
+  } else if (typeof cast === "object") {
+    entries = Object.entries(cast)
+      .filter(([, v]) => v && String(v).trim())
+      .map(([k, v]) => `${k}: ${v}`);
+  }
+  if (!entries.length) return "";
+  return `Consistent recurring characters — draw them IDENTICALLY across every image (same face, hairstyle, outfit, body type): ${entries.join("; ")}. Only include the characters that actually appear in this scene. `;
+}
+
+// 최종 이미지 프롬프트 = 인물고정 + 장면 + 스타일 + 금지어
+function composeImagePrompt(images, img) {
+  const scene = img?.prompt || img?.ko_desc || "";
+  return `${castBlock(images)}Scene: ${scene}. ${images?.style_token || ""} ${P.NO_TEXT_NEGATIVE}`.trim();
+}
+
 // 슬롯 1개를 실제로 생성(덮어쓰기)
 async function renderImageById(dir, images, img) {
-  const full = `${img.prompt} ${images.style_token || ""} ${P.NO_TEXT_NEGATIVE}`.trim();
+  const full = composeImagePrompt(images, img);
   const out = await generateImage(full);
   const path = join(dir, "images", `${img.id}.png`);
   if (out.b64) writeFileSync(path, Buffer.from(out.b64, "base64"));
@@ -156,7 +178,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // 반드시 '영상용 이미지 세트'의 컷에서 출발한다(있으면 재사용, 없으면 그 컷의 이미지 프롬프트로 생성).
 // 클립의 모션 프롬프트로 이미지를 만들지 않는다(그림체가 흔들리므로).
 async function ensureClipImage(dir, clip, images, emit) {
-  const styleToken = images?.style_token || "";
   const imgList = images?.images || [];
   // from_image_id 가 유효하면 그걸, 아니면 첫 번째 이미지 컷으로 폴백(스타일 통일 보장)
   let refId = clip.from_image_id && imgList.some((i) => i.id === clip.from_image_id) ? clip.from_image_id : imgList[0]?.id;
@@ -169,10 +190,9 @@ async function ensureClipImage(dir, clip, images, emit) {
     }
   }
   // 없으면 '그 컷의 이미지 프롬프트'로 통일 스타일 생성 (모션 프롬프트 아님)
-  const imgDef = imgList.find((i) => i.id === refId);
-  const sceneText = imgDef?.prompt || clip.ko_desc || clip.prompt;
-  emit(`  · ${clip.id}: 입력 이미지 생성(${refId || "scene"}, 그림체 통일)`);
-  const full = `${sceneText} ${styleToken} ${P.NO_TEXT_NEGATIVE}`.trim();
+  const imgDef = imgList.find((i) => i.id === refId) || { prompt: clip.ko_desc || clip.prompt };
+  emit(`  · ${clip.id}: 입력 이미지 생성(${refId || "scene"}, 그림체·인물 통일)`);
+  const full = composeImagePrompt(images, imgDef);
   const out = await generateImage(full);
   const savePath = join(dir, "images", `${refId || clip.id}.png`);
   if (out.b64) {

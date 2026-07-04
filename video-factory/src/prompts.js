@@ -87,6 +87,10 @@ export const imageSystem = `너는 영상용 일러스트레이션 아트 디렉
 - 한 장면당 하나의 깔끔한 단일 일러스트(만화 컷 분할 X).
 - 모든 프롬프트 끝에 반드시 다음을 붙인다: "${NO_TEXT_NEGATIVE}".
 - 모든 이미지에 동일한 스타일 토큰을 포함해 그림체를 통일한다.
+[인물 일관성 — 매우 중요]
+- 한 영상에는 소수의 고정 인물만 등장한다(보통 주인공 남자 1명, 필요 시 여자 1명). 장면이 달라도 같은 사람이어야 한다.
+- 먼저 cast(등장인물)를 정의한다: 각 인물의 외모를 아주 구체적으로 고정(나이·성별·헤어스타일·얼굴형·체형·복장·색). 영어로.
+- 각 이미지 prompt 에는 그 장면에 등장하는 인물만 넣되, cast 에 정의한 외모를 그대로 반영한다(다른 사람이 되지 않게).
 이미지 프롬프트 본문은 영어, 설명(ko_desc)은 한국어. 출력은 JSON 하나만.`;
 
 export const imagePrompt = (pkg) => `아래 콘텐츠 패키지의 챕터 흐름에 맞춰 이미지 ${Math.max(8, config.targetMinutes + 2)}장의 생성 프롬프트를 만들어라.
@@ -98,19 +102,23 @@ ${JSON.stringify({ thumbnail_title: pkg.thumbnail_title, chapters: pkg.chapters?
 </package>
 
 규칙(반드시):
-- 각 prompt 는 그 챕터 내용을 표현하는 '장면' 묘사 (한국인 인물, 표정·몸짓·상황 중심).
-- 말풍선/글자/자막/만화칸 금지. prompt 끝에 항상 "${NO_TEXT_NEGATIVE}" 를 붙일 것.
-- style_token 에는 위 스타일 문구를 그대로 넣을 것.
+- 먼저 cast(고정 등장인물)를 정의: 주인공 남자 1명은 필수, 상대 여자 등 추가 인물은 필요할 때만. 각 인물 외모를 아주 구체적으로(영어).
+- 각 prompt 는 그 챕터 '장면' 묘사이되, 등장인물은 cast 에 정의한 그 사람과 동일해야 한다(장면마다 다른 사람 금지).
+- 말풍선/글자/자막/만화칸 금지. style_token 은 위 스타일 문구 그대로.
 
 JSON 스키마:
 {
   "style_token": "위 스타일 문구(영어) + 16:9",
+  "cast": {
+    "man": "주인공 남자의 고정 외모(영어, 예: a Korean man in his early 30s, short neat black hair, clean-shaven, warm brown eyes, soft grey knit sweater, slim build)",
+    "woman": "상대 여자가 등장하면 그 사람의 고정 외모(영어). 없으면 생략"
+  },
   "images": [
     {
       "id": "img-01",
       "chapter": "연결되는 챕터 제목",
       "ko_desc": "이 컷이 무엇을 보여주는지(한국어, 대사 아님)",
-      "prompt": "영문 장면 묘사 + style_token + '${NO_TEXT_NEGATIVE}'"
+      "prompt": "영문 장면 묘사(등장인물은 cast 와 동일한 외모로)"
     }
   ]
 }`;

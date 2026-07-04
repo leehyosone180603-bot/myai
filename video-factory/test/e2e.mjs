@@ -62,6 +62,7 @@ const mock = createServer(async (req, res) => {
     } else if (sys.includes("아트 디렉터")) {
       content = {
         style_token: "soft flat illustration",
+        cast: { man: "a Korean man in his 30s, short black hair", woman: "" },
         images: [
           { id: "img-01", chapter: "후킹", ko_desc: "장면1", prompt: "scene one" },
           { id: "img-02", chapter: "본론", ko_desc: "장면2", prompt: "scene two" },
