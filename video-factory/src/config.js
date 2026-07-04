@@ -59,6 +59,7 @@ function buildConfig() {
       baseUrl: env("ELEVENLABS_BASE_URL", "https://api.elevenlabs.io/v1"),
       model: env("ELEVENLABS_MODEL", "eleven_multilingual_v2"),
       voiceId: env("ELEVENLABS_VOICE_ID", ""),
+      speed: Number(env("ELEVENLABS_SPEED", "1.0")), // 0.7(느림)~1.2(빠름), 1.0 기본
     },
 
     channelName: env("CHANNEL_NAME", "호감의 심리학"),

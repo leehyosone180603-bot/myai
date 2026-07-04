@@ -2,11 +2,21 @@
 // video-factory UI 서버.  의존성 0 (Node 내장 http).
 // 브라우저에서 클릭만으로 자막 수집 → 대본/메타데이터/이미지·인트로 프롬프트 생성 → 미디어 렌더링.
 import { createServer } from "node:http";
-import { readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join, normalize } from "node:path";
 import { config, ROOT, saveEnv, requireTextProvider } from "./config.js";
-import { runAll, renderImages, renderVideos, renderOneImage, readResult, outDir, generateNarration } from "./pipeline.js";
+import {
+  runAll,
+  renderImages,
+  renderVideos,
+  renderOneImage,
+  readResult,
+  outDir,
+  generateNarration,
+  generateChapterNarration,
+  listOutputs,
+} from "./pipeline.js";
 import { fetchTranscript, toBenchmarkMd, youtubeId } from "./transcript.js";
 import { listModels, listVoices } from "./clients.js";
 
@@ -76,6 +86,7 @@ function health() {
       hasKey: !!config.elevenlabs.apiKey,
       model: config.elevenlabs.model,
       voiceId: config.elevenlabs.voiceId,
+      speed: config.elevenlabs.speed,
     },
   };
 }
@@ -130,6 +141,7 @@ const server = createServer(async (req, res) => {
       if (b.elevenKey) map.ELEVENLABS_API_KEY = b.elevenKey;
       if (b.voiceId) map.ELEVENLABS_VOICE_ID = b.voiceId;
       if (b.ttsModel) map.ELEVENLABS_MODEL = b.ttsModel;
+      if (b.ttsSpeed) map.ELEVENLABS_SPEED = String(b.ttsSpeed);
       if (Object.keys(map).length) saveEnv(map);
       return send(res, 200, health());
     }
@@ -177,6 +189,7 @@ const server = createServer(async (req, res) => {
       }
     }
 
+    // 음성 생성: chapter 가 숫자면 그 챕터만, 없으면 전체. voiceId/speed 로 그 자리에서 변경 가능.
     if (path === "/api/tts" && req.method === "POST") {
       const b = await readBody(req);
       const emit = startStream(res);
@@ -184,12 +197,44 @@ const server = createServer(async (req, res) => {
         if (!config.elevenlabs.apiKey) throw new Error("ElevenLabs API 키가 없습니다. ⚙️설정에서 입력하세요.");
         const slug = sanitizeSlug(b.slug?.trim());
         if (!slug) throw new Error("slug 가 필요합니다.");
-        const result = await generateNarration(slug, { onLog: (msg) => emit({ type: "log", msg }) });
+        const opts = { voiceId: b.voiceId || undefined, speed: b.speed || undefined, onLog: (msg) => emit({ type: "log", msg }) };
+        const result =
+          Number.isInteger(b.chapter) && b.chapter >= 0
+            ? await generateChapterNarration(slug, b.chapter, opts)
+            : await generateNarration(slug, opts);
         emit({ type: "done", result });
       } catch (e) {
         emit({ type: "error", msg: e.message });
       }
       return res.end();
+    }
+
+    // 이전 결과 목록 (재구동 후 복사/붙여넣기용)
+    if (path === "/api/list-outputs" && req.method === "GET") {
+      return send(res, 200, { slugs: listOutputs() });
+    }
+
+    // 참조 이미지 업로드 ('이런 느낌으로' 첨부 → 이미지 생성 시 참고)
+    if (path === "/api/upload-ref" && req.method === "POST") {
+      const b = await readBody(req);
+      const slug = sanitizeSlug(b.slug);
+      const m = String(b.dataUrl || "").match(/^data:image\/(\w+);base64,(.+)$/s);
+      if (!slug || !m) return send(res, 400, { error: "slug, 이미지 dataUrl 이 필요합니다." });
+      const dir = outDir(slug);
+      const refDir = join(dir, "ref");
+      mkdirSync(refDir, { recursive: true });
+      const idx = (readdirSync(refDir).filter((f) => /\.(png|jpg|jpeg|webp)$/i.test(f)).length % 3) + 1;
+      writeFileSync(join(refDir, `reference-${idx}.png`), Buffer.from(m[2], "base64"));
+      return send(res, 200, { ok: true, count: readdirSync(refDir).length });
+    }
+
+    // 참조 이미지 전체 삭제
+    if (path === "/api/clear-ref" && req.method === "POST") {
+      const b = await readBody(req);
+      const slug = sanitizeSlug(b.slug);
+      const refDir = join(ROOT, "output", slug, "ref");
+      if (existsSync(refDir)) rmSync(refDir, { recursive: true, force: true });
+      return send(res, 200, { ok: true });
     }
 
     if (path === "/api/fetch" && req.method === "POST") {

@@ -121,6 +121,14 @@
   <!-- 2. 생성 -->
   <section class="card">
     <h2><span class="step">2</span> 영상 콘텐츠 만들기</h2>
+    <div style="background:#0d0f14;border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:12px">
+      <span class="hint">📂 이전에 만든 결과 불러오기 (재구동 후 복사·붙여넣기용, 재생성 안 함):</span>
+      <div class="row" style="margin-top:6px">
+        <select id="outputSelect" style="flex:3"><option value="">— 목록 —</option></select>
+        <button class="ghost sm" style="flex:1" onclick="loadOutputs()">새로고침</button>
+        <button class="ghost sm" style="flex:1" onclick="loadPrevious()">불러오기</button>
+      </div>
+    </div>
     <div class="row">
       <div style="flex:2"><label>저장 폴더 이름(slug)</label><input id="slug" placeholder="예: yeoyuroun-namja (비우면 자동)" /></div>
     </div>
@@ -140,11 +148,8 @@
     <div style="margin-top:18px" class="row">
       <button class="ghost" onclick="doRender(true,false)">🖼️ 이미지 생성</button>
       <button class="ghost" onclick="doRender(false,true)">🎞️ 인트로 영상 생성</button>
-      <button class="ghost" onclick="doTts()">🎙️ 음성 + 자막(SRT) 생성</button>
     </div>
     <pre id="log2" style="display:none"></pre>
-    <div id="ttsOut"></div>
-    <pre id="log3" style="display:none"></pre>
   </section>
 </main>
 
@@ -295,6 +300,14 @@ function renderResults(r){
 
   h+=`<h3>🎨 이미지 프롬프트 (${(im.images||[]).length}장)</h3>`;
   h+=`<div class="hint" style="margin:-4px 0 8px">📁 <b>내 이미지</b>로 올리면 그 슬롯은 생성을 건너뜁니다(기존 이미지 재사용·비용 0). 인트로 영상도 이 이미지를 재료로 씁니다.</div>`;
+  h+=`<div style="background:#0d0f14;border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:10px">
+    <span class="hint">🎨 <b>참고 이미지</b>(이런 느낌으로!): 원하는 그림체·인물 예시를 첨부하면 <u>다음에 생성하는 이미지</u>에 AI가 참고합니다(최대 3장).</span>
+    <div style="margin-top:6px">
+      <label class="ghost sm" style="display:inline-block;cursor:pointer">➕ 참고 이미지 첨부<input type="file" accept="image/*" style="display:none" onchange="uploadRef(this)"></label>
+      <button class="ghost sm" onclick="clearRef()">비우기</button>
+      <span id="refMsg" class="hint"></span>
+    </div>
+  </div>`;
   h+=`<div class="grid">`;
   (im.images||[]).forEach(x=>{
     const src=`/output/${r.slug}/images/${x.id}.png?t=${Date.now()}`;
@@ -314,6 +327,24 @@ function renderResults(r){
     h+=`<div class="media"><video src="${src}" controls onerror="this.style.display='none'"></video><b>${esc(x.id)}</b><div class="mp">${esc(x.ko_desc||"")}</div>${copyBtn(x.prompt)}</div>`;
   });
   h+=`</div>`;
+  // 🎙️ 음성+자막 패널 (전체 + 챕터별 버튼, 보이스·속도 변경)
+  const nCh=(p.chapters||[]).length;
+  let chBtns="";
+  for(let i=0;i<nCh;i++) chBtns+=`<button class="ghost sm" style="margin:2px" onclick="doTts(${i})">${i+1}장</button>`;
+  h+=`<h3>🎙️ 음성 + 자막(SRT)</h3>
+  <div style="background:#0d0f14;border:1px solid var(--line);border-radius:9px;padding:12px">
+    <div class="row">
+      <div style="flex:2"><label>보이스(목소리)</label><select id="ttsVoice2"><option value="">⚙️설정의 보이스 사용</option></select></div>
+      <div><label>속도 (0.7~1.2)</label><input id="ttsSpeed2" type="number" min="0.7" max="1.2" step="0.05" value="${HEALTH?.tts?.speed||1.0}"></div>
+      <div style="display:flex;align-items:flex-end"><button class="ghost sm" onclick="loadVoicesInto('ttsVoice2')">🔊 보이스 새로고침</button></div>
+    </div>
+    <div style="margin-top:10px">
+      <button onclick="doTts('all')">🎙️ 전체 음성 생성</button>
+      <span style="margin-left:8px" class="hint">또는 챕터별:</span> ${chBtns}
+    </div>
+    <pre id="log3" style="display:none;margin-top:8px"></pre>
+    <div id="ttsOut"></div>
+  </div>`;
   h+=`<div class="hint" style="margin-top:14px">📁 모든 파일은 <code>output/${esc(r.slug)}/</code> 폴더에 저장되었습니다.</div>`;
   $("result").innerHTML=h;
   $("resultCard").scrollIntoView({behavior:"smooth"});
@@ -334,32 +365,86 @@ async function doRender(images, videos){
   fresh.slug=CURRENT.slug; CURRENT=fresh; renderResults(fresh);
 }
 
-async function doTts(){
-  if(!CURRENT?.slug) return toast("먼저 콘텐츠를 생성하세요");
+// mode: 'all'(전체) 또는 챕터 인덱스(0-based)
+async function doTts(mode){
+  if(!CURRENT?.slug) return toast("먼저 콘텐츠를 생성/불러오세요");
   if(!HEALTH?.tts?.hasKey){ toggleSettings(); return toast("ElevenLabs 키를 설정·저장하세요"); }
-  if(!HEALTH?.tts?.voiceId) return toast("⚙️설정에서 보이스를 고르고 저장하세요");
+  const voiceId=$("ttsVoice2")?.value||"";
+  if(!voiceId && !HEALTH?.tts?.voiceId) return toast("보이스를 고르세요(위 드롭다운의 '보이스 새로고침' 또는 ⚙️설정)");
+  const speed=Number($("ttsSpeed2")?.value)||undefined;
+  const body={ slug:CURRENT.slug, voiceId:voiceId||undefined, speed };
+  if(mode!=='all') body.chapter=mode;
   const log=$("log3"); log.style.display="block"; log.textContent="";
-  await stream("/api/tts", { slug:CURRENT.slug }, (ev)=>{
+  await stream("/api/tts", body, (ev)=>{
     if(ev.type==="log") log.textContent+=ev.msg+"\n";
     else if(ev.type==="error") log.textContent+="❌ "+ev.msg+"\n";
-    else if(ev.type==="done") showTts(ev.result);
+    else if(ev.type==="done") showTts(ev.result, mode);
     log.scrollTop=log.scrollHeight;
   });
 }
-function showTts(r){
+function showTts(r, mode){
   const base="/output/"+CURRENT.slug+"/";
-  $("ttsOut").innerHTML=`<div class="media" style="margin-top:12px">
-    <b>🎙️ 내레이션 음성 + 자막</b>
-    <audio src="${base}audio/narration.mp3?t=${Date.now()}" controls style="width:100%;margin-top:8px"></audio>
-    <div style="margin-top:8px">
-      <a href="${base}audio/narration.mp3" download style="text-decoration:none"><button class="ghost sm">⬇️ 음성 mp3</button></a>
-      <a href="${base}narration.srt" download style="text-decoration:none"><button class="ghost sm">⬇️ 자막 srt</button></a>
-      <span class="hint" style="margin-left:6px">자막 ${r.lines}줄 · 편집기에 끌어넣으면 타이밍 자동</span>
+  const label = mode==='all' ? '전체' : `${(mode|0)+1}장`;
+  const html=`<div class="media" style="margin-top:10px">
+    <b>🎙️ ${label} 음성 + 자막</b> <span class="hint">자막 ${r.lines}줄</span>
+    <audio src="${base}${r.audio}?t=${Date.now()}" controls style="width:100%;margin-top:6px"></audio>
+    <div style="margin-top:6px">
+      <a href="${base}${r.audio}" download style="text-decoration:none"><button class="ghost sm">⬇️ mp3</button></a>
+      <a href="${base}${r.srt}" download style="text-decoration:none"><button class="ghost sm">⬇️ srt</button></a>
     </div></div>`;
-  toast("음성+자막 생성 완료");
+  $("ttsOut").insertAdjacentHTML("afterbegin", html);
+  toast(label+" 음성 생성 완료");
+}
+
+// 보이스 목록을 특정 select 에 채움 (TTS 패널용)
+async function loadVoicesInto(selId){
+  if(!HEALTH?.tts?.hasKey) return toast("먼저 ElevenLabs 키를 저장하세요");
+  const sel=$(selId); if(!sel) return;
+  const r=await api("/api/voices",null,"GET");
+  if(!r.voices||!r.voices.length){ toast("보이스 목록 실패: "+(r.error||"")); return; }
+  const keep=sel.querySelector('option[value=""]');
+  sel.innerHTML=""; if(keep) sel.appendChild(keep);
+  r.voices.forEach(v=>{ const o=document.createElement("option"); o.value=v.id; o.textContent=`${v.name}${v.labels?.language?` · ${v.labels.language}`:""}`; sel.appendChild(o); });
+  if(HEALTH?.tts?.voiceId) sel.value=HEALTH.tts.voiceId;
+  toast(`${r.voices.length}개 보이스`);
+}
+
+// 참고 이미지 업로드/삭제
+async function uploadRef(input){
+  const f=input.files && input.files[0]; if(!f) return;
+  if(!CURRENT?.slug) return toast("먼저 콘텐츠를 생성/불러오세요");
+  try{
+    const dataUrl=await fileToDataUrl(f);
+    const r=await api("/api/upload-ref",{slug:CURRENT.slug,dataUrl});
+    if(r.error) return toast("실패: "+r.error);
+    $("refMsg").textContent=`참고 이미지 ${r.count}장 첨부됨 (다음 이미지 생성부터 반영)`;
+    toast("참고 이미지 첨부됨");
+  }catch(e){ toast("실패: "+e.message); }
+  input.value="";
+}
+async function clearRef(){
+  if(!CURRENT?.slug) return;
+  await api("/api/clear-ref",{slug:CURRENT.slug});
+  $("refMsg").textContent="참고 이미지 비움";
+  toast("참고 이미지 비움");
+}
+
+// 이전 결과 목록/불러오기
+async function loadOutputs(){
+  const r=await api("/api/list-outputs",null,"GET");
+  const sel=$("outputSelect"); sel.innerHTML='<option value="">— 목록 —</option>';
+  (r.slugs||[]).forEach(s=>{ const o=document.createElement("option"); o.value=s; o.textContent=s; sel.appendChild(o); });
+}
+async function loadPrevious(){
+  const slug=$("outputSelect").value; if(!slug) return toast("불러올 항목을 고르세요");
+  const r=await api("/api/result?slug="+encodeURIComponent(slug),null,"GET");
+  if(!r.pkg){ return toast("이 폴더에 콘텐츠가 없습니다."); }
+  r.slug=slug; CURRENT=r; $("slug").value=slug; renderResults(r);
+  toast(slug+" 불러옴");
 }
 
 loadHealth();
+loadOutputs();
 </script>
 </body>
 </html>

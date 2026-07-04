@@ -1,5 +1,5 @@
 // 파이프라인 오케스트레이션: 벤치마크 → 분석 → 콘텐츠 → 이미지/인트로 프롬프트 → (옵션) 렌더링.
-import { mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { config, ROOT } from "./config.js";
 import { generateJson, generateImage, generateVideo, ttsWithTimestamps } from "./clients.js";
@@ -122,10 +122,24 @@ function composeImagePrompt(images, img) {
   return `${castBlock(images)}Scene: ${scene}. ${images?.style_token || ""} ${P.NO_TEXT_NEGATIVE}`.trim();
 }
 
-// 슬롯 1개를 실제로 생성(덮어쓰기)
-async function renderImageById(dir, images, img) {
+// 참조 이미지(사용자가 첨부한 "이런 느낌") data URI 배열 — output/<slug>/ref/*
+export function readRefDataUrls(dir) {
+  const rdir = join(dir, "ref");
+  if (!existsSync(rdir)) return [];
+  return readdirSync(rdir)
+    .filter((f) => /\.(png|jpg|jpeg|webp)$/i.test(f))
+    .slice(0, 3)
+    .map((f) => {
+      const buf = readFileSync(join(rdir, f));
+      const ext = f.split(".").pop().toLowerCase();
+      return `data:image/${ext === "jpg" ? "jpeg" : ext};base64,${buf.toString("base64")}`;
+    });
+}
+
+// 슬롯 1개를 실제로 생성(덮어쓰기). refs: 참조 이미지 data URI 배열
+async function renderImageById(dir, images, img, refs) {
   const full = composeImagePrompt(images, img);
-  const out = await generateImage(full);
+  const out = await generateImage(full, { refImages: refs });
   const path = join(dir, "images", `${img.id}.png`);
   if (out.b64) writeFileSync(path, Buffer.from(out.b64, "base64"));
   else if (out.url) writeFileSync(path, Buffer.from(await (await fetch(out.url)).arrayBuffer()));
@@ -137,6 +151,8 @@ async function renderImageById(dir, images, img) {
 export async function renderImages(dir, images, onLog) {
   const emit = mkEmit(onLog);
   const list = images.images || [];
+  const refs = readRefDataUrls(dir);
+  if (refs.length) emit(`참조 이미지 ${refs.length}장 반영`);
   const done = [];
   let made = 0,
     reused = 0;
@@ -149,7 +165,7 @@ export async function renderImages(dir, images, onLog) {
     }
     emit(`이미지 생성: ${img.id}`);
     try {
-      await renderImageById(dir, images, img);
+      await renderImageById(dir, images, img, refs);
       made++;
       done.push(img.id);
     } catch (e) {
@@ -168,7 +184,7 @@ export async function renderOneImage(slug, id, onLog) {
   const img = (r.images?.images || []).find((x) => x.id === id);
   if (!img) throw new Error(`이미지 슬롯 ${id} 를 찾을 수 없습니다.`);
   emit(`이미지 다시 생성: ${id}`);
-  await renderImageById(dir, r.images, img);
+  await renderImageById(dir, r.images, img, readRefDataUrls(dir));
   return { id };
 }
 
@@ -193,7 +209,7 @@ async function ensureClipImage(dir, clip, images, emit) {
   const imgDef = imgList.find((i) => i.id === refId) || { prompt: clip.ko_desc || clip.prompt };
   emit(`  · ${clip.id}: 입력 이미지 생성(${refId || "scene"}, 그림체·인물 통일)`);
   const full = composeImagePrompt(images, imgDef);
-  const out = await generateImage(full);
+  const out = await generateImage(full, { refImages: readRefDataUrls(dir) });
   const savePath = join(dir, "images", `${refId || clip.id}.png`);
   if (out.b64) {
     writeFileSync(savePath, Buffer.from(out.b64, "base64"));
@@ -239,9 +255,9 @@ export async function renderVideos(dir, intro, images, onLog) {
 }
 
 // ── TTS 음성 + 자막(SRT) 생성 ─────────────────────────────────
-// 대본(챕터별)을 ElevenLabs 로 읽어 음성을 만들고, 글자 타임스탬프로 자막을 생성한다.
-// 챕터별로 생성해 이어 붙이고, 자막 시간은 누적 오프셋으로 맞춘다.
-export async function generateNarration(slug, { voiceId, model, onLog } = {}) {
+// 전체 대본을 '한 번의 요청'으로 읽어 하나의 깨끗한 mp3 + 자막을 만든다.
+// (챕터별 mp3 를 이어붙이면 플레이어가 첫 조각만 인식하는 문제가 있어 단일 요청 방식 사용)
+export async function generateNarration(slug, { voiceId, model, speed, onLog } = {}) {
   const emit = mkEmit(onLog);
   const dir = outDir(slug);
   mkdirSync(join(dir, "audio"), { recursive: true });
@@ -249,25 +265,46 @@ export async function generateNarration(slug, { voiceId, model, onLog } = {}) {
   const chunks = (r.pkg?.chapters || []).map((c) => (c.script || "").trim()).filter(Boolean);
   if (!chunks.length) throw new Error("대본이 없습니다. 먼저 콘텐츠(✨생성)를 만들어 주세요.");
 
-  const audioBuffers = [];
-  const lines = [];
-  let offset = 0;
-  for (let i = 0; i < chunks.length; i++) {
-    emit(`음성 생성: ${i + 1}/${chunks.length} 챕터`);
-    const { audioB64, alignment } = await ttsWithTimestamps(chunks[i], { voiceId, model });
-    if (audioB64) audioBuffers.push(Buffer.from(audioB64, "base64"));
-    for (const s of buildSegments(alignment)) {
-      lines.push({ text: s.text, start: s.start + offset, end: s.end + offset });
-    }
-    const ends = alignment?.character_end_times_seconds || [];
-    offset += ends.length ? ends[ends.length - 1] : 0; // 다음 챕터 자막 시작 오프셋(= 누적 음성 길이)
-  }
-
-  writeFileSync(join(dir, "audio", "narration.mp3"), Buffer.concat(audioBuffers));
+  const text = chunks.join("\n\n");
+  emit(`전체 음성 생성 중... (${chunks.length}개 챕터, 총 ${text.length}자 · 한 번에)`);
+  const { audioB64, alignment } = await ttsWithTimestamps(text, { voiceId, model, speed });
+  if (!audioB64) throw new Error("음성 데이터를 받지 못했습니다.");
+  writeFileSync(join(dir, "audio", "narration.mp3"), Buffer.from(audioB64, "base64"));
+  const lines = buildSegments(alignment);
   writeFileSync(join(dir, "narration.srt"), formatSrt(lines));
-  writeFileSync(join(dir, "narration.txt"), chunks.join("\n\n"));
-  emit(`✓ 음성(audio/narration.mp3) + 자막(narration.srt, ${lines.length}줄) 생성 완료`);
-  return { slug, audio: "audio/narration.mp3", srt: "narration.srt", txt: "narration.txt", lines: lines.length };
+  writeFileSync(join(dir, "narration.txt"), text);
+  emit(`✓ 전체 음성(audio/narration.mp3) + 자막(narration.srt, ${lines.length}줄) 완료`);
+  return { slug, audio: "audio/narration.mp3", srt: "narration.srt", lines: lines.length };
+}
+
+// 챕터 1개만 음성+자막 생성 (audio/ch-NN.mp3, chapter-NN.srt)
+export async function generateChapterNarration(slug, index, { voiceId, model, speed, onLog } = {}) {
+  const emit = mkEmit(onLog);
+  const dir = outDir(slug);
+  mkdirSync(join(dir, "audio"), { recursive: true });
+  const chapters = readResult(slug).pkg?.chapters || [];
+  const ch = chapters[index];
+  const scriptText = (ch?.script || "").trim();
+  if (!scriptText) throw new Error(`${index + 1}번 챕터 대본이 없습니다.`);
+  const n = String(index + 1).padStart(2, "0");
+  emit(`${index + 1}번 챕터 음성 생성 중... (${scriptText.length}자)`);
+  const { audioB64, alignment } = await ttsWithTimestamps(scriptText, { voiceId, model, speed });
+  if (!audioB64) throw new Error("음성 데이터를 받지 못했습니다.");
+  writeFileSync(join(dir, "audio", `ch-${n}.mp3`), Buffer.from(audioB64, "base64"));
+  const lines = buildSegments(alignment);
+  writeFileSync(join(dir, `chapter-${n}.srt`), formatSrt(lines));
+  emit(`✓ ${index + 1}번 챕터 음성(audio/ch-${n}.mp3) + 자막(chapter-${n}.srt) 완료`);
+  return { index, audio: `audio/ch-${n}.mp3`, srt: `chapter-${n}.srt`, lines: lines.length };
+}
+
+// output 폴더의 slug 목록 (이전 결과 불러오기용)
+export function listOutputs() {
+  const base = join(ROOT, "output");
+  if (!existsSync(base)) return [];
+  return readdirSync(base, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name)
+    .sort();
 }
 
 export function readBenchmark(path) {

@@ -128,14 +128,15 @@ export async function listVoices() {
   }));
 }
 
-// 텍스트 → 음성(mp3 base64) + 글자별 타임스탬프(자막 생성용)
-export async function ttsWithTimestamps(text, { voiceId, model } = {}) {
+// 텍스트 → 음성(mp3 base64) + 글자별 타임스탬프(자막 생성용). speed: 0.7~1.2
+export async function ttsWithTimestamps(text, { voiceId, model, speed } = {}) {
   const vid = voiceId || config.elevenlabs.voiceId;
   if (!vid) throw new Error("보이스가 선택되지 않았습니다. ⚙️설정에서 ElevenLabs 보이스를 고르세요.");
+  const spd = Math.min(1.2, Math.max(0.7, Number(speed || config.elevenlabs.speed) || 1.0));
   const r = await fetch(`${config.elevenlabs.baseUrl}/text-to-speech/${vid}/with-timestamps?output_format=mp3_44100_128`, {
     method: "POST",
     headers: { "xi-api-key": config.elevenlabs.apiKey, "Content-Type": "application/json" },
-    body: JSON.stringify({ text, model_id: model || config.elevenlabs.model }),
+    body: JSON.stringify({ text, model_id: model || config.elevenlabs.model, voice_settings: { speed: spd } }),
   });
   const txt = await r.text();
   if (!r.ok) throw new Error(`음성 생성 실패 (HTTP ${r.status}) — ${elevenReason(r.status, txt)}`);
@@ -167,8 +168,8 @@ export async function listModels() {
 }
 
 // ── 이미지 생성 ──────────────────────────────────────────────
-// prompt → 이미지 1장 (base64 또는 url). 반환: { b64?, url? }
-export async function generateImage(prompt) {
+// prompt → 이미지 1장. refImages: 참조 이미지 data URI 배열(최대 3장, xAI 이미지 편집).
+export async function generateImage(prompt, { refImages } = {}) {
   if (config.textProvider === "openai" || (!config.xai.apiKey && config.openai.apiKey)) {
     const json = await postJson(
       `${config.openai.baseUrl}/images/generations`,
@@ -178,10 +179,16 @@ export async function generateImage(prompt) {
     const d = json.data?.[0] ?? {};
     return { b64: d.b64_json, url: d.url };
   }
+  const body = { model: config.xai.imageModel, prompt, n: 1 };
+  const refs = (refImages || []).filter(Boolean).slice(0, 3);
+  if (refs.length) {
+    // xAI 이미지 편집: image 로 참조 이미지 전달(1장이면 객체, 여러 장이면 배열)
+    body.image = refs.length === 1 ? { url: refs[0] } : refs.map((u) => ({ url: u }));
+  }
   const json = await postJson(
     `${config.xai.baseUrl}/images/generations`,
     { Authorization: `Bearer ${config.xai.apiKey}` },
-    { model: config.xai.imageModel, prompt, n: 1 }
+    body
   );
   const d = json.data?.[0] ?? {};
   return { b64: d.b64_json, url: d.url };
