@@ -85,7 +85,7 @@ function buildBlogIndex(posts) {
 '  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885"\n' +
 '     crossorigin="anonymous"></script>\n' +
 '\n' +
-'  <link rel="stylesheet" href="../style.css?v=5">\n' +
+'  <link rel="stylesheet" href="../style.css?v=6">\n' +
 '</head>\n' +
 '<body>\n' +
 '  <nav class="back-nav"><a href="/">← 한국인계산기 홈</a></nav>\n' +

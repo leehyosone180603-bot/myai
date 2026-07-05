@@ -395,6 +395,23 @@ input[type="text"]:focus {
 .post .toc a { color: var(--primary); text-decoration: none; }
 .post .toc a:hover { text-decoration: underline; }
 
+/* 블로그 본문 이미지 */
+.post figure { margin: 22px 0; }
+.post figure img {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  display: block;
+}
+.post figcaption {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin-top: 8px;
+}
+
 /* 블로그 글 목록 */
 .post-list { list-style: none; padding: 0; margin: 0; }
 .post-list li { margin-bottom: 12px; }

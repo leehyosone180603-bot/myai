@@ -1,0 +1,4 @@
+node_modules/
+package.json
+package-lock.json
+blog/img/dims.json
