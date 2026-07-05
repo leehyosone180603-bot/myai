@@ -63,7 +63,8 @@ ${JSON.stringify(analysis, null, 2)}
 아래 JSON 스키마로만 출력하라:
 {
   "video_title_options": ["클릭을 부르는 영상 제목 후보 3개"],
-  "thumbnail_title": "썸네일에 박을 2줄 이내 초강력 문구",
+  "thumbnail_title_options": ["유튜브 메인에서 클릭을 가장 많이 유발할 썸네일 문구 5개 (각 2줄 이내, 호기심·반전·공감 자극, 서로 다른 각도로)"],
+  "thumbnail_title": "위 5개 중 대표 1개(가장 강력한 것)",
   "thumbnail_subtext": "썸네일 보조 문구(짧게)",
   "description": "유튜브 설명글. 첫 2줄 후킹 + 본문 + 해시태그 5~8개 포함",
   "chapters": [
@@ -104,6 +105,7 @@ ${JSON.stringify({ thumbnail_title: pkg.thumbnail_title, chapters: pkg.chapters?
 규칙(반드시):
 - 먼저 cast(고정 등장인물)를 정의: 주인공 남자 1명은 필수, 상대 여자 등 추가 인물은 필요할 때만. 각 인물 외모를 아주 구체적으로(영어).
 - 각 prompt 는 그 챕터 '장면' 묘사이되, 등장인물은 cast 에 정의한 그 사람과 동일해야 한다(장면마다 다른 사람 금지).
+- 각 prompt 에는 반드시 세 가지를 구체적으로 넣어라: (a) 배경/장소(어디인지: 카페·거실·거리 등), (b) 배경 색감·분위기(따뜻한 파스텔 톤 등), (c) 인물의 구체적 행동·표정·몸짓(그 챕터 내용과 일치).
 - 말풍선/글자/자막/만화칸 금지. style_token 은 위 스타일 문구 그대로.
 
 JSON 스키마:

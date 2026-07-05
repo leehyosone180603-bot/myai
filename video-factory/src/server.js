@@ -15,6 +15,7 @@ import {
   outDir,
   generateNarration,
   generateChapterNarration,
+  generateThumbnail,
   listOutputs,
 } from "./pipeline.js";
 import { fetchTranscript, toBenchmarkMd, youtubeId } from "./transcript.js";
@@ -202,6 +203,22 @@ const server = createServer(async (req, res) => {
           Number.isInteger(b.chapter) && b.chapter >= 0
             ? await generateChapterNarration(slug, b.chapter, opts)
             : await generateNarration(slug, opts);
+        emit({ type: "done", result });
+      } catch (e) {
+        emit({ type: "error", msg: e.message });
+      }
+      return res.end();
+    }
+
+    // 썸네일 이미지 생성 (사용자 지침 기반)
+    if (path === "/api/thumbnail" && req.method === "POST") {
+      const b = await readBody(req);
+      const emit = startStream(res);
+      try {
+        requireTextProvider();
+        const slug = sanitizeSlug(b.slug?.trim());
+        if (!slug) throw new Error("slug 가 필요합니다.");
+        const result = await generateThumbnail(slug, b.instruction || "", { onLog: (msg) => emit({ type: "log", msg }) });
         emit({ type: "done", result });
       } catch (e) {
         emit({ type: "error", msg: e.message });

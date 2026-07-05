@@ -292,8 +292,19 @@ function renderResults(r){
   let h="";
   h+=`<h3>📌 영상 제목 후보</h3>`;
   (p.video_title_options||[]).forEach(t=>{ h+=`<div class="pill"><span class="t">${esc(t)}</span>${copyBtn(t)}</div>`; });
-  h+=`<h3>🖼️ 썸네일 문구</h3><div class="pill"><span class="t thumb">${esc(p.thumbnail_title||"")}</span>${copyBtn(p.thumbnail_title||"")}</div>`;
-  if(p.thumbnail_subtext) h+=`<div class="hint">보조: ${esc(p.thumbnail_subtext)}</div>`;
+  const thumbTitles=(p.thumbnail_title_options&&p.thumbnail_title_options.length)?p.thumbnail_title_options:(p.thumbnail_title?[p.thumbnail_title]:[]);
+  h+=`<h3>🖼️ 썸네일 문구 — 클릭 유발 ${thumbTitles.length}개</h3>`;
+  thumbTitles.forEach(t=>{ h+=`<div class="pill"><span class="t thumb" style="font-size:17px">${esc(t)}</span>${copyBtn(t)}</div>`; });
+  if(p.thumbnail_subtext) h+=`<div class="hint">보조 문구: ${esc(p.thumbnail_subtext)}</div>`;
+
+  h+=`<h3>🖼️ 썸네일 이미지 생성 (AI)</h3>
+  <div style="background:#0d0f14;border:1px solid var(--line);border-radius:9px;padding:12px">
+    <span class="hint">원하는 썸네일 지침을 적고 생성하세요. (대본 주제·그림체·인물·참고이미지가 자동 반영됩니다)</span>
+    <textarea id="thumbInstruction" style="min-height:64px;margin-top:6px" placeholder="예: 카페에서 여자가 남자를 흥미롭게 바라보는 클로즈업, 따뜻한 노을빛 배경, 오른쪽에 큰 글자 넣을 여백"></textarea>
+    <div style="margin-top:6px"><button onclick="doThumbnail()">✨ 썸네일 이미지 생성</button> <span class="hint">여러 번 눌러 마음에 드는 컷을 뽑으세요(누를 때마다 과금)</span></div>
+    <pre id="logThumb" style="display:none;margin-top:8px"></pre>
+    <div id="thumbOut"></div>
+  </div>`;
   h+=`<h3>📝 설명글 ${copyBtn(p.description||"")}</h3><div class="chapter"><div class="cs">${esc(p.description||"")}</div></div>`;
   h+=`<h3>🎬 대본 (${(p.chapters||[]).length}챕터) ${copyBtn((p.chapters||[]).map(c=>`[${c.timecode||""}] ${c.title}\n${c.script}`).join("\n\n"))}</h3>`;
   (p.chapters||[]).forEach(c=>{ h+=`<div class="chapter"><div class="ct">${esc(c.timecode||"")} · ${esc(c.title||"")}</div><div class="cs">${esc(c.script||"")}</div></div>`; });
@@ -394,6 +405,28 @@ function showTts(r, mode){
     </div></div>`;
   $("ttsOut").insertAdjacentHTML("afterbegin", html);
   toast(label+" 음성 생성 완료");
+}
+
+// 썸네일 이미지 생성
+async function doThumbnail(){
+  if(!CURRENT?.slug) return toast("먼저 콘텐츠를 생성/불러오세요");
+  if(!HEALTH?.hasKey) return toast("API 키를 먼저 설정하세요");
+  const instruction=$("thumbInstruction")?.value||"";
+  const log=$("logThumb"); log.style.display="block"; log.textContent="";
+  await stream("/api/thumbnail",{slug:CURRENT.slug,instruction},(ev)=>{
+    if(ev.type==="log") log.textContent+=ev.msg+"\n";
+    else if(ev.type==="error") log.textContent+="❌ "+ev.msg+"\n";
+    else if(ev.type==="done") showThumb();
+    log.scrollTop=log.scrollHeight;
+  });
+}
+function showThumb(){
+  const base="/output/"+CURRENT.slug+"/";
+  $("thumbOut").innerHTML=`<div class="media" style="margin-top:10px">
+    <img src="${base}thumbnail.png?t=${Date.now()}" style="width:100%"/>
+    <div style="margin-top:6px"><a href="${base}thumbnail.png" download style="text-decoration:none"><button class="ghost sm">⬇️ 썸네일 다운로드</button></a></div>
+  </div>`;
+  toast("썸네일 생성 완료");
 }
 
 // 보이스 목록을 특정 select 에 채움 (TTS 패널용)

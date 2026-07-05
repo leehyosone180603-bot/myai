@@ -49,6 +49,7 @@ const mock = createServer(async (req, res) => {
     } else if (sys.includes("대본 작가")) {
       content = {
         video_title_options: ["제목A", "제목B", "제목C"],
+        thumbnail_title_options: ["문구1", "문구2", "문구3", "문구4", "문구5"],
         thumbnail_title: "썸네일\n문구",
         thumbnail_subtext: "보조",
         description: "설명글 #태그",

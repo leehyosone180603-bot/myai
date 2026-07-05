@@ -188,6 +188,32 @@ export async function renderOneImage(slug, id, onLog) {
   return { id };
 }
 
+// 썸네일 이미지 생성 — 사용자의 지침(instruction) + 대본 주제 + 그림체/인물/참고이미지 반영
+export async function generateThumbnail(slug, instruction, { onLog } = {}) {
+  const emit = mkEmit(onLog);
+  const dir = outDir(slug);
+  const r = readResult(slug);
+  const pkg = r.pkg || {};
+  const style = r.images?.style_token || config.imageStyle;
+  const cast = castBlock(r.images);
+  const topic = r.analysis?.topic || pkg.thumbnail_title || pkg.one_line_summary || "";
+  const dirText = (instruction || "").trim();
+  emit("썸네일 이미지 생성 중...");
+  const prompt =
+    `YouTube thumbnail illustration (16:9). Topic: ${topic}. ` +
+    (dirText ? `Art direction from user: ${dirText}. ` : "") +
+    `${cast}${style}. Eye-catching and emotionally expressive, one clear focal subject, ` +
+    `dramatic but tasteful mood, strong composition that leaves some empty space on one side for a big text headline, high visual contrast. ` +
+    P.NO_TEXT_NEGATIVE;
+  const out = await generateImage(prompt, { refImages: readRefDataUrls(dir) });
+  const path = join(dir, "thumbnail.png");
+  if (out.b64) writeFileSync(path, Buffer.from(out.b64, "base64"));
+  else if (out.url) writeFileSync(path, Buffer.from(await (await fetch(out.url)).arrayBuffer()));
+  else throw new Error("썸네일 이미지 응답이 비어 있습니다");
+  emit("✓ 썸네일 생성: thumbnail.png");
+  return { file: "thumbnail.png" };
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // 클립에 쓸 입력 이미지(base64)를 확보한다. 그림체 통일이 핵심:
