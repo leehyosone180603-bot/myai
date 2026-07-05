@@ -61,5 +61,19 @@
     "date": "2026.07.06",
     "excerpt": "로또 6/45 자동 추출과 포함·제외 번호 활용법",
     "published": true
+  },
+  {
+    "slug": "high-salary",
+    "title": "연봉 1억·1억2천·2억 실수령액 총정리 (고연봉 세후 월급)",
+    "date": "2026.07.07",
+    "excerpt": "고연봉 구간의 월·연 실수령액과 공제 비율 정리",
+    "published": false
+  },
+  {
+    "slug": "birth-year-guide",
+    "title": "몇년생 계산기 — 나이로 출생연도·띠 찾기 (나이 조견표)",
+    "date": "2026.07.08",
+    "excerpt": "나이로 출생연도·띠 찾기와 나이별 조견표",
+    "published": false
   }
 ]

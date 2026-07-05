@@ -20,6 +20,7 @@ const STATIC_URLS = [
   { loc: "https://calcbox.kr/", freq: "weekly", pri: "1.0" },
   { loc: "https://calcbox.kr/salary/", freq: "monthly", pri: "0.9" },
   { loc: "https://calcbox.kr/age/", freq: "monthly", pri: "0.9" },
+  { loc: "https://calcbox.kr/birth-year/", freq: "monthly", pri: "0.9" },
   { loc: "https://calcbox.kr/business-days/", freq: "monthly", pri: "0.8" },
   { loc: "https://calcbox.kr/vat/", freq: "monthly", pri: "0.8" },
   { loc: "https://calcbox.kr/severance/", freq: "monthly", pri: "0.8" },
