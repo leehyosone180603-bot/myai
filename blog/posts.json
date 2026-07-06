@@ -72,8 +72,148 @@
   {
     "slug": "birth-year-guide",
     "title": "몇년생 계산기 — 나이로 출생연도·띠 찾기 (나이 조견표)",
-    "date": "2026.07.08",
+    "date": "2026.07.06",
     "excerpt": "나이로 출생연도·띠 찾기와 나이별 조견표",
+    "published": true
+  },
+  {
+    "slug": "saju-gyounki",
+    "title": "\"요즘 왜 이렇게 일이 안 풀릴까?\" 삼재보다 무서운 교운기(交運期)",
+    "date": "2026.07.06",
+    "excerpt": "대운이 바뀌는 교운기의 증상과 내 대운 전환 시기를 확인하는 법",
+    "published": true
+  },
+  {
+    "slug": "mbti-vs-saju",
+    "title": "MBTI는 마스터했는데... 내 '사주 팔자'는 어떤 글자로 이뤄져 있을까?",
+    "date": "2026.07.08",
+    "excerpt": "MBTI와 사주(일간·오행)로 보는 타고난 성향 비교",
+    "published": false
+  },
+  {
+    "slug": "saju-gunghab-relationship",
+    "title": "친구·연인과 자꾸 싸우는 이유가 '이것' 때문? 재미로 보는 사주 궁합",
+    "date": "2026.07.09",
+    "excerpt": "오행 상생·상극으로 보는 관계 궁합과 무료 궁합 확인법",
+    "published": false
+  },
+  {
+    "slug": "saju-sinsal-dohwa",
+    "title": "\"내 사주에 도화살 있을까?\" 도화·역마·화개, 신살의 종류 총정리",
+    "date": "2026.07.10",
+    "excerpt": "도화·역마·화개 등 신살의 진짜 의미와 내 신살 확인법",
+    "published": false
+  },
+  {
+    "slug": "saju-today-fortune",
+    "title": "매일 아침 별자리 운세 보시나요? 일진(日辰)으로 하루를 여는 법",
+    "date": "2026.07.11",
+    "excerpt": "일진의 개념과 내 원국·세운을 함께 보는 운세 활용법",
+    "published": false
+  },
+  {
+    "slug": "saju-jaemul-timing",
+    "title": "\"언제쯤 돈이 모일까?\" 사주로 보는 내 인생 재물운 터지는 시기",
+    "date": "2026.07.12",
+    "excerpt": "재성으로 보는 돈 그릇과 재물운이 열리는 시기 확인법",
+    "published": false
+  },
+  {
+    "slug": "saju-job-change",
+    "title": "올해 이직해도 될까? 사주로 보는 직장운·시험·합격운",
+    "date": "2026.07.13",
+    "excerpt": "관성·인성으로 보는 이직·승진·합격의 타이밍",
+    "published": false
+  },
+  {
+    "slug": "saju-spouse",
+    "title": "\"내 배우자는 어떤 사람일까?\" 사주가 말해주는 인연의 특징",
+    "date": "2026.07.14",
+    "excerpt": "일지와 배우자성으로 보는 미래 배우자의 특징과 인연 시기",
+    "published": false
+  },
+  {
+    "slug": "saju-aptitude",
+    "title": "나는 직장인 체질일까, 사업가 체질일까? 사주로 보는 진로와 적성",
+    "date": "2026.07.15",
+    "excerpt": "십성으로 보는 타고난 적성과 직장인·사업가 체질",
+    "published": false
+  },
+  {
+    "slug": "saju-gilil",
+    "title": "이사·개업·결혼 날짜, 손 없는 날보다 정확한 '나만의 길일' 찾는 법",
+    "date": "2026.07.16",
+    "excerpt": "손 없는 날보다 내 사주에 맞는 좋은 시기 찾는 법",
+    "published": false
+  },
+  {
+    "slug": "saju-before-philosophy",
+    "title": "철학관 가기 전 필수! 사주 볼 때 돈 낭비하지 않는 법",
+    "date": "2026.07.17",
+    "excerpt": "철학관 상담 전 만세력·기본 구조를 미리 파악하는 법",
+    "published": false
+  },
+  {
+    "slug": "saju-easy-program",
+    "title": "\"한자 가득한 만세력은 그만\" 초보자도 3초 만에 이해하는 사주 프로그램",
+    "date": "2026.07.18",
+    "excerpt": "복잡한 한자 없이 쉬운 말로 풀어주는 사주 프로그램 소개",
+    "published": false
+  },
+  {
+    "slug": "saju-engine-story",
+    "title": "천문 계산과 정통 명리의 만남: 이 사주 프로그램은 어떻게 만들어졌을까?",
+    "date": "2026.07.19",
+    "excerpt": "천문 계산 기반 만세력과 절기 처리 등 정확도의 원리 공개",
+    "published": false
+  },
+  {
+    "slug": "saju-expert-tools",
+    "title": "복잡한 대운·세운을 한눈에! 명리 공부에도 쓰는 사주 분석 도구",
+    "date": "2026.07.20",
+    "excerpt": "십성·신살·용신·대운·세운을 자동 계산하는 분석 도구",
+    "published": false
+  },
+  {
+    "slug": "saju-reviews",
+    "title": "\"어떻게 알았지?\" 사람들이 사주에서 소름 돋는다고 느끼는 이유",
+    "date": "2026.07.21",
+    "excerpt": "사주 풀이에서 공감·소름을 느끼게 되는 원리",
+    "published": false
+  },
+  {
+    "slug": "saju-newyear",
+    "title": "올해 신년운세·토정비결 아직 안 보셨나요? 내 총운 확인하기",
+    "date": "2026.07.22",
+    "excerpt": "토정비결과 사주 세운의 차이, 올해 총운 확인법",
+    "published": false
+  },
+  {
+    "slug": "saju-monthly",
+    "title": "이번 달 나에게 찾아올 행운은? 월별 운세로 한 달 미리 대비하기",
+    "date": "2026.07.23",
+    "excerpt": "오행으로 보는 좋은 달·조심할 달과 한 달 흐름 대비법",
+    "published": false
+  },
+  {
+    "slug": "saju-lucky-color",
+    "title": "중요한 미팅 있는 날, 행운을 부르는 사주 맞춤 컬러·아이템",
+    "date": "2026.07.24",
+    "excerpt": "부족한 오행을 채우는 행운의 색·방향·숫자 찾는 법",
+    "published": false
+  },
+  {
+    "slug": "saju-investment",
+    "title": "주식·부동산 투자 전 확인! 사주로 보는 내 투자 성향과 타이밍",
+    "date": "2026.07.25",
+    "excerpt": "재물 흐름과 조심할 시기로 보는 투자 성향·타이밍",
+    "published": false
+  },
+  {
+    "slug": "saju-naming",
+    "title": "개명·작명 고민? 사주에 부족한 기운을 채우는 좋은 이름의 조건",
+    "date": "2026.07.26",
+    "excerpt": "작명·개명에서 오행 균형이 중요한 이유와 부족한 기운 확인법",
     "published": false
   }
 ]
