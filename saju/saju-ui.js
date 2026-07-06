@@ -43,7 +43,15 @@
       h += '<option value="' + hh + '">' + ap + " " + h12 + "시</option>";
     }
     selH.innerHTML = h;
+    var mn = "";
+    for (var mi = 0; mi < 60; mi++) mn += '<option value="' + mi + '">' + mi + "분</option>";
+    $("selMin").innerHTML = mn;
+    onHourChange();
     updateDays();
+  }
+
+  function onHourChange() {
+    $("selMin").disabled = ($("selH").value === "x");
   }
 
   function daysInMonth(y, m, lunar) {
@@ -99,11 +107,13 @@
     var hv = $("selH").value;
     var hourKnown = hv !== "x";
     var hh = hourKnown ? +hv : 12;
+    var mm = hourKnown ? (+$("selMin").value || 0) : 0;
+    var name = ($("nameInput").value || "").trim();
 
-    var res = S.computeSaju(sy, sm, sd, hh, 0, { tzHours: 9, hourKnown: hourKnown, gender: state.gender });
+    var res = S.computeSaju(sy, sm, sd, hh, mm, { tzHours: 9, hourKnown: hourKnown, gender: state.gender });
     var reading = DK.buildReading(res);
 
-    $("greeting").textContent = DK.PERSONA.greeting;
+    $("greeting").textContent = (name ? name + "아, " : "") + DK.PERSONA.greeting;
     $("palja").textContent = reading.palja;
     var fs = $("freeSections"); fs.innerHTML = "";
     reading.sections.forEach(function (sec, i) {
@@ -131,17 +141,19 @@
     $("priceNow").textContent = DK.CONFIG.PRICE_NOW + "원";
 
     // 공유 링크
-    $("shareUrl").value = buildShareUrl(y, m, d, isLeap, hourKnown, hv);
+    $("shareUrl").value = buildShareUrl(y, m, d, isLeap, hourKnown, hv, mm, name);
 
     $("result").classList.remove("hidden");
     $("result").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function buildShareUrl(y, m, d, isLeap, hourKnown, hv) {
+  function buildShareUrl(y, m, d, isLeap, hourKnown, hv, mm, name) {
     var p = new URLSearchParams();
     p.set("y", y); p.set("m", m); p.set("d", d);
     p.set("g", state.gender); p.set("love", state.love);
     p.set("h", hourKnown ? hv : "x");
+    if (hourKnown && mm) p.set("mi", mm);
+    if (name) p.set("n", name);
     if (state.cal === "lunar") { p.set("cal", "l"); if (isLeap) p.set("leap", "1"); }
     return location.origin + location.pathname + "?" + p.toString();
   }
@@ -182,8 +194,11 @@
     if (q.get("g")) setSeg("gender", q.get("g"));
     if (q.get("love")) setSeg("love", q.get("love"));
     onCalChange();
+    if (q.get("n")) $("nameInput").value = q.get("n");
     $("selY").value = q.get("y"); $("selM").value = q.get("m"); updateDays(); $("selD").value = q.get("d");
     $("selH").value = q.get("h") || "x";
+    if (q.get("mi")) $("selMin").value = q.get("mi");
+    onHourChange();
     $("introModal").classList.add("hidden"); // 공유로 들어오면 팝업 생략
     run();
   }
@@ -195,6 +210,7 @@
   fillSelects();
   $("selY").addEventListener("change", updateDays);
   $("selM").addEventListener("change", updateDays);
+  $("selH").addEventListener("change", onHourChange);
   $("goBtn").addEventListener("click", run);
   $("payBtn").addEventListener("click", goPay);
   $("kakaoBtn").addEventListener("click", kakaoShare);

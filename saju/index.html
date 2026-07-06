@@ -150,6 +150,11 @@
     <!-- 입력 폼 -->
     <section class="card" id="formCard">
       <div class="field">
+        <label for="nameInput">이름 <small>(또는 별칭)</small></label>
+        <input type="text" id="nameInput" maxlength="12" placeholder="예: 홍길동"
+          style="width:100%;padding:12px;font-size:1rem;color:var(--text);background:#100f16;border:1px solid var(--line);border-radius:10px;">
+      </div>
+      <div class="field">
         <label>성별</label>
         <div class="seg" id="segGender" data-name="gender">
           <button type="button" data-v="m" class="on">남</button>
@@ -183,7 +188,10 @@
       </div>
       <div class="field">
         <label>태어난 시간</label>
-        <select id="selH" aria-label="태어난 시간"></select>
+        <div class="ymd" style="grid-template-columns:1fr 1fr;">
+          <select id="selH" aria-label="태어난 시"></select>
+          <select id="selMin" aria-label="태어난 분"></select>
+        </div>
       </div>
       <p class="err" id="err" role="alert"></p>
       <button class="btn-go" id="goBtn" type="button">사주 풀이 시작</button>
@@ -246,8 +254,8 @@
 
   <script src="saju.js?v=2"></script>
   <script src="saju-lunar.js?v=1"></script>
-  <script src="saju-dokkaebi.js?v=3"></script>
-  <script src="saju-ui.js?v=6"></script>
+  <script src="saju-dokkaebi.js?v=4"></script>
+  <script src="saju-ui.js?v=7"></script>
   <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
 </body>
 </html>
