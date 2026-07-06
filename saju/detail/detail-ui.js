@@ -110,7 +110,8 @@
       if (b.love) return;
       if (b.daeun) { if (b.sub) h += '<p class="bsub">' + esc(b.sub) + "</p>"; h += daeunTable(res); return; }
       h += '<div class="blk">' + (b.sub ? '<p class="bsub">' + esc(b.sub) + "</p>" : "") +
-        (b.text ? "<p>" + esc(b.text) + "</p>" : "") + "</div>";
+        (b.text ? "<p>" + esc(b.text) + "</p>" : "") +
+        (b.link ? '<p style="margin-top:8px;"><a href="' + b.link + '" style="color:var(--gold);font-weight:700;">→ 무료 궁합 보러 가기</a></p>' : "") + "</div>";
     });
     if (sec.tale) h += '<div class="seal"><div class="frame"><div class="hj">生靈</div><div class="cap">이 놈의 정체와 유래</div></div></div>' +
       '<div class="tale">' + SAENGRYEONG_TALE + "</div>";
