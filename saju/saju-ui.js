@@ -105,7 +105,14 @@
 
     $("greeting").textContent = DK.PERSONA.greeting;
     $("palja").textContent = reading.palja;
-    $("portrait").textContent = reading.portrait;
+    var fs = $("freeSections"); fs.innerHTML = "";
+    reading.sections.forEach(function (sec, i) {
+      var h = document.createElement("h2");
+      h.style.cssText = "font-size:1.12rem; margin:" + (i === 0 ? "4px" : "22px") + " 0 8px;";
+      h.textContent = sec.title;
+      var p = document.createElement("p"); p.className = "speak"; p.textContent = sec.body;
+      fs.appendChild(h); fs.appendChild(p);
+    });
     $("hookLead").textContent = DK.PERSONA.hookLead;
     $("hook").textContent = reading.hook;
     $("preview").textContent = reading.preview;
