@@ -21,9 +21,11 @@
     if (cal === "lunar") { var s = L.lunarToSolar(y, m, d, leap); if (s) { sy = s.y; sm = s.m; sd = s.d; } }
     var hv = q.get("h"), hourKnown = hv && hv !== "x";
     var hh = hourKnown ? +hv : 12;
+    var mm = hourKnown ? (+q.get("mi") || 0) : 0;
     return {
       y: y, m: m, d: d, sy: sy, sm: sm, sd: sd, cal: cal, leap: leap,
-      gender: q.get("g") || "m", love: q.get("love") || "", hourKnown: hourKnown, hh: hh
+      gender: q.get("g") || "m", love: q.get("love") || "", name: (q.get("n") || "").trim(),
+      hourKnown: hourKnown, hh: hh, mm: mm
     };
   }
 
@@ -123,15 +125,17 @@
   function run() {
     var inp = parse();
     if (!inp) { $("content").innerHTML = '<p class="loading">먼저 <a href="/saju/" style="color:#d8b25c">도깨비 사주</a>에서 생년월일을 넣어라.</p>'; return; }
-    var res = S.computeSaju(inp.sy, inp.sm, inp.sd, inp.hh, 0, { tzHours: 9, hourKnown: inp.hourKnown, gender: inp.gender });
+    var res = S.computeSaju(inp.sy, inp.sm, inp.sd, inp.hh, inp.mm, { tzHours: 9, hourKnown: inp.hourKnown, gender: inp.gender });
     var yong = DT.yongsin(res);
     var thisYear = new Date().getFullYear();
-    var ctx = { gender: inp.gender, love: inp.love, birthYear: inp.y, age: thisYear - inp.y + 1, thisYear: thisYear, yongsin: yong };
+    var ctx = { gender: inp.gender, love: inp.love, name: inp.name, birthYear: inp.y, age: thisYear - inp.y + 1, thisYear: thisYear, yongsin: yong };
 
     // echo
     var calTxt = inp.cal === "lunar" ? "음력" + (inp.leap ? " 윤달" : "") : "양력";
-    $("echo").innerHTML = '<span class="b">' + inp.y + "년 " + inp.m + "월 " + inp.d + "일</span> · " + calTxt +
-      " · " + (inp.gender === "m" ? "남성" : "여성") + (inp.hourKnown ? " · " + inp.hh + "시" : " · 시간미상");
+    var timeTxt = inp.hourKnown ? (" · " + inp.hh + "시" + (inp.mm ? " " + inp.mm + "분" : "")) : " · 시간미상";
+    $("echo").innerHTML = (inp.name ? '<span class="b">' + esc(inp.name) + "님</span> · " : "") +
+      '<span class="b">' + inp.y + "년 " + inp.m + "월 " + inp.d + "일</span> · " + calTxt +
+      " · " + (inp.gender === "m" ? "남성" : "여성") + timeTxt;
     paljaStrip(res);
 
     var sections = DC.build(res, ctx);
