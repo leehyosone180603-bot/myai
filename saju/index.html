@@ -99,6 +99,21 @@
     .pay-note { background: #fff8f0; border: 1px solid #ffe3c2; border-radius: 10px; padding: 12px 14px; font-size: .9rem; margin-top: 12px; color: #8a5a1a; }
     .muted-small { color: var(--muted); font-size: .85rem; }
     .badge-soon { background: var(--muted); color:#fff; border-radius: 999px; padding: 3px 10px; font-size: .75rem; font-weight: 700; }
+
+    /* 결과 탭 */
+    .result-tabs { display: flex; gap: 8px; max-width: 640px; margin: 0 auto 4px; padding: 0 16px; }
+    .rtab {
+      flex: 1; padding: 11px 10px; font-size: .95rem; font-weight: 700; cursor: pointer;
+      color: var(--muted); background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    }
+    .rtab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    /* 5문답 */
+    .qa-item { padding: 14px 0; border-bottom: 1px dashed var(--border); }
+    .qa-item:last-child { border-bottom: none; }
+    .qa-q { font-weight: 700; margin: 0 0 6px; display: flex; gap: 8px; align-items: baseline; }
+    .qa-q .qa-ic { font-size: 1.05rem; }
+    .qa-a { margin: 0; color: #33384a; }
   </style>
 </head>
 <body>
@@ -117,8 +132,20 @@
   <main class="container">
     <section class="card controls">
       <div class="control-row">
-        <label for="birthDate">생년월일 <small>(양력)</small></label>
+        <label>달력 종류</label>
+        <div class="segment" role="radiogroup" aria-label="달력 종류">
+          <label><input type="radio" name="calType" value="solar" checked><span>양력</span></label>
+          <label><input type="radio" name="calType" value="lunar"><span>음력</span></label>
+        </div>
+        <label class="checkbox-row" id="leapRow" style="margin-top:8px; display:none;">
+          <input type="checkbox" id="isLeap"> 윤달 <small>(해당 월이 윤달인 경우)</small>
+        </label>
+      </div>
+
+      <div class="control-row">
+        <label for="birthDate">생년월일 <small id="dateHint">(양력)</small></label>
         <input type="date" id="birthDate" min="1900-01-01" max="2100-12-31">
+        <p class="muted-small" id="lunarRange" style="margin:6px 0 0; display:none;">※ 음력은 1900~2050년만 지원합니다.</p>
       </div>
 
       <div class="control-row">
@@ -147,6 +174,28 @@
       <button id="calcBtn" class="btn-primary" type="button">사주 보기</button>
     </section>
 
+    <!-- 결과 탭 -->
+    <div class="result-tabs" id="resultTabs" hidden>
+      <button type="button" class="rtab active" data-tab="detail">🔮 상세 보기</button>
+      <button type="button" class="rtab" data-tab="text">📋 텍스트로 공유</button>
+    </div>
+
+    <!-- ▶ 텍스트 공유 탭 -->
+    <div id="tabText" hidden>
+      <section class="card">
+        <h2 style="margin:0 0 6px; font-size:1.2rem;">📋 내 사주 텍스트</h2>
+        <p class="muted-small" style="margin:0 0 10px;">아래 내용을 복사해 카카오톡·메시지로 전달하세요. 표와 자세한 풀이는 링크로 함께 볼 수 있어요.</p>
+        <textarea id="summaryText" readonly rows="18"
+          style="width:100%; font-size:.92rem; line-height:1.7; border:1px solid var(--border); border-radius:10px; padding:14px; color:var(--text); background:#fff; resize:vertical;"></textarea>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <button class="btn-primary" id="copyTextBtn" type="button" style="flex:1;">텍스트 전체 복사</button>
+          <button class="btn-ghost" id="copyLinkBtn2" type="button">링크만 복사</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- ▶ 상세 보기 탭 -->
+    <div id="tabDetail">
     <section class="card results" id="resultsCard" hidden>
       <!-- 사주팔자 -->
       <h2 style="margin:0 0 4px; font-size:1.2rem;">사주팔자 (四柱八字)</h2>
@@ -163,6 +212,12 @@
       </div>
       <div class="chips" id="dmChips"></div>
       <p id="dmDesc" style="margin:12px 0 0;"></p>
+    </section>
+
+    <section class="card" id="qaCard" hidden>
+      <h2 style="margin:0 0 4px; font-size:1.2rem;">💬 내 사주로 보는 5가지 질문</h2>
+      <p class="muted-small" style="margin:0 0 6px;">당신의 사주(일간·오행)에 대입한 답변입니다.</p>
+      <div id="qaList"></div>
     </section>
 
     <section class="card" id="ohengCard" hidden>
@@ -196,6 +251,7 @@
         오픈 알림을 원하시면 즐겨찾기 해두세요.
       </div>
     </section>
+    </div><!-- /tabDetail -->
 
     <section class="card info">
       <h2>이용 안내 · 계산 방식</h2>
@@ -214,8 +270,9 @@
   </footer>
 
   <script src="saju.js?v=1"></script>
-  <script src="saju-data.js?v=1"></script>
-  <script src="saju-ui.js?v=1"></script>
+  <script src="saju-lunar.js?v=1"></script>
+  <script src="saju-data.js?v=2"></script>
+  <script src="saju-ui.js?v=2"></script>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
     try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}

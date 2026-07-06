@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>무료 궁합 계산기 - 두 사람 사주로 보는 오행 궁합 | 한국인계산기</title>
+  <meta name="description" content="두 사람의 생년월일시로 사주 궁합을 무료로 봅니다. 일간 성향 궁합, 일지 부부궁, 오행 보완까지 분석하고 결과를 링크로 공유하세요.">
+  <meta name="keywords" content="궁합, 무료궁합, 궁합계산기, 사주궁합, 커플궁합, 오행궁합, 띠궁합, 결혼궁합">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="무료 궁합 계산기 - 두 사람 사주로 보는 궁합">
+  <meta property="og:description" content="생년월일시로 사주 궁합을 무료로 분석. 결과는 링크로 공유하세요.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://calcbox.kr/gunghap/">
+  <meta property="og:site_name" content="한국인계산기">
+  <link rel="canonical" href="https://calcbox.kr/gunghap/">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "무료 궁합 계산기",
+    "url": "https://calcbox.kr/gunghap/",
+    "description": "두 사람의 사주로 일간 궁합, 일지 부부궁, 오행 보완을 분석하는 무료 궁합 도구.",
+    "applicationCategory": "LifestyleApplication",
+    "operatingSystem": "Any",
+    "inLanguage": "ko",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" }
+  }
+  </script>
+
+  <!-- Google AdSense 게시자 ID: ca-pub-7143828779500885 -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885"
+     crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" href="../style.css?v=4">
+  <style>
+    input[type="date"], input[type="time"] {
+      width: 100%; padding: 11px 12px; font-size: 1rem;
+      border: 1px solid var(--border); border-radius: 9px; background: #fff; color: var(--text);
+    }
+    input[type="date"]:focus, input[type="time"]:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,91,219,.15); }
+    .person-title { display:flex; align-items:center; gap:8px; margin:0 0 12px; font-size:1.1rem; }
+    .person-badge { background: var(--primary); color:#fff; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:800; font-size:.9rem; }
+    .person-badge.b { background:#e64980; }
+    .muted-small { color: var(--muted); font-size: .85rem; }
+
+    .score-hero { text-align:center; padding:8px 0 4px; }
+    .score-num { font-size: 3.4rem; font-weight: 900; color: var(--primary); line-height:1; }
+    .score-num small { font-size:1.2rem; color:var(--muted); font-weight:700; }
+    .score-tier { font-size:1.2rem; font-weight:800; margin:8px 0 2px; }
+    .pair-line { color:var(--muted); font-size:.92rem; }
+
+    .pair-grids { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:14px 0 4px; }
+    .pg-box { border:1px solid var(--border); border-radius:12px; padding:12px 8px; background:#fff; }
+    .pg-name { text-align:center; font-size:.82rem; color:var(--muted); font-weight:600; margin-bottom:8px; }
+    .mini-saju { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; }
+    .mini-col { text-align:center; }
+    .mini-l { font-size:.68rem; color:var(--muted); margin-bottom:3px; }
+    .mini-c { font-size:1.25rem; font-weight:800; line-height:1.25; }
+
+    .axis { padding:14px 0; border-bottom:1px dashed var(--border); }
+    .axis:last-child { border-bottom:none; }
+    .axis-head { display:flex; align-items:center; gap:8px; margin:0 0 6px; }
+    .axis-ic { font-size:1.15rem; }
+    .axis-title { font-weight:700; }
+    .axis-tag { margin-left:auto; background:#f0f4ff; border:1px solid #d6e0ff; color:var(--primary); border-radius:999px; padding:3px 11px; font-size:.82rem; font-weight:700; }
+    .axis-body { margin:0; color:#33384a; }
+    .share-box { display:flex; gap:8px; margin-top:6px; }
+    .share-box input { flex:1; font-size:.85rem; color:var(--muted); }
+  </style>
+</head>
+<body>
+  <nav class="back-nav"><a href="/">← 한국인계산기 전체 계산기</a></nav>
+
+  <header class="site-header">
+    <h1>💞 무료 궁합 계산기</h1>
+    <p class="subtitle">두 사람의 사주로 보는 오행 궁합</p>
+  </header>
+
+  <div class="ad-container" aria-label="광고">
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7143828779500885"
+         data-ad-slot="0000000000" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+
+  <main class="container">
+    <!-- A -->
+    <section class="card">
+      <p class="person-title"><span class="person-badge">A</span> 첫 번째 사람</p>
+      <div class="control-row">
+        <label for="nameA">이름/별칭 <small>(선택)</small></label>
+        <input type="text" id="nameA" placeholder="예: 나">
+      </div>
+      <div class="control-row">
+        <label>달력 종류</label>
+        <div class="segment" role="radiogroup" aria-label="A 달력 종류">
+          <label><input type="radio" name="calA" value="solar" checked><span>양력</span></label>
+          <label><input type="radio" name="calA" value="lunar"><span>음력</span></label>
+        </div>
+        <label class="checkbox-row" id="leapRowA" style="margin-top:8px; display:none;">
+          <input type="checkbox" id="leapA"> 윤달
+        </label>
+      </div>
+      <div class="control-row">
+        <label for="dateA">생년월일 <small id="hintA">(양력)</small></label>
+        <input type="date" id="dateA" min="1900-01-01" max="2100-12-31">
+      </div>
+      <div class="control-row">
+        <label for="timeA">태어난 시각</label>
+        <input type="time" id="timeA" value="12:00">
+        <label class="checkbox-row" style="margin-top:8px;"><input type="checkbox" id="timeUnknownA"> 시간을 모름</label>
+      </div>
+    </section>
+
+    <!-- B -->
+    <section class="card">
+      <p class="person-title"><span class="person-badge b">B</span> 두 번째 사람</p>
+      <div class="control-row">
+        <label for="nameB">이름/별칭 <small>(선택)</small></label>
+        <input type="text" id="nameB" placeholder="예: 상대">
+      </div>
+      <div class="control-row">
+        <label>달력 종류</label>
+        <div class="segment" role="radiogroup" aria-label="B 달력 종류">
+          <label><input type="radio" name="calB" value="solar" checked><span>양력</span></label>
+          <label><input type="radio" name="calB" value="lunar"><span>음력</span></label>
+        </div>
+        <label class="checkbox-row" id="leapRowB" style="margin-top:8px; display:none;">
+          <input type="checkbox" id="leapB"> 윤달
+        </label>
+      </div>
+      <div class="control-row">
+        <label for="dateB">생년월일 <small id="hintB">(양력)</small></label>
+        <input type="date" id="dateB" min="1900-01-01" max="2100-12-31">
+      </div>
+      <div class="control-row">
+        <label for="timeB">태어난 시각</label>
+        <input type="time" id="timeB" value="12:00">
+        <label class="checkbox-row" style="margin-top:8px;"><input type="checkbox" id="timeUnknownB"> 시간을 모름</label>
+      </div>
+    </section>
+
+    <section class="card">
+      <p class="error" id="errorMsg" role="alert" style="margin-top:0;"></p>
+      <button id="calcBtn" class="btn-primary" type="button">궁합 보기</button>
+    </section>
+
+    <div id="resultArea" hidden>
+      <section class="card">
+        <div class="score-hero">
+          <div class="score-num"><span id="scoreNum">0</span><small> 점</small></div>
+          <p class="score-tier" id="scoreTier"></p>
+          <p class="pair-line" id="pairLine"></p>
+        </div>
+        <div class="pair-grids">
+          <div class="pg-box"><div class="pg-name" id="nameA2">A</div><div class="mini-saju" id="gridA"></div></div>
+          <div class="pg-box"><div class="pg-name" id="nameB2">B</div><div class="mini-saju" id="gridB"></div></div>
+        </div>
+        <p class="muted-small" style="text-align:center;">위=천간 · 아래=지지 · 색은 오행</p>
+      </section>
+
+      <section class="card">
+        <h2 style="margin:0 0 4px; font-size:1.2rem;">궁합 풀이</h2>
+        <div class="axis">
+          <div class="axis-head"><span class="axis-ic">🧭</span><span class="axis-title">일간 성향 궁합</span><span class="axis-tag" id="relType"></span></div>
+          <p class="axis-body" id="relComment"></p>
+        </div>
+        <div class="axis">
+          <div class="axis-head"><span class="axis-ic">💑</span><span class="axis-title">일지 부부궁</span><span class="axis-tag" id="jiType"></span></div>
+          <p class="axis-body" id="jiComment"></p>
+        </div>
+        <div class="axis">
+          <div class="axis-head"><span class="axis-ic">⚖️</span><span class="axis-title">오행 보완</span></div>
+          <p class="axis-body" id="compComment"></p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3 style="margin:0 0 8px; font-size:1.05rem;">🔗 궁합 결과 공유하기</h3>
+        <p class="muted-small" style="margin:0 0 8px;">이 링크를 보내면 같은 궁합 결과를 볼 수 있어요.</p>
+        <div class="share-box">
+          <input type="text" id="shareUrl" readonly>
+          <button class="btn-ghost" id="copyBtn" type="button">복사</button>
+        </div>
+        <p class="muted-small" style="margin:12px 0 0;">더 자세한 사주 분석은 <a href="/saju/">무료 사주 계산기</a>에서 확인하세요.</p>
+      </section>
+    </div>
+
+    <section class="card info">
+      <h2>이용 안내</h2>
+      <ul>
+        <li>두 사람의 <strong>일간(성향)·일지(부부궁)·오행 균형</strong>을 바탕으로 궁합을 분석합니다.</li>
+        <li><strong>상생·비화</strong>는 편안하고 북돋는 관계, <strong>상극·충</strong>은 자극과 긴장이 있는 관계로 봅니다.</li>
+        <li>시간을 모르면 시주를 빼고 계산하며, 음력(1900~2050)·윤달 입력을 지원합니다.</li>
+        <li>본 결과는 <strong>재미와 참고용</strong>이며, 두 사람의 인연은 사주보다 서로의 노력이 더 중요합니다. 🙂</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>© <span id="year"></span> 한국인계산기 · 무료 궁합 계산기</p>
+  </footer>
+
+  <script src="../saju/saju.js?v=1"></script>
+  <script src="../saju/saju-lunar.js?v=1"></script>
+  <script src="../saju/saju-data.js?v=2"></script>
+  <script src="gunghap.js?v=1"></script>
+  <script src="gunghap-ui.js?v=1"></script>
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+  </script>
+</body>
+</html>
