@@ -14,13 +14,14 @@
     trueSolar: $("trueSolar"), err: $("errorMsg"), calc: $("calcBtn"),
     resultTabs: $("resultTabs"), tabDetail: $("tabDetail"), tabText: $("tabText"),
     results: $("resultsCard"), dmCard: $("dmCard"), qaCard: $("qaCard"), qaList: $("qaList"),
+    daeunCard: $("daeunCard"), daeunHead: $("daeunHead"), daeunList: $("daeunList"),
     ohengCard: $("ohengCard"), shareCard: $("shareCard"), lockedCard: $("lockedCard"),
     grid: $("sajuGrid"), birthEcho: $("birthEcho"),
     dmChar: $("dmChar"), dmEl: $("dmEl"), dmLine: $("dmLine"), dmChips: $("dmChips"), dmDesc: $("dmDesc"),
     ohengBars: $("ohengBars"), ohengComment: $("ohengComment"),
     yyBar: $("yyBar"), yyComment: $("yyComment"),
     shareUrl: $("shareUrl"), copyBtn: $("copyBtn"),
-    lockedGrid: $("lockedGrid"), daeunDir: $("daeunDir"),
+    lockedGrid: $("lockedGrid"),
     summaryText: $("summaryText"), copyTextBtn: $("copyTextBtn"), copyLinkBtn2: $("copyLinkBtn2")
   };
 
@@ -118,11 +119,31 @@
     els.yyComment.textContent = D.yinYangComment(yang, yin);
   }
 
+  function renderDaeun(res) {
+    var dd = D.daeunDecades(res);
+    if (!dd) { els.daeunCard.hidden = true; return null; }
+    els.daeunHead.innerHTML = "대운 방향 <strong>" + (dd.forward ? "순행(順行)" : "역행(逆行)") +
+      "</strong> · 대운수 <strong>" + dd.num + "세</strong> 시작 · <span class=\"strength-pill\">" + dd.strengthLabel + "</span><br>" +
+      "<span style=\"font-size:.85rem;\">" + dd.strengthGloss + "</span>";
+    els.daeunList.innerHTML = "";
+    dd.rows.forEach(function (r) {
+      var div = document.createElement("div"); div.className = "daeun-row";
+      div.innerHTML =
+        '<div class="daeun-dec">' + r.decade + "</div>" +
+        '<div class="daeun-body">' +
+          '<div class="daeun-top">' +
+            '<span class="daeun-gan">' + r.ganKo + "(" + r.ganHan + ") · " + r.tenGodLabel + "</span>" +
+            '<span class="luck-badge ' + r.luck + '">' + r.luckLabel + "</span>" +
+            '<span class="daeun-age">' + r.ageRange + "</span>" +
+          "</div>" +
+          '<p class="daeun-text">' + r.text + "</p>" +
+        "</div>";
+      els.daeunList.appendChild(div);
+    });
+    return dd;
+  }
+
   function renderLocked(res, gender) {
-    var yang = (res.pillars.year.stem % 2 === 0);
-    var forward = (yang && gender === "m") || (!yang && gender === "f");
-    els.daeunDir.textContent = "당신의 대운은 " + (forward ? "순행(順行)" : "역행(逆行)") +
-      " 합니다. 구체적인 대운 간지·대운수와 시기별 풀이는 상세 풀이에서 확인할 수 있어요.";
     els.lockedGrid.innerHTML = "";
     D.LOCKED_ITEMS.forEach(function (it) {
       var card = document.createElement("div"); card.className = "locked-card";
@@ -165,6 +186,14 @@
       lines.push(q.icon + " " + q.q);
       lines.push("→ " + answers[i]);
     });
+    var dd = D.daeunDecades(res);
+    if (dd) {
+      lines.push("");
+      lines.push("[연령대별 인생 흐름 · 대운] (" + (dd.forward ? "순행" : "역행") + " · " + dd.num + "세 시작 · " + dd.strengthLabel + ")");
+      dd.rows.forEach(function (r) {
+        lines.push("· " + r.decade + " (" + r.ganKo + "·" + r.tenGodLabel.split(" ")[0] + ") [" + r.luckLabel + "] — " + r.text);
+      });
+    }
     lines.push("");
     lines.push("▶ 사주팔자 표와 자세한 풀이는 여기서 확인하세요:");
     lines.push(shareUrl);
@@ -189,6 +218,7 @@
       (input.gender === "m" ? "남성" : "여성") + (input.trueSolar ? " · 진태양시" : "");
     renderDayMaster(res);
     var answers = renderQA(res);
+    var dd = renderDaeun(res);
     renderOheng(res);
     renderLocked(res, input.gender);
 
@@ -197,6 +227,7 @@
     els.summaryText.value = buildSummary(res, input, answers, shareUrl);
 
     els.resultTabs.hidden = false;
+    els.daeunCard.hidden = !dd;
     [els.results, els.dmCard, els.qaCard, els.ohengCard, els.shareCard, els.lockedCard]
       .forEach(function (c) { c.hidden = false; });
   }
@@ -233,11 +264,12 @@
     var cy = sy, cm = sm, cd = sd, ch = hh, cmin = mm;
     if (useTrueSolar) { var a = applyTrueSolar(sy, sm, sd, hh, mm); cy = a.y; cm = a.m; cd = a.d; ch = a.h; cmin = a.min; }
 
-    var res = S.computeSaju(cy, cm, cd, ch, cmin, { tzHours: 9, hourKnown: hourKnown });
+    var gender = getRadio("gender", "m");
+    var res = S.computeSaju(cy, cm, cd, ch, cmin, { tzHours: 9, hourKnown: hourKnown, gender: gender });
 
     show(res, {
       dateStr: dateStr, dateLabel: dateLabel, timeStr: timeStr, hourKnown: hourKnown,
-      gender: getRadio("gender", "m"), trueSolar: useTrueSolar, calType: calType, isLeap: isLeap
+      gender: gender, trueSolar: useTrueSolar, calType: calType, isLeap: isLeap
     });
   }
 

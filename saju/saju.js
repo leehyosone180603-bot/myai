@@ -134,16 +134,52 @@
       (p.branch % 2 ? yin++ : yang++);
     });
 
+    // 대운(大運) — 성별이 주어지면 계산
+    var daeun = null;
+    if (opts.gender === "m" || opts.gender === "f") {
+      daeun = computeDaeun(jdBirth, lambda, yearStem, monthStem, monthBranch, opts.gender);
+    }
+
     return {
       pillars: pillars,
       hourKnown: hourKnown,
       dayMaster: dayStem,          // 일간
       oheng: oheng,                // [목,화,토,금,수]
       yinYang: { yin: yin, yang: yang },
+      daeun: daeun,
       solarLongitude: lambda,
       ipchunJD: ipchun,
       effectiveYear: effYear
     };
+  }
+
+  // 대운: 방향(순행/역행) + 대운수(시작 나이) + 10년 단위 간지 목록
+  function computeDaeun(jdBirth, lambda, yearStem, monthStem, monthBranch, gender) {
+    var yangYear = (yearStem % 2 === 0);
+    var forward = (yangYear && gender === "m") || (!yangYear && gender === "f"); // 양남음녀 순행
+
+    // 12절기(節)는 태양황경 15° + 30°k 지점. 순행=다음 절, 역행=이전 절까지 거리.
+    var best = null, bestDeg = 1e9;
+    for (var k = 0; k < 12; k++) {
+      var b = 15 + 30 * k;
+      var d = forward ? (((b - lambda) % 360) + 360) % 360 : (((lambda - b) % 360) + 360) % 360;
+      if (d > 1e-9 && d < bestDeg) { bestDeg = d; best = b; }
+    }
+    var guess = jdBirth + (forward ? 1 : -1) * (bestDeg / 0.9856474);
+    var jieJD = solarTermJD(best, guess);
+    var days = Math.abs(jieJD - jdBirth);
+    var num = Math.max(1, Math.round(days / 3)); // 3일=1년
+
+    var dir = forward ? 1 : -1;
+    var list = [];
+    for (var i = 1; i <= 10; i++) { // 대운 10개 → 10대~90대 전 구간 커버
+      list.push({
+        startAge: num + (i - 1) * 10,
+        stem: ((monthStem + dir * i) % 10 + 10) % 10,
+        branch: ((monthBranch + dir * i) % 12 + 12) % 12
+      });
+    }
+    return { forward: forward, num: num, list: list };
   }
 
   /* ---- 표기 헬퍼 ---- */
