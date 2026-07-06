@@ -126,6 +126,11 @@
 
     footer { text-align: center; color: var(--muted); font-size: .82rem; padding: 20px 18px 40px; }
     footer a { color: var(--muted); }
+    .biz-links { margin: 0 0 10px; }
+    .biz-links a { color: var(--gold-d); text-decoration: none; }
+    .biz-links a:hover { text-decoration: underline; }
+    .biz-info { color: #6f6a5f; font-size: .78rem; line-height: 1.7; margin: 0 0 12px; }
+    .biz-info p { margin: 2px 0; }
   </style>
 </head>
 <body>
@@ -249,7 +254,15 @@
   </main>
 
   <footer>
-    <p>© <span id="year"></span> 한국인계산기 · 도깨비 사주</p>
+    <p class="biz-links">
+      <a href="/saju/terms/">이용약관</a> · <a href="/saju/privacy/">개인정보처리방침</a> · <a href="/saju/refund/">취소·환불 정책</a>
+    </p>
+    <div class="biz-info">
+      <p>상호: {{상호}} &nbsp;|&nbsp; 대표자: {{대표자명}} &nbsp;|&nbsp; 사업자등록번호: {{사업자등록번호}}</p>
+      <p>통신판매업신고번호: {{통신판매업신고번호}} &nbsp;|&nbsp; 주소: {{주소}}</p>
+      <p>고객센터(유선): {{전화번호}} &nbsp;|&nbsp; 이메일: {{이메일}}</p>
+    </div>
+    <p>© <span id="year"></span> {{상호}} · 도깨비 사주 · 재미·참고용</p>
   </footer>
 
   <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
