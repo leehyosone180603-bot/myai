@@ -181,48 +181,36 @@
     { title: "내 인생의 황금기 — 삶이 빛을 보는 시기", sub: "고생이 끝나는 때가 온다. 이때를 준비하느냐 마느냐가 인생을 가른다." }
   ];
 
-  // 도깨비 얼굴 SVG (인라인) — 더 실감나는 버전
+  // 전통 도깨비(귀면) 문양 — 골드 대칭 SVG (인라인)
   var AVATAR_SVG =
-    '<svg viewBox="0 0 120 120" width="118" height="118" role="img" aria-label="도깨비">' +
+    '<svg viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="도깨비 문양">' +
     '<defs>' +
-    '<radialGradient id="dkf" cx="48%" cy="36%" r="70%"><stop offset="0%" stop-color="#4fc7a2"/><stop offset="62%" stop-color="#2e8f74"/><stop offset="100%" stop-color="#155645"/></radialGradient>' +
-    '<linearGradient id="dkhorn" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#a8792f"/><stop offset="55%" stop-color="#e8c07a"/><stop offset="100%" stop-color="#fff2cf"/></linearGradient>' +
-    '<radialGradient id="dkeye" cx="50%" cy="40%" r="60%"><stop offset="0%" stop-color="#ffe9a8"/><stop offset="100%" stop-color="#f2b705"/></radialGradient>' +
+    '<g id="ghalf" fill="#d8b25c">' +
+    '<path d="M63 27 Q66 8 83 8 Q93 9 89 21 Q81 12 72 21 Q67 22 63 27 Z"/>' +   // 뿔/불꽃
+    '<path d="M59 46 Q73 36 88 45 Q95 49 89 60 Q84 50 73 54 Q65 55 61 63 Q58 55 59 46 Z"/>' + // 눈썹 소용돌이
+    '<circle cx="78" cy="64" r="11.5"/>' +                                       // 눈(금 원반)
+    '<path d="M93 63 Q108 62 104 83 Q100 71 91 74 Q97 69 93 63 Z"/>' +           // 볼 스크롤 위
+    '<path d="M83 90 Q97 96 88 108 Q88 97 78 98 Q86 95 83 90 Z"/>' +            // 볼 스크롤 아래
+    '<path d="M73 87 L77 100 L81 87 Z"/>' +                                      // 입가 송곳니
+    '</g>' +
+    '<g id="ghalfd" fill="#0b0a0e">' +
+    '<circle cx="79" cy="65" r="4.8"/>' +                                        // 눈동자
+    '</g>' +
     '</defs>' +
-    // back glow ring
-    '<circle cx="60" cy="60" r="56" fill="#0b0a0e"/>' +
-    // wild hair/mane
-    '<path d="M60 12 Q40 6 30 20 Q44 14 52 22 Q46 10 60 12" fill="#123c31"/>' +
-    '<path d="M60 12 Q80 6 90 20 Q76 14 68 22 Q74 10 60 12" fill="#123c31"/>' +
-    '<path d="M22 44 Q10 40 8 54 Q18 46 26 52 Z" fill="#123c31"/>' +
-    '<path d="M98 44 Q110 40 112 54 Q102 46 94 52 Z" fill="#123c31"/>' +
-    // horns (ridged)
-    '<path d="M28 30 Q16 4 40 10 Q30 20 40 34 Z" fill="url(#dkhorn)" stroke="#7a5216" stroke-width="1"/>' +
-    '<path d="M33 14 L37 18 M31 20 L36 23" stroke="#7a5216" stroke-width="1.2" fill="none"/>' +
-    '<path d="M92 30 Q104 4 80 10 Q90 20 80 34 Z" fill="url(#dkhorn)" stroke="#7a5216" stroke-width="1"/>' +
-    '<path d="M87 14 L83 18 M89 20 L84 23" stroke="#7a5216" stroke-width="1.2" fill="none"/>' +
-    // face
-    '<path d="M60 22 C86 22 96 44 96 66 C96 90 80 104 60 104 C40 104 24 90 24 66 C24 44 34 22 60 22 Z" fill="url(#dkf)"/>' +
-    // cheek shading + scar
-    '<path d="M34 66 Q30 78 38 88" fill="none" stroke="#12503f" stroke-width="2" opacity=".5"/>' +
-    '<path d="M86 66 Q90 78 82 88" fill="none" stroke="#12503f" stroke-width="2" opacity=".5"/>' +
-    '<path d="M78 34 L84 46" stroke="#12503f" stroke-width="2" opacity=".6"/>' +
-    // angry brows
-    '<path d="M32 50 Q42 44 54 52 L52 57 Q42 51 34 56 Z" fill="#0c2a22"/>' +
-    '<path d="M88 50 Q78 44 66 52 L68 57 Q78 51 86 56 Z" fill="#0c2a22"/>' +
-    // eyes (bulging, glowing)
-    '<ellipse cx="45" cy="63" rx="11" ry="10" fill="#0c2a22"/>' +
-    '<circle cx="45" cy="63" r="8" fill="url(#dkeye)"/><circle cx="46" cy="64" r="3.4" fill="#1a0f00"/><circle cx="43" cy="60" r="1.6" fill="#fff"/>' +
-    '<ellipse cx="75" cy="63" rx="11" ry="10" fill="#0c2a22"/>' +
-    '<circle cx="75" cy="63" r="8" fill="url(#dkeye)"/><circle cx="74" cy="64" r="3.4" fill="#1a0f00"/><circle cx="72" cy="60" r="1.6" fill="#fff"/>' +
-    // nose
-    '<path d="M60 66 Q54 80 60 84 Q66 80 60 66" fill="#1b6250"/>' +
-    '<ellipse cx="55" cy="82" rx="2.4" ry="1.8" fill="#0c2a22"/><ellipse cx="65" cy="82" rx="2.4" ry="1.8" fill="#0c2a22"/>' +
-    // grin (open, dark) + fangs
-    '<path d="M40 88 Q60 104 80 88 Q60 96 40 88 Z" fill="#0c1512"/>' +
-    '<path d="M40 88 Q60 100 80 88" fill="none" stroke="#0c2a22" stroke-width="2"/>' +
-    '<path d="M48 89 L52 98 L56 89 Z" fill="#fff"/><path d="M64 89 L68 98 L72 89 Z" fill="#fff"/>' +
-    '<path d="M50 95 L53 90 L56 95 Z" fill="#f2f2f2"/><path d="M64 95 L67 90 L70 95 Z" fill="#f2f2f2"/>' +
+    '<circle cx="60" cy="60" r="58" fill="#0b0a0e"/>' +
+    '<circle cx="60" cy="60" r="55" fill="none" stroke="#8a6d2a" stroke-width="1.6" opacity=".7"/>' +
+    '<circle cx="60" cy="60" r="50" fill="none" stroke="#8a6d2a" stroke-width="0.8" opacity=".4"/>' +
+    '<path d="M60 3 Q70 15 60 29 Q50 15 60 3 Z" fill="#d8b25c"/>' +              // 정수리 불꽃(여의주)
+    '<circle cx="60" cy="19" r="3.2" fill="#0b0a0e"/>' +
+    '<path d="M51 55 Q60 48 69 55 Q60 53 51 55 Z" fill="#d8b25c"/>' +           // 미간
+    '<path d="M60 57 Q48 80 60 89 Q72 80 60 57 Z" fill="#d8b25c"/>' +           // 코
+    '<ellipse cx="54" cy="85" rx="2.6" ry="1.8" fill="#0b0a0e"/><ellipse cx="66" cy="85" rx="2.6" ry="1.8" fill="#0b0a0e"/>' +
+    '<path d="M35 93 Q60 114 85 93 Q60 102 35 93 Z" fill="#0b0a0e"/>' +          // 입(어두운 안)
+    '<path d="M33 91 Q60 110 87 91" fill="none" stroke="#d8b25c" stroke-width="3.4"/>' +
+    '<path d="M41 95 Q60 106 79 95" fill="none" stroke="#d8b25c" stroke-width="1.6" opacity=".7"/>' +
+    '<path d="M54 92 L57 103 L60 92 Z" fill="#d8b25c"/><path d="M60 92 L63 103 L66 92 Z" fill="#d8b25c"/>' + // 송곳니
+    '<use href="#ghalf"/><use href="#ghalf" transform="matrix(-1 0 0 1 120 0)"/>' +
+    '<use href="#ghalfd"/><use href="#ghalfd" transform="matrix(-1 0 0 1 120 0)"/>' +
     '</svg>';
 
   // 오행 분포 → 직설 묘사(동적)
