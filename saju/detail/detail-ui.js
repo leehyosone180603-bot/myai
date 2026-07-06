@@ -108,7 +108,7 @@
       (sec.sealCap ? '<div class="cap">' + esc(sec.sealCap) + "</div>" : "") + "</div></div>";
     (sec.blocks || []).forEach(function (b) {
       if (b.love) return;
-      if (b.daeun) { h += daeunTable(res); return; }
+      if (b.daeun) { if (b.sub) h += '<p class="bsub">' + esc(b.sub) + "</p>"; h += daeunTable(res); return; }
       h += '<div class="blk">' + (b.sub ? '<p class="bsub">' + esc(b.sub) + "</p>" : "") +
         (b.text ? "<p>" + esc(b.text) + "</p>" : "") + "</div>";
     });
