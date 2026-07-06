@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>도깨비 사주 상세풀이 | 한국인계산기</title>
+  <meta name="description" content="도깨비가 풀어주는 사주 상세풀이 — 액운·인연·재물·귀인·황금기까지 십성·신살·대운·세운으로 자세히.">
+  <meta name="robots" content="noindex, follow">
+  <link rel="canonical" href="https://calcbox.kr/saju/detail/">
+  <style>
+    :root {
+      --bg:#0b0b0f; --card:#17161e; --card2:#131219; --line:#2a2833; --text:#ece7dd; --muted:#8f897c;
+      --gold:#d8b25c; --gold-d:#b8923d; --red:#c0392b; --teal:#3fb08f; --shadow:0 8px 30px rgba(0,0,0,.5);
+    }
+    *{box-sizing:border-box;}
+    body{margin:0; background:radial-gradient(120% 60% at 50% -5%, #1a1622 0%, var(--bg) 55%) fixed;
+      color:var(--text); line-height:1.8; font-family:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+    .wrap{max-width:600px; margin:0 auto; padding:0 18px 80px;}
+    .topnav{max-width:600px;margin:0 auto;padding:14px 18px 0;}
+    .topnav a{color:var(--muted);text-decoration:none;font-size:.85rem;}
+    .head{text-align:center; padding:24px 0 6px;}
+    .head h1{font-size:1.6rem;margin:0;letter-spacing:.14em;}
+    .head h1 .g{color:var(--gold);}
+    .echo{color:var(--muted);font-size:.9rem;margin:8px 0 0;}
+    .echo .b{color:var(--gold);}
+
+    .palja-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:16px 0;}
+    .pcell{text-align:center;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 2px;}
+    .pcell .l{font-size:.7rem;color:var(--muted);}
+    .pcell .h{font-size:1.5rem;font-weight:800;color:var(--gold);line-height:1.2;}
+    .pcell .s{font-size:.66rem;color:var(--muted);}
+
+    /* 요약 카드 */
+    .sumcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin:14px 0;box-shadow:var(--shadow);}
+    .sumcard h2{font-size:1.05rem;margin:0 0 12px;color:var(--gold);}
+    .sum-row{margin:10px 0;}
+    .sum-row .cat{font-size:.78rem;color:var(--muted);font-weight:700;margin-bottom:6px;}
+    .chips{display:flex;flex-wrap:wrap;gap:6px;}
+    .chip{background:#100f16;border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:.82rem;font-weight:600;}
+    .chip.good{border-color:var(--teal);color:var(--teal);}
+    .chip.bad{border-color:var(--red);color:#e8897e;}
+    .chip.gold{border-color:var(--gold-d);color:var(--gold);}
+
+    /* 목차 */
+    .toc{background:var(--card2);border:1px solid var(--line);border-radius:16px;padding:14px 10px;margin:14px 0;}
+    .toc a{display:flex;align-items:center;gap:12px;padding:9px 10px;text-decoration:none;color:var(--text);border-bottom:1px solid var(--line);}
+    .toc a:last-child{border-bottom:none;}
+    .toc .hj{font-size:1.2rem;color:var(--red);width:22px;text-align:center;font-weight:800;}
+    .toc .tt{flex:1;}
+    .toc .ar{color:var(--muted);}
+
+    /* 섹션 */
+    .sec{margin:34px 0;}
+    .sec-head{display:flex;align-items:baseline;gap:12px;margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line);}
+    .sec-hj{font-size:1.7rem;font-weight:800;color:var(--red);}
+    .sec-t{font-size:1.3rem;font-weight:800;}
+    .sec-sub{color:var(--muted);font-size:.85rem;margin-left:auto;}
+    .blk{margin:16px 0;}
+    .blk .bsub{color:var(--gold);font-weight:700;font-size:1rem;border-left:3px solid var(--gold-d);padding-left:10px;margin:0 0 8px;}
+    .blk p{margin:0;}
+
+    /* 印(도장/씰) */
+    .seal{text-align:center;margin:26px 0;}
+    .seal .frame{display:inline-block;padding:26px 34px;border:1px solid var(--gold-d);border-radius:14px;
+      background:radial-gradient(circle at 50% 40%, #1c1622, #0b0a0e);box-shadow:0 0 44px rgba(216,178,92,.18);}
+    .seal .hj{font-size:2.6rem;font-weight:800;color:var(--gold);letter-spacing:.1em;}
+    .seal .cap{color:var(--muted);font-size:.82rem;margin-top:10px;}
+    .tale{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:16px;color:#cfc8ba;font-size:.92rem;margin:14px 0;}
+
+    /* 능력치 레이더 */
+    .radar-wrap{text-align:center;margin:8px 0 6px;}
+    .abil{margin:10px 0;}
+    .abil-row{display:flex;align-items:center;gap:10px;margin:7px 0;}
+    .abil-l{width:78px;font-size:.86rem;font-weight:600;}
+    .abil-tr{flex:1;height:9px;background:#100f16;border-radius:999px;overflow:hidden;}
+    .abil-f{height:100%;background:linear-gradient(90deg,var(--gold-d),var(--gold));border-radius:999px;}
+    .abil-v{width:28px;text-align:right;color:var(--muted);font-size:.82rem;}
+
+    /* 대운 표 */
+    .du-row{display:flex;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:.9rem;}
+    .du-row:last-child{border-bottom:none;}
+    .du-age{width:74px;color:var(--muted);flex-shrink:0;}
+    .du-gan{font-weight:700;color:var(--gold);}
+    .du-luck{margin-left:auto;font-weight:700;}
+    .lg{color:var(--teal);} .ln{color:var(--muted);} .lc{color:#e2953f;}
+
+    .cta{margin:34px 0 0;text-align:center;}
+    .cta .note{color:var(--muted);font-size:.85rem;}
+    footer{text-align:center;color:var(--muted);font-size:.8rem;padding:26px 18px 40px;}
+    footer a{color:var(--muted);}
+    .loading{text-align:center;color:var(--muted);padding:60px 0;}
+  </style>
+</head>
+<body>
+  <nav class="topnav"><a href="/saju/">← 도깨비 사주</a></nav>
+  <div class="head">
+    <h1>👺 <span class="g">도깨비 사주</span> 상세풀이</h1>
+    <p class="echo" id="echo"></p>
+  </div>
+  <main class="wrap">
+    <div class="palja-strip" id="paljaStrip"></div>
+    <div id="content"><p class="loading">도깨비가 네 팔자를 들여다보는 중…</p></div>
+    <div class="cta" id="cta"></div>
+  </main>
+  <footer>
+    <p>© <span id="year"></span> 한국인계산기 · 도깨비 사주 · 재미·참고용</p>
+  </footer>
+
+  <script src="../saju.js?v=2"></script>
+  <script src="../saju-lunar.js?v=1"></script>
+  <script src="../saju-detail.js?v=1"></script>
+  <script src="../saju-dokkaebi.js?v=3"></script>
+  <script src="../detail-content.js?v=1"></script>
+  <script src="detail-ui.js?v=1"></script>
+  <script>document.getElementById("year").textContent=new Date().getFullYear();</script>
+</body>
+</html>

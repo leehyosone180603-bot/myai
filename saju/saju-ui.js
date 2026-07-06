@@ -148,8 +148,10 @@
 
   /* ---- 결제 / 카카오 / 복사 ---- */
   function goPay() {
-    if (DK.CONFIG.PAYMENT_URL) { location.href = DK.CONFIG.PAYMENT_URL + (DK.CONFIG.PAYMENT_URL.indexOf("?") < 0 ? "?" : "&") + "ref=" + encodeURIComponent($("shareUrl").value); }
-    else { alert("도깨비의 상세 풀이 결제는 곧 열린다. 조금만 기다려라."); }
+    var url = DK.CONFIG.PAYMENT_URL;
+    if (!url) { alert("도깨비의 상세 풀이 결제는 곧 열린다. 조금만 기다려라."); return; }
+    var q = ($("shareUrl").value.split("?")[1]) || "";
+    location.href = url + (url.indexOf("?") < 0 ? "?" : "&") + q;
   }
   function kakaoShare() {
     var url = $("shareUrl").value, text = "도깨비가 봐준 내 사주, 너도 봐라.";

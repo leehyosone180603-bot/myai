@@ -8,7 +8,7 @@
 
   // 결제/공유 설정 (실서비스 시 값 교체)
   var CONFIG = {
-    PAYMENT_URL: "",          // 상세 결제 페이지 URL (비어있으면 '준비중')
+    PAYMENT_URL: "detail/",   // 상세 결과 페이지 (실결제 붙이면 결제 후 이 링크로 이동)
     KAKAO_JS_KEY: "",         // 카카오 JavaScript 키 (비어있으면 링크복사 대체)
     PRICE_ORIGINAL: "29,900",
     PRICE_NOW: "9,900"
