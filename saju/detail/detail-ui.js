@@ -138,13 +138,47 @@
       " · " + (inp.gender === "m" ? "남성" : "여성") + timeTxt;
     paljaStrip(res);
 
+    var DKb = window.SajuDokkaebi;
+    var params = DKb.chartParamsFromQuery(location.search);
+    var token = new URLSearchParams(location.search).get("pay");
+    $("content").innerHTML = '<p class="loading">도깨비가 봉인을 확인하는 중…</p>';
+    DKb.verifyAccess(params, token, function (access) {
+      // access: null = 결제 미설정(전체 공개) · true = 결제 완료 · false = 잠금
+      if (access === false) renderLocked(res, yong, ctx);
+      else renderFull(res, yong, ctx);
+    });
+  }
+
+  function renderFull(res, yong, ctx) {
     var sections = DC.build(res, ctx);
     var html = summaryCard(res, yong) + toc(sections);
     sections.forEach(function (s, i) { html += renderSection(s, i, res); });
     $("content").innerHTML = html;
-
     $("cta").innerHTML = '<p class="note">이 풀이는 정통 명리학에 도깨비의 토속적 해석을 더한 재미·참고용입니다.</p>' +
       '<p class="note">궁합이 궁금하면 <a href="/gunghap/" style="color:#d8b25c">무료 궁합</a>도 있어요.</p>';
+  }
+
+  function renderLocked(res, yong, ctx) {
+    var DKb = window.SajuDokkaebi, C = DKb.CONFIG;
+    var sections = DC.build(res, ctx);
+    var html = summaryCard(res, yong) + toc(sections);
+    html += renderSection(sections[0], 0, res); // 첫 장(魂)만 미리보기
+    html += '<div class="paywall"><div class="pw-hj">封</div>' +
+      '<h3>나머지 ' + (sections.length - 1) + '장은 도깨비가 봉인해 뒀다</h3>' +
+      '<p class="note">액운·인연·재물·귀인·황금기까지 — 결제하면 도깨비가 봉인을 푼다.</p>' +
+      '<div class="pw-price"><span class="o">' + C.PRICE_ORIGINAL + '원</span><span class="n">' + C.PRICE_NOW + '원</span></div>' +
+      '<button id="pwPay" class="pw-btn">결제하고 전체 풀이 보기</button>' +
+      '<p class="note" style="margin-top:10px;">결제 후 이 화면에서 바로 전체 풀이가 열립니다.</p></div>';
+    $("content").innerHTML = html;
+    $("cta").innerHTML = "";
+    var btn = document.getElementById("pwPay");
+    if (btn) btn.addEventListener("click", function () {
+      var qs = new URLSearchParams(location.search); qs.delete("pay");
+      var base = location.pathname + "?" + qs.toString();
+      DKb.startPayment(DKb.chartParamsFromQuery(location.search), {
+        onToken: function (t) { location.href = base + "&pay=" + encodeURIComponent(t); }
+      });
+    });
   }
 
   run();
