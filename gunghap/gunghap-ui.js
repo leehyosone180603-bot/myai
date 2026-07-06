@@ -101,7 +101,11 @@
       return '<a href="#g' + i + '"><span class="hj">' + s.hanja + '</span><span>' + esc(s.title) + '</span></a>';
     }).join("") + "</div>";
     var body = r.sections.map(function (s, i) {
-      return '<section class="sec" id="g' + i + '"><div class="sec-head"><span class="sec-hj">' + s.hanja + '</span><span class="sec-t">' + esc(s.title) + '</span></div><p>' + s.body + "</p></section>";
+      var blocks = (s.blocks || []).map(function (b) {
+        return '<div class="blk"><p class="bsub">' + esc(b.s) + '</p><p>' + b.t + "</p></div>";
+      }).join("");
+      var lead = s.lead ? '<p class="sec-lead">' + s.lead + "</p>" : (s.body ? '<p>' + s.body + "</p>" : "");
+      return '<section class="sec" id="g' + i + '"><div class="sec-head"><span class="sec-hj">' + s.hanja + '</span><span class="sec-t">' + esc(s.title) + "</span></div>" + lead + blocks + "</section>";
     }).join("");
     $("content").innerHTML = toc + body;
 
