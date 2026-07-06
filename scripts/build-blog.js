@@ -28,6 +28,11 @@ const STATIC_URLS = [
   { loc: "https://calcbox.kr/lotto-prize/", freq: "monthly", pri: "0.8" },
   { loc: "https://calcbox.kr/military/", freq: "monthly", pri: "0.8" },
   { loc: "https://calcbox.kr/lotto/", freq: "weekly", pri: "0.8" },
+  { loc: "https://calcbox.kr/saju/", freq: "weekly", pri: "0.9" },
+  { loc: "https://calcbox.kr/gunghap/", freq: "monthly", pri: "0.9" },
+  { loc: "https://calcbox.kr/saju/terms/", freq: "yearly", pri: "0.3" },
+  { loc: "https://calcbox.kr/saju/privacy/", freq: "yearly", pri: "0.3" },
+  { loc: "https://calcbox.kr/saju/refund/", freq: "yearly", pri: "0.3" },
   { loc: "https://calcbox.kr/blog/", freq: "weekly", pri: "0.7" }
 ];
 
@@ -140,6 +145,7 @@ function main() {
     const next = posts.find(function (p) { return !p.published; });
     if (next) {
       next.published = true;
+      next.date = todayKST().replace(/-/g, "."); // 발행일을 실제 발행 날짜로
       fs.writeFileSync(POSTS_FILE, JSON.stringify(posts, null, 2) + "\n");
       console.log("published:", next.slug);
     } else {
