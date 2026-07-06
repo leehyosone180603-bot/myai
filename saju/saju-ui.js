@@ -1,297 +1,203 @@
 /* ============================================================
- * 사주 계산기 UI — calcbox.kr
- * 입력(양력/음력) → Saju 엔진 → 무료 결과(상세 보기 / 텍스트 공유 탭)
+ * 도깨비 사주 — UI 컨트롤러
+ * 팝업 → 입력(성별·연애·양음력·연월일시) → 도깨비 풀이 퍼널
  * ============================================================ */
 (function () {
   "use strict";
 
-  var S = window.Saju, D = window.SajuData, L = window.SajuLunar;
+  var S = window.Saju, L = window.SajuLunar, DK = window.SajuDokkaebi;
   var $ = function (id) { return document.getElementById(id); };
 
-  var els = {
-    date: $("birthDate"), time: $("birthTime"), timeUnknown: $("timeUnknown"),
-    isLeap: $("isLeap"), leapRow: $("leapRow"), dateHint: $("dateHint"), lunarRange: $("lunarRange"),
-    trueSolar: $("trueSolar"), err: $("errorMsg"), calc: $("calcBtn"),
-    resultTabs: $("resultTabs"), tabDetail: $("tabDetail"), tabText: $("tabText"),
-    results: $("resultsCard"), dmCard: $("dmCard"), qaCard: $("qaCard"), qaList: $("qaList"),
-    ohengCard: $("ohengCard"), shareCard: $("shareCard"), lockedCard: $("lockedCard"),
-    grid: $("sajuGrid"), birthEcho: $("birthEcho"),
-    dmChar: $("dmChar"), dmEl: $("dmEl"), dmLine: $("dmLine"), dmChips: $("dmChips"), dmDesc: $("dmDesc"),
-    ohengBars: $("ohengBars"), ohengComment: $("ohengComment"),
-    yyBar: $("yyBar"), yyComment: $("yyComment"),
-    shareUrl: $("shareUrl"), copyBtn: $("copyBtn"),
-    lockedGrid: $("lockedGrid"), daeunDir: $("daeunDir"),
-    summaryText: $("summaryText"), copyTextBtn: $("copyTextBtn"), copyLinkBtn2: $("copyLinkBtn2")
-  };
+  var state = { gender: "m", love: "solo", cal: "solar" };
 
-  var PILLAR_LABELS = { year: "년주(年)", month: "월주(月)", day: "일주(日)", hour: "시주(時)" };
-  var ORDER = ["year", "month", "day", "hour"];
-
-  function ohengColor(i) { return D.OHENG[i].color; }
-  function getRadio(name, def) { var r = document.querySelector('input[name="' + name + '"]:checked'); return r ? r.value : def; }
-
-  function applyTrueSolar(y, m, d, hh, mm) {
-    var dt = new Date(y, m - 1, d, hh, mm);
-    dt.setMinutes(dt.getMinutes() - 30);
-    return { y: dt.getFullYear(), m: dt.getMonth() + 1, d: dt.getDate(), h: dt.getHours(), min: dt.getMinutes() };
+  /* ---- 팝업 ---- */
+  function initPopup() {
+    $("mTitle").textContent = DK.POPUP.title;
+    $("mBody").innerHTML = DK.POPUP.body;
+    $("mBtn").textContent = DK.POPUP.button;
+    $("mBtn").addEventListener("click", function () { $("introModal").classList.add("hidden"); });
   }
 
-  /* ---- 달력 종류 UI ---- */
-  function onCalTypeChange() {
-    var lunar = getRadio("calType", "solar") === "lunar";
-    els.leapRow.style.display = lunar ? "flex" : "none";
-    els.lunarRange.style.display = lunar ? "block" : "none";
-    els.dateHint.textContent = lunar ? "(음력 · 1900~2050)" : "(양력)";
-    els.date.min = "1900-01-01";
-    els.date.max = lunar ? "2050-12-31" : "2100-12-31";
-    if (!lunar) els.isLeap.checked = false;
+  /* ---- 페르소나 ---- */
+  function initPersona() {
+    $("avatar").innerHTML = DK.AVATAR_SVG;
+    $("pTitle").textContent = DK.PERSONA.title;
+    $("pSub").textContent = DK.PERSONA.subtitle;
   }
 
-  /* ---- 렌더 ---- */
-  function renderGrid(res) {
-    els.grid.innerHTML = "";
-    ORDER.forEach(function (k) {
-      var p = res.pillars[k];
-      var col = document.createElement("div"); col.className = "pillar";
-      var label = '<div class="pillar-label">' + PILLAR_LABELS[k] + "</div>";
-      var cells;
-      if (!p) {
-        cells = '<div class="gz-cell"><div class="gz-han">?</div><div class="gz-ko">미상</div></div>' +
-                '<div class="gz-cell"><div class="gz-han">?</div><div class="gz-ko">미상</div></div>';
-      } else {
-        var sc = ohengColor(S.GAN_OHENG[p.stem]), bc = ohengColor(S.JI_OHENG[p.branch]);
-        var dm = (k === "day") ? " dm" : "";
-        cells =
-          '<div class="gz-cell' + dm + '"><div class="gz-han" style="color:' + sc + '">' + S.GAN[p.stem] +
-            '</div><div class="gz-ko">' + S.GAN_KO[p.stem] + " · " + D.OHENG[S.GAN_OHENG[p.stem]].ko + "</div></div>" +
-          '<div class="gz-cell"><div class="gz-han" style="color:' + bc + '">' + S.JI[p.branch] +
-            '</div><div class="gz-ko">' + S.JI_KO[p.branch] + " · " + D.OHENG[S.JI_OHENG[p.branch]].ko + "</div></div>";
-      }
-      col.innerHTML = label + cells;
-      els.grid.appendChild(col);
-    });
-  }
-
-  function renderDayMaster(res) {
-    var dm = D.DAY_MASTER[res.dayMaster];
-    els.dmChar.textContent = S.GAN[res.dayMaster];
-    els.dmChar.style.color = ohengColor(S.GAN_OHENG[res.dayMaster]);
-    els.dmEl.textContent = "일간(日干) " + S.GAN_KO[res.dayMaster] + " · " + dm.element + " · " + dm.symbol;
-    els.dmLine.textContent = "“" + dm.line + "”";
-    els.dmChips.innerHTML = "";
-    dm.keywords.forEach(function (kw) {
-      var c = document.createElement("span"); c.className = "chip"; c.textContent = "#" + kw; els.dmChips.appendChild(c);
-    });
-    els.dmDesc.textContent = dm.desc;
-  }
-
-  function renderQA(res) {
-    var answers = D.buildAnswers(res);
-    els.qaList.innerHTML = "";
-    D.FIVE_Q.forEach(function (item, i) {
-      var div = document.createElement("div"); div.className = "qa-item";
-      div.innerHTML =
-        '<p class="qa-q"><span class="qa-ic">' + item.icon + '</span><span>' + item.q + "</span></p>" +
-        '<p class="qa-a">' + answers[i] + "</p>";
-      els.qaList.appendChild(div);
-    });
-    return answers;
-  }
-
-  function renderOheng(res) {
-    var max = Math.max.apply(null, res.oheng) || 1;
-    els.ohengBars.innerHTML = "";
-    D.OHENG.forEach(function (o, i) {
-      var cnt = res.oheng[i];
-      var row = document.createElement("div"); row.className = "oheng-row";
-      row.innerHTML =
-        '<div class="oheng-name" style="color:' + o.color + '">' + o.ko + "</div>" +
-        '<div class="oheng-track"><div class="oheng-fill" style="width:' + (cnt / max * 100) + "%;background:" + o.color + '"></div></div>' +
-        '<div class="oheng-cnt">' + cnt + "</div>";
-      els.ohengBars.appendChild(row);
-    });
-    els.ohengComment.textContent = D.ohengComment(res.oheng);
-    var yang = res.yinYang.yang, yin = res.yinYang.yin;
-    els.yyBar.innerHTML =
-      '<div class="yy-seg yy-yang" style="flex:' + yang + '">' + (yang ? "양 " + yang : "") + "</div>" +
-      '<div class="yy-seg yy-yin" style="flex:' + yin + '">' + (yin ? "음 " + yin : "") + "</div>";
-    els.yyComment.textContent = D.yinYangComment(yang, yin);
-  }
-
-  function renderLocked(res, gender) {
-    var yang = (res.pillars.year.stem % 2 === 0);
-    var forward = (yang && gender === "m") || (!yang && gender === "f");
-    els.daeunDir.textContent = "당신의 대운은 " + (forward ? "순행(順行)" : "역행(逆行)") +
-      " 합니다. 구체적인 대운 간지·대운수와 시기별 풀이는 상세 풀이에서 확인할 수 있어요.";
-    els.lockedGrid.innerHTML = "";
-    D.LOCKED_ITEMS.forEach(function (it) {
-      var card = document.createElement("div"); card.className = "locked-card";
-      card.innerHTML = '<div class="lc-icon">' + it.icon + "</div>" +
-        '<div class="lc-body"><strong>' + it.title + "</strong><div class=\"lc-teaser\">" + it.teaser + "</div></div>" +
-        '<div class="lc-lock">🔒</div>';
-      els.lockedGrid.appendChild(card);
-    });
-  }
-
-  /* ---- 텍스트 요약 ---- */
-  function pillarsLine(res) {
-    var s = [];
-    ["year", "month", "day", "hour"].forEach(function (k, i) {
-      var lab = ["년", "월", "일", "시"][i], p = res.pillars[k];
-      s.push(lab + " " + (p ? S.ganjaHan(p.stem, p.branch) + "(" + S.ganjaKo(p.stem, p.branch) + ")" : "미상"));
-    });
-    return s.join(" · ");
-  }
-
-  function buildSummary(res, input, answers, shareUrl) {
-    var dm = D.DAY_MASTER[res.dayMaster];
-    var strong = [], missing = [];
-    for (var i = 0; i < 5; i++) {
-      if (res.oheng[i] === Math.max.apply(null, res.oheng) && res.oheng[i] > 0) strong.push(D.OHENG[i].ko);
-      if (res.oheng[i] === 0) missing.push(D.OHENG[i].ko);
+  /* ---- 셀렉트 채우기 ---- */
+  function fillSelects() {
+    var selY = $("selY"), selM = $("selM"), selH = $("selH");
+    var thisYear = 2026;
+    var y = "";
+    for (var yy = thisYear; yy >= 1930; yy--) y += '<option value="' + yy + '">' + yy + "년</option>";
+    selY.innerHTML = y;
+    selY.value = "1996";
+    var m = "";
+    for (var mm = 1; mm <= 12; mm++) m += '<option value="' + mm + '">' + mm + "월</option>";
+    selM.innerHTML = m;
+    var h = '<option value="x">시간 모름</option>';
+    for (var hh = 0; hh < 24; hh++) {
+      var ap = hh < 12 ? "오전" : "오후";
+      var h12 = hh % 12 === 0 ? 12 : hh % 12;
+      h += '<option value="' + hh + '">' + ap + " " + h12 + "시</option>";
     }
-    var lines = [];
-    lines.push("[내 사주 요약]");
-    lines.push("· 생년월일시: " + input.dateLabel + (input.hourKnown ? " " + input.timeStr : " (시간 미상)") + " · " + (input.gender === "m" ? "남성" : "여성"));
-    lines.push("· 사주팔자: " + pillarsLine(res));
-    lines.push("· 일간(나): " + S.GAN[res.dayMaster] + "(" + S.GAN_KO[res.dayMaster] + ") — " + dm.element + " · " + dm.symbol);
-    lines.push("  “" + dm.line + "”");
-    lines.push("· 오행: 목" + res.oheng[0] + " 화" + res.oheng[1] + " 토" + res.oheng[2] + " 금" + res.oheng[3] + " 수" + res.oheng[4] +
-      "  (강한 기운: " + (strong.join("·") || "-") + (missing.length ? " / 없는 기운: " + missing.join("·") : "") + ")");
-    lines.push("· 음양: 양" + res.yinYang.yang + " · 음" + res.yinYang.yin);
-    lines.push("");
-    lines.push("[사주로 보는 나 · 5문답]");
-    D.FIVE_Q.forEach(function (q, i) {
-      lines.push(q.icon + " " + q.q);
-      lines.push("→ " + answers[i]);
-    });
-    lines.push("");
-    lines.push("▶ 사주팔자 표와 자세한 풀이는 여기서 확인하세요:");
-    lines.push(shareUrl);
-    return lines.join("\n");
+    selH.innerHTML = h;
+    updateDays();
   }
 
-  /* ---- 공유 URL ---- */
-  function buildShareUrl(input) {
+  function daysInMonth(y, m, lunar) {
+    if (lunar) return 30; // 음력은 30까지 열고 유효성은 변환에서 검사
+    return new Date(y, m, 0).getDate();
+  }
+  function updateDays() {
+    var selD = $("selD"), y = +$("selY").value, m = +$("selM").value;
+    var prev = selD.value;
+    var n = daysInMonth(y, m, state.cal === "lunar");
+    var d = "";
+    for (var dd = 1; dd <= n; dd++) d += '<option value="' + dd + '">' + dd + "일</option>";
+    selD.innerHTML = d;
+    if (prev && +prev <= n) selD.value = prev;
+  }
+
+  /* ---- 세그먼트 ---- */
+  function initSegments() {
+    document.querySelectorAll(".seg").forEach(function (seg) {
+      var name = seg.getAttribute("data-name");
+      seg.querySelectorAll("button").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          seg.querySelectorAll("button").forEach(function (b) { b.classList.remove("on"); });
+          btn.classList.add("on");
+          state[name] = btn.getAttribute("data-v");
+          if (name === "cal") onCalChange();
+        });
+      });
+    });
+  }
+  function onCalChange() {
+    var lunar = state.cal === "lunar";
+    $("leapRow").style.display = lunar ? "inline-flex" : "none";
+    $("calHint").textContent = lunar ? "(음력 1900~2050)" : "(양력)";
+    if (!lunar) $("isLeap").checked = false;
+    updateDays();
+  }
+
+  /* ---- 계산 & 렌더 ---- */
+  function run() {
+    $("err").textContent = "";
+    var y = +$("selY").value, m = +$("selM").value, d = +$("selD").value;
+    var isLeap = $("isLeap").checked;
+    var sy = y, sm = m, sd = d;
+
+    if (state.cal === "lunar") {
+      if (y < L.minYear() || y > L.maxYear()) { $("err").textContent = "음력은 " + L.minYear() + "~" + L.maxYear() + "년만 볼 수 있다."; return; }
+      var solar = L.lunarToSolar(y, m, d, isLeap);
+      if (!solar) { $("err").textContent = "그런 음력 날짜는 없다. 날짜나 윤달을 다시 봐라."; return; }
+      sy = solar.y; sm = solar.m; sd = solar.d;
+    }
+
+    var hv = $("selH").value;
+    var hourKnown = hv !== "x";
+    var hh = hourKnown ? +hv : 12;
+
+    var res = S.computeSaju(sy, sm, sd, hh, 0, { tzHours: 9, hourKnown: hourKnown, gender: state.gender });
+    var reading = DK.buildReading(res);
+
+    $("greeting").textContent = DK.PERSONA.greeting;
+    $("palja").textContent = reading.palja;
+    var fs = $("freeSections"); fs.innerHTML = "";
+    reading.sections.forEach(function (sec, i) {
+      var h = document.createElement("h2");
+      h.style.cssText = "font-size:1.12rem; margin:" + (i === 0 ? "4px" : "22px") + " 0 8px;";
+      h.textContent = sec.title;
+      var p = document.createElement("p"); p.className = "speak"; p.textContent = sec.body;
+      fs.appendChild(h); fs.appendChild(p);
+    });
+    $("hookLead").textContent = DK.PERSONA.hookLead;
+    $("hook").textContent = reading.hook;
+    $("preview").textContent = reading.preview;
+
+    // 유료 10항목
+    var ol = $("paidList"); ol.innerHTML = "";
+    DK.PAID.forEach(function (it) {
+      var li = document.createElement("li"); li.className = "paid-item";
+      li.innerHTML = '<span class="num"></span><div><div class="pt">' + it.title +
+        '</div><div class="ps blur">' + it.sub + "</div></div>";
+      ol.appendChild(li);
+    });
+
+    // 가격
+    $("priceOrig").textContent = "정가 " + DK.CONFIG.PRICE_ORIGINAL + "원";
+    $("priceNow").textContent = DK.CONFIG.PRICE_NOW + "원";
+
+    // 공유 링크
+    $("shareUrl").value = buildShareUrl(y, m, d, isLeap, hourKnown, hv);
+
+    $("result").classList.remove("hidden");
+    $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function buildShareUrl(y, m, d, isLeap, hourKnown, hv) {
     var p = new URLSearchParams();
-    p.set("d", input.dateStr);
-    p.set("t", input.hourKnown ? input.timeStr : "x");
-    p.set("g", input.gender);
-    if (input.calType === "lunar") { p.set("cal", "l"); if (input.isLeap) p.set("leap", "1"); }
-    if (input.trueSolar) p.set("ts", "1");
+    p.set("y", y); p.set("m", m); p.set("d", d);
+    p.set("g", state.gender); p.set("love", state.love);
+    p.set("h", hourKnown ? hv : "x");
+    if (state.cal === "lunar") { p.set("cal", "l"); if (isLeap) p.set("leap", "1"); }
     return location.origin + location.pathname + "?" + p.toString();
   }
 
-  function show(res, input) {
-    renderGrid(res);
-    els.birthEcho.textContent = input.dateLabel + " · " +
-      (input.hourKnown ? input.timeStr : "시간 미상") + " · " +
-      (input.gender === "m" ? "남성" : "여성") + (input.trueSolar ? " · 진태양시" : "");
-    renderDayMaster(res);
-    var answers = renderQA(res);
-    renderOheng(res);
-    renderLocked(res, input.gender);
-
-    var shareUrl = buildShareUrl(input);
-    els.shareUrl.value = shareUrl;
-    els.summaryText.value = buildSummary(res, input, answers, shareUrl);
-
-    els.resultTabs.hidden = false;
-    [els.results, els.dmCard, els.qaCard, els.ohengCard, els.shareCard, els.lockedCard]
-      .forEach(function (c) { c.hidden = false; });
+  /* ---- 결제 / 카카오 / 복사 ---- */
+  function goPay() {
+    var url = DK.CONFIG.PAYMENT_URL;
+    if (!url) { alert("도깨비의 상세 풀이 결제는 곧 열린다. 조금만 기다려라."); return; }
+    var q = ($("shareUrl").value.split("?")[1]) || "";
+    location.href = url + (url.indexOf("?") < 0 ? "?" : "&") + q;
   }
-
-  /* ---- 계산 ---- */
-  function calculate() {
-    els.err.textContent = "";
-    var dateStr = els.date.value;
-    if (!dateStr) { els.err.textContent = "생년월일을 입력해 주세요."; return; }
-    var pr = dateStr.split("-").map(Number);
-    var y = pr[0], m = pr[1], d = pr[2];
-
-    var calType = getRadio("calType", "solar");
-    var isLeap = els.isLeap.checked;
-    var dateLabel, sy = y, sm = m, sd = d;
-
-    if (calType === "lunar") {
-      if (y < L.minYear() || y > L.maxYear()) { els.err.textContent = "음력은 " + L.minYear() + "~" + L.maxYear() + "년만 지원합니다."; return; }
-      var solar = L.lunarToSolar(y, m, d, isLeap);
-      if (!solar) { els.err.textContent = "존재하지 않는 음력 날짜입니다. (날짜 또는 윤달 여부를 확인하세요)"; return; }
-      sy = solar.y; sm = solar.m; sd = solar.d;
-      dateLabel = y + "년 " + m + "월 " + d + "일 (음력" + (isLeap ? " 윤달" : "") + " → 양력 " + sy + "-" + String(sm).padStart(2, "0") + "-" + String(sd).padStart(2, "0") + ")";
-    } else {
-      if (y < 1900 || y > 2100) { els.err.textContent = "1900~2100년 사이 날짜를 입력해 주세요."; return; }
-      dateLabel = y + "년 " + String(m).padStart(2, "0") + "월 " + String(d).padStart(2, "0") + "일 (양력)";
+  function kakaoShare() {
+    var url = $("shareUrl").value, text = "도깨비가 봐준 내 사주, 너도 봐라.";
+    if (DK.CONFIG.KAKAO_JS_KEY && window.Kakao && window.Kakao.Share) {
+      window.Kakao.Share.sendDefault({ objectType: "text", text: text, link: { mobileWebUrl: url, webUrl: url } });
+      return;
     }
-
-    var hourKnown = !els.timeUnknown.checked;
-    var timeStr = els.time.value || "12:00";
-    var hh = 12, mm = 0;
-    if (hourKnown) { var tp = timeStr.split(":").map(Number); hh = tp[0]; mm = tp[1] || 0; }
-
-    var useTrueSolar = els.trueSolar.checked && hourKnown;
-    var cy = sy, cm = sm, cd = sd, ch = hh, cmin = mm;
-    if (useTrueSolar) { var a = applyTrueSolar(sy, sm, sd, hh, mm); cy = a.y; cm = a.m; cd = a.d; ch = a.h; cmin = a.min; }
-
-    var res = S.computeSaju(cy, cm, cd, ch, cmin, { tzHours: 9, hourKnown: hourKnown });
-
-    show(res, {
-      dateStr: dateStr, dateLabel: dateLabel, timeStr: timeStr, hourKnown: hourKnown,
-      gender: getRadio("gender", "m"), trueSolar: useTrueSolar, calType: calType, isLeap: isLeap
-    });
+    if (navigator.share) { navigator.share({ title: "도깨비 사주", text: text, url: url }).catch(function () {}); return; }
+    copyText(url); alert("카카오 연동은 준비 중이라 링크를 복사했다. 카카오톡에 붙여넣어 보내라.");
+  }
+  function copyText(t) {
+    if (navigator.clipboard) navigator.clipboard.writeText(t).catch(function () {});
+    else { var ta = document.createElement("textarea"); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch (e) {} document.body.removeChild(ta); }
   }
 
-  /* ---- 탭 전환 ---- */
-  function switchTab(name) {
-    els.tabDetail.hidden = (name !== "detail");
-    els.tabText.hidden = (name !== "text");
-    document.querySelectorAll(".rtab").forEach(function (b) {
-      b.classList.toggle("active", b.getAttribute("data-tab") === name);
-    });
-  }
-
-  /* ---- 복사 ---- */
-  function copyValue(text, btn, okLabel) {
-    var orig = btn.textContent;
-    function done() { btn.textContent = okLabel; setTimeout(function () { btn.textContent = orig; }, 1500); }
-    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(function () {});
-    else {
-      var ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select();
-      try { document.execCommand("copy"); done(); } catch (e) {}
-      document.body.removeChild(ta);
-    }
-  }
-
-  /* ---- URL 자동 계산 ---- */
+  /* ---- 공유 링크 자동 실행 ---- */
   function loadFromUrl() {
     var q = new URLSearchParams(location.search);
-    var d = q.get("d");
-    if (!d) return;
-    if (q.get("cal") === "l") {
-      var rl = document.querySelector('input[name="calType"][value="lunar"]'); if (rl) rl.checked = true;
-      if (q.get("leap") === "1") els.isLeap.checked = true;
+    if (!q.get("y")) return;
+    function setSeg(name, val) {
+      var seg = document.querySelector('.seg[data-name="' + name + '"]');
+      if (!seg) return;
+      seg.querySelectorAll("button").forEach(function (b) {
+        var on = b.getAttribute("data-v") === val; b.classList.toggle("on", on); if (on) state[name] = val;
+      });
     }
-    onCalTypeChange();
-    els.date.value = d;
-    var t = q.get("t");
-    if (t === "x") els.timeUnknown.checked = true; else if (t) els.time.value = t;
-    els.time.disabled = els.timeUnknown.checked;
-    if (q.get("g") === "f") { var rf = document.querySelector('input[name="gender"][value="f"]'); if (rf) rf.checked = true; }
-    if (q.get("ts") === "1") els.trueSolar.checked = true;
-    calculate();
+    if (q.get("cal") === "l") { setSeg("cal", "lunar"); if (q.get("leap") === "1") $("isLeap").checked = true; }
+    if (q.get("g")) setSeg("gender", q.get("g"));
+    if (q.get("love")) setSeg("love", q.get("love"));
+    onCalChange();
+    $("selY").value = q.get("y"); $("selM").value = q.get("m"); updateDays(); $("selD").value = q.get("d");
+    $("selH").value = q.get("h") || "x";
+    $("introModal").classList.add("hidden"); // 공유로 들어오면 팝업 생략
+    run();
   }
 
-  /* ---- 이벤트 ---- */
-  els.calc.addEventListener("click", calculate);
-  els.timeUnknown.addEventListener("change", function () { els.time.disabled = els.timeUnknown.checked; });
-  document.querySelectorAll('input[name="calType"]').forEach(function (r) { r.addEventListener("change", onCalTypeChange); });
-  document.querySelectorAll(".rtab").forEach(function (b) {
-    b.addEventListener("click", function () { switchTab(b.getAttribute("data-tab")); });
-  });
-  els.copyBtn.addEventListener("click", function () { copyValue(els.shareUrl.value, els.copyBtn, "복사됨!"); });
-  els.copyTextBtn.addEventListener("click", function () { copyValue(els.summaryText.value, els.copyTextBtn, "복사됨!"); });
-  els.copyLinkBtn2.addEventListener("click", function () { copyValue(els.shareUrl.value, els.copyLinkBtn2, "복사됨!"); });
-
-  onCalTypeChange();
+  /* ---- init ---- */
+  initPopup();
+  initPersona();
+  initSegments();
+  fillSelects();
+  $("selY").addEventListener("change", updateDays);
+  $("selM").addEventListener("change", updateDays);
+  $("goBtn").addEventListener("click", run);
+  $("payBtn").addEventListener("click", goPay);
+  $("kakaoBtn").addEventListener("click", kakaoShare);
+  $("copyBtn").addEventListener("click", function () { copyText($("shareUrl").value); this.textContent = "복사됨"; var b = this; setTimeout(function () { b.textContent = "복사"; }, 1500); });
   loadFromUrl();
 })();

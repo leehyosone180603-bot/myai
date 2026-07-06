@@ -204,7 +204,6 @@
 
   // 유료 미끼(잠금) 항목
   var LOCKED_ITEMS = [
-    { icon: "🔮", title: "대운(大運) 10년 흐름", teaser: "언제 상승기가 오고 언제 조심해야 하는지, 10년 단위 인생의 큰 흐름" },
     { icon: "💰", title: "재물운 · 금전운", teaser: "돈이 들어오는 시기와 재물을 모으는 방식, 주의할 지출 흐름" },
     { icon: "💕", title: "연애 · 결혼운", teaser: "잘 맞는 배우자 유형과 인연이 무르익는 시기" },
     { icon: "💼", title: "직업 · 적성 · 사업운", teaser: "타고난 적성과 어울리는 직업, 직장운과 사업운 비교" },
@@ -240,6 +239,93 @@
   // 로컬 오행 매핑(saju-data 단독 사용 대비)
   function GAN_OHENG_LOCAL(stem) { return [0, 0, 1, 1, 2, 2, 3, 3, 4, 4][stem]; }
 
+  // ── 대운(연령대별 인생 흐름) ──────────────────────────────
+  // 십성(十星) 테마: 0비겁 1식상 2재성 3관성 4인성
+  var TENGOD = [
+    { label: "비겁운 · 자립과 경쟁", theme: "내 힘으로 밀고 나가는 주체성이 강해지는 때예요. 독립심·경쟁심이 커지고 동료·형제와의 인연이 두드러집니다.", kind: "support" },
+    { label: "식상운 · 재능과 표현", theme: "하고 싶은 일과 재능을 마음껏 펼치는 때예요. 활동·창작·표현이 살아나고 새로운 시도가 늘어납니다.", kind: "neutral" },
+    { label: "재성운 · 재물과 현실", theme: "돈과 실속을 챙기는 때예요. 재물과 활동 반경이 넓어지고 현실 감각·추진력이 살아납니다.", kind: "drain" },
+    { label: "관성운 · 책임과 명예", theme: "자리와 인정을 얻는 때예요. 조직·규율·책임이 커지며 명예가 오르지만, 그만큼 부담도 함께 따릅니다.", kind: "drain" },
+    { label: "인성운 · 배움과 귀인", theme: "배우고 도움받는 때예요. 공부·문서·자격, 윗사람이나 귀인의 도움으로 마음의 안정을 찾습니다.", kind: "support" }
+  ];
+
+  // 대운 천간 오행(X)이 일간 오행(D)에 대해 어떤 십성인지
+  function tenGodOf(D, X) {
+    if (X === D) return 0;                // 비겁
+    if (X === (D + 1) % 5) return 1;      // 식상 (D生X)
+    if (X === (D + 2) % 5) return 2;      // 재성 (D克X)
+    if (X === (D + 3) % 5) return 3;      // 관성 (X克D)
+    return 4;                             // 인성 (X生D)
+  }
+
+  // 신강/신약 간이 판정 (일간 제외한 오행 세력 비교)
+  function bodyStrength(res) {
+    var D = GAN_OHENG_LOCAL(res.dayMaster);
+    var o = res.oheng;
+    var support = (o[D] - 1) + o[(D + 4) % 5];              // 비겁 + 인성
+    var oppose = o[(D + 1) % 5] + o[(D + 2) % 5] + o[(D + 3) % 5]; // 식상 + 재성 + 관성
+    return { strong: support > oppose, support: support, oppose: oppose };
+  }
+
+  var LUCK = {
+    good: { label: "상승기", cls: "good", phrase: "기운이 힘을 실어 주는 상승기예요." },
+    neutral: { label: "무난", cls: "neutral", phrase: "큰 굴곡 없이 무난하게 흐르는 시기예요." },
+    caution: { label: "관리기", cls: "caution", phrase: "무리하기보다 속도를 조절하며 관리하면 좋은 시기예요." }
+  };
+
+  // 십성 종류 + 신강/신약 → 운때
+  function luckOf(tenGodKind, strong) {
+    if (tenGodKind === "neutral") return "neutral"; // 식상
+    if (tenGodKind === "support") return strong ? "caution" : "good"; // 비겁·인성
+    return strong ? "good" : "caution"; // 재성·관성(누르는 오행)
+  }
+
+  // 연령대(10대~90대)별 대운 흐름
+  function daeunDecades(res) {
+    if (!res.daeun) return null;
+    var D = GAN_OHENG_LOCAL(res.dayMaster);
+    var bs = bodyStrength(res);
+    var list = res.daeun.list;
+    var rows = [];
+    for (var dec = 1; dec <= 9; dec++) {            // 10대 ~ 90대
+      var midAge = dec * 10 + 5;
+      var idx = Math.floor((midAge - res.daeun.num) / 10);
+      if (idx < 0) idx = 0;
+      if (idx > list.length - 1) idx = list.length - 1;
+      var du = list[idx];
+      var tg = tenGodOf(D, GAN_OHENG_LOCAL(du.stem));
+      var luck = luckOf(TENGOD[tg].kind, bs.strong);
+      rows.push({
+        decade: dec + "0대",
+        ageRange: du.startAge + "~" + (du.startAge + 9) + "세",
+        ganKo: GAN_KO_L(du.stem) + JI_KO_L(du.branch),
+        ganHan: GAN_L(du.stem) + JI_L(du.branch),
+        tenGodLabel: TENGOD[tg].label,
+        luck: luck, luckLabel: LUCK[luck].label,
+        text: TENGOD[tg].theme + " " + LUCK[luck].phrase
+      });
+    }
+    return {
+      forward: res.daeun.forward, num: res.daeun.num,
+      strong: bs.strong,
+      strengthLabel: bs.strong ? "신강(身强)" : "신약(身弱)",
+      strengthGloss: bs.strong
+        ? "일간의 기운이 강한 편이라, 기운을 적절히 눌러 주고 흘려보내는 운(재성·관성·식상)에서 힘을 냅니다."
+        : "일간의 기운이 약한 편이라, 나를 돕고 북돋는 운(비겁·인성)에서 힘을 냅니다.",
+      rows: rows
+    };
+  }
+
+  // 한글/한자 표기 로컬 헬퍼
+  var GAN_L_ARR = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
+  var JI_L_ARR = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+  var GAN_KO_ARR = ["갑", "을", "병", "정", "무", "기", "경", "신", "임", "계"];
+  var JI_KO_ARR = ["자", "축", "인", "묘", "진", "사", "오", "미", "신", "유", "술", "해"];
+  function GAN_L(i) { return GAN_L_ARR[i]; }
+  function JI_L(i) { return JI_L_ARR[i]; }
+  function GAN_KO_L(i) { return GAN_KO_ARR[i]; }
+  function JI_KO_L(i) { return JI_KO_ARR[i]; }
+
   root.SajuData = {
     OHENG: OHENG,
     DAY_MASTER: DAY_MASTER,
@@ -247,6 +333,7 @@
     ohengComment: ohengComment,
     LOCKED_ITEMS: LOCKED_ITEMS,
     FIVE_Q: FIVE_Q,
-    buildAnswers: buildAnswers
+    buildAnswers: buildAnswers,
+    daeunDecades: daeunDecades
   };
 })(typeof window !== "undefined" ? window : this);

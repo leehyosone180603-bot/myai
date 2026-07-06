@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>무료 사주 계산기 - 사주팔자 · 일간 · 오행 분석 | 한국인계산기</title>
-  <meta name="description" content="생년월일시를 입력하면 사주팔자 8글자와 나를 상징하는 일간, 오행 분포, 음양 균형을 무료로 분석해 드립니다. 대운·재물운·연애운 등 상세 풀이도 확인하세요.">
-  <meta name="keywords" content="사주계산기, 무료사주, 사주팔자, 만세력, 일간, 오행, 사주풀이, 사주분석, 무료사주풀이">
+  <title>도깨비 사주 - 천 년 묵은 도깨비가 봐주는 무료 사주풀이 | 한국인계산기</title>
+  <meta name="description" content="천 년 묵은 도깨비가 네 생년월일시로 팔자를 봐준다. 나는 어떤 사람인지, 내게 붙은 액운과 인생의 황금기까지 — 무료로 확인하는 토속 사주풀이.">
+  <meta name="keywords" content="도깨비사주, 무료사주, 토속사주, 사주풀이, 사주팔자, 운세, 대운, 신점, 무료운세">
   <meta name="robots" content="index, follow">
-  <meta property="og:title" content="무료 사주 계산기 - 사주팔자 · 일간 · 오행 분석">
-  <meta property="og:description" content="생년월일시로 사주팔자 8글자와 일간·오행·음양을 무료로 분석. 결과는 링크로 공유하세요.">
+  <meta property="og:title" content="도깨비 사주 - 도깨비가 봐주는 무료 사주풀이">
+  <meta property="og:description" content="천 년 묵은 도깨비가 네 팔자를 봐준다. 무료로 시작해봐라.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://calcbox.kr/saju/">
   <meta property="og:site_name" content="한국인계산기">
@@ -18,9 +18,9 @@
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "무료 사주 계산기",
+    "name": "도깨비 사주",
     "url": "https://calcbox.kr/saju/",
-    "description": "생년월일시로 사주팔자, 일간, 오행 분포, 음양 균형을 무료로 분석하는 만세력 기반 도구.",
+    "description": "도깨비가 생년월일시로 봐주는 무료 토속 사주풀이.",
     "applicationCategory": "LifestyleApplication",
     "operatingSystem": "Any",
     "inLanguage": "ko",
@@ -28,254 +28,226 @@
   }
   </script>
 
-  <!-- Google AdSense 게시자 ID: ca-pub-7143828779500885 -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885"
-     crossorigin="anonymous"></script>
-
-  <link rel="stylesheet" href="../style.css?v=4">
   <style>
-    /* 입력 필드(날짜/시간) */
-    input[type="date"], input[type="time"] {
-      width: 100%; padding: 11px 12px; font-size: 1rem;
-      border: 1px solid var(--border); border-radius: 9px; background: #fff; color: var(--text);
+    :root {
+      --bg: #0b0b0f; --bg2: #121118; --card: #17161e; --line: #2a2833;
+      --text: #ece7dd; --muted: #8f897c; --gold: #d8b25c; --gold-d: #b8923d;
+      --red: #c0392b; --teal: #3fb08f; --shadow: 0 8px 30px rgba(0,0,0,.5);
     }
-    input[type="date"]:focus, input[type="time"]:focus {
-      outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,91,219,.15);
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: radial-gradient(120% 80% at 50% -10%, #1a1622 0%, var(--bg) 55%) fixed;
+      color: var(--text); line-height: 1.7;
+      font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
+    .wrap { max-width: 560px; margin: 0 auto; padding: 0 18px 64px; }
+    .back-nav { max-width: 560px; margin: 0 auto; padding: 16px 18px 0; }
+    .back-nav a { color: var(--muted); text-decoration: none; font-size: .85rem; }
+    .back-nav a:hover { color: var(--gold); }
 
-    /* 사주팔자 격자 */
-    .saju-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 6px 0 4px; }
-    .pillar { text-align: center; }
-    .pillar-label { font-size: .8rem; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
-    .gz-cell {
-      border: 1px solid var(--border); border-radius: 10px; padding: 10px 4px; margin-bottom: 6px; background: #fff;
-    }
-    .gz-cell.dm { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(59,91,219,.18); position: relative; }
-    .gz-cell.dm::after {
-      content: "나"; position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
-      background: var(--primary); color: #fff; font-size: .68rem; font-weight: 700; padding: 1px 7px; border-radius: 999px;
-    }
-    .gz-han { font-size: 2rem; font-weight: 800; line-height: 1.1; }
-    .gz-ko { font-size: .82rem; color: var(--muted); margin-top: 2px; }
+    /* 헤더/페르소나 */
+    .hero { text-align: center; padding: 26px 0 8px; }
+    .hero .avatar { width: 112px; height: 112px; margin: 0 auto 14px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(circle at 50% 35%, #23202c, #0c0b10);
+      box-shadow: 0 0 0 2px var(--gold-d), 0 0 40px rgba(216,178,92,.25); }
+    .hero h1 { font-size: 1.7rem; margin: 0; letter-spacing: .06em; font-weight: 800; }
+    .hero h1 .g { color: var(--gold); }
+    .hero .sub { color: var(--muted); font-size: .95rem; margin: 8px 0 0; }
 
-    /* 오행 막대 */
-    .oheng-bars { margin: 6px 0; }
-    .oheng-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
-    .oheng-name { width: 62px; font-weight: 600; font-size: .92rem; }
-    .oheng-track { flex: 1; background: #eef1f7; border-radius: 999px; height: 20px; overflow: hidden; }
-    .oheng-fill { height: 100%; border-radius: 999px; transition: width .4s ease; min-width: 2px; }
-    .oheng-cnt { width: 26px; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 600; }
+    /* 카드/폼 */
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+      padding: 22px; margin: 18px 0; box-shadow: var(--shadow); }
+    .field { margin-bottom: 16px; }
+    .field > label { display: block; font-weight: 700; font-size: .92rem; margin-bottom: 8px; color: #d8d2c6; }
+    .field small { color: var(--muted); font-weight: 400; }
 
-    /* 음양 바 */
-    .yy-bar { display: flex; height: 26px; border-radius: 999px; overflow: hidden; border: 1px solid var(--border); margin: 6px 0; }
-    .yy-yang { background: #ffa94d; color: #fff; }
-    .yy-yin { background: #4c6ef5; color: #fff; }
-    .yy-seg { display: flex; align-items: center; justify-content: center; font-size: .82rem; font-weight: 700; min-width: 0; }
+    .seg { display: flex; gap: 8px; flex-wrap: wrap; }
+    .seg button { flex: 1; min-width: 64px; padding: 11px 8px; font-size: .95rem; font-weight: 700;
+      color: var(--muted); background: #100f16; border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
+      transition: all .12s ease; }
+    .seg button.on { color: #1a1410; background: var(--gold); border-color: var(--gold); }
 
-    /* 키워드 칩 */
-    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
-    .chip { background: #f0f4ff; border: 1px solid #d6e0ff; color: var(--primary); border-radius: 999px; padding: 6px 14px; font-size: .9rem; font-weight: 600; }
+    select { width: 100%; padding: 12px 12px; font-size: 1rem; color: var(--text);
+      background: #100f16; border: 1px solid var(--line); border-radius: 10px; appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='%238f897c' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");
+      background-repeat: no-repeat; background-position: right 14px center; }
+    select:focus { outline: none; border-color: var(--gold); }
+    .ymd { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 8px; }
+    .chk { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; font-size: .9rem; color: #d8d2c6; cursor: pointer; }
+    .chk input { width: 17px; height: 17px; accent-color: var(--gold); }
 
-    .dm-hero { text-align: center; padding: 6px 0 2px; }
-    .dm-symbol { font-size: 3rem; font-weight: 800; color: var(--primary); line-height: 1; }
-    .dm-el { color: var(--muted); font-size: .9rem; margin-top: 4px; }
-    .dm-line { font-size: 1.05rem; font-weight: 700; margin: 10px 0 4px; }
+    .btn-go { width: 100%; padding: 16px; margin-top: 6px; font-size: 1.1rem; font-weight: 800; letter-spacing: .03em;
+      color: #1a1410; background: linear-gradient(180deg, #e6c469, var(--gold-d)); border: none; border-radius: 12px; cursor: pointer; }
+    .btn-go:active { transform: translateY(1px); }
+    .err { color: #ff8a7a; font-size: .9rem; min-height: 1em; margin: 4px 0 0; }
 
-    /* 공유 박스 */
-    .share-box { display: flex; gap: 8px; margin-top: 6px; }
-    .share-box input { flex: 1; font-size: .85rem; color: var(--muted); }
+    /* 결과 */
+    .speak { font-size: 1.06rem; }
+    .divider { text-align: center; color: var(--gold-d); letter-spacing: .5em; margin: 22px 0 10px; opacity: .7; }
+    .palja { text-align: center; font-size: 1.15rem; font-weight: 800; letter-spacing: .05em; color: var(--gold);
+      background: #100f16; border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+    .quote { color: var(--muted); font-size: .88rem; text-align: center; margin-top: 8px; }
+    .hook { border-left: 3px solid var(--red); padding: 4px 0 4px 14px; margin: 6px 0; color: #e7c9b0; font-weight: 600; }
 
-    /* 유료 잠금 카드 */
-    .locked-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-    .locked-grid { display: grid; gap: 10px; margin: 14px 0 4px; }
-    .locked-card {
-      display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px;
-      border: 1px solid var(--border); border-radius: 12px; background: #fafbff; position: relative; overflow: hidden;
-    }
-    .locked-card .lc-icon { font-size: 1.6rem; line-height: 1; }
-    .locked-card .lc-body strong { display: block; font-size: 1.02rem; }
-    .locked-card .lc-teaser { color: var(--muted); font-size: .9rem; margin-top: 3px; filter: blur(3.5px); user-select: none; }
-    .lc-lock { position: absolute; top: 10px; right: 12px; font-size: .95rem; }
-    .pay-note { background: #fff8f0; border: 1px solid #ffe3c2; border-radius: 10px; padding: 12px 14px; font-size: .9rem; margin-top: 12px; color: #8a5a1a; }
-    .muted-small { color: var(--muted); font-size: .85rem; }
-    .badge-soon { background: var(--muted); color:#fff; border-radius: 999px; padding: 3px 10px; font-size: .75rem; font-weight: 700; }
+    .blur { filter: blur(5px); user-select: none; color: var(--muted); }
+    .locked-wrap { position: relative; }
+    .lock-tag { display: inline-block; background: #241f16; color: var(--gold); border: 1px solid var(--gold-d);
+      border-radius: 999px; padding: 3px 12px; font-size: .78rem; font-weight: 800; }
 
-    /* 결과 탭 */
-    .result-tabs { display: flex; gap: 8px; max-width: 640px; margin: 0 auto 4px; padding: 0 16px; }
-    .rtab {
-      flex: 1; padding: 11px 10px; font-size: .95rem; font-weight: 700; cursor: pointer;
-      color: var(--muted); background: #fff; border: 1px solid var(--border); border-radius: 10px;
-    }
-    .rtab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .paid-list { list-style: none; padding: 0; margin: 14px 0 0; counter-reset: p; }
+    .paid-item { display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px dashed var(--line); }
+    .paid-item:last-child { border-bottom: none; }
+    .paid-item .num { counter-increment: p; color: var(--red); font-weight: 800; min-width: 20px; }
+    .paid-item .num::before { content: counter(p); }
+    .paid-item .pt { font-weight: 700; color: #efe9df; }
+    .paid-item .ps { color: var(--muted); font-size: .88rem; margin-top: 3px; }
 
-    /* 5문답 */
-    .qa-item { padding: 14px 0; border-bottom: 1px dashed var(--border); }
-    .qa-item:last-child { border-bottom: none; }
-    .qa-q { font-weight: 700; margin: 0 0 6px; display: flex; gap: 8px; align-items: baseline; }
-    .qa-q .qa-ic { font-size: 1.05rem; }
-    .qa-a { margin: 0; color: #33384a; }
+    .price-box { text-align: center; padding: 8px 0; }
+    .price-box .orig { color: var(--muted); text-decoration: line-through; font-size: .95rem; }
+    .price-box .now { color: var(--gold); font-size: 2.2rem; font-weight: 900; margin: 4px 0; }
+    .btn-pay { width: 100%; padding: 17px; font-size: 1.12rem; font-weight: 800; color: #fff;
+      background: linear-gradient(180deg, #d9463a, #a92c22); border: none; border-radius: 12px; cursor: pointer; }
+    .btn-kakao { width: 100%; padding: 15px; font-size: 1.02rem; font-weight: 800; color: #3a1d1d;
+      background: #FEE500; border: none; border-radius: 12px; cursor: pointer; display: flex; gap: 8px; align-items: center; justify-content: center; }
+    .mini { color: var(--muted); font-size: .82rem; }
+
+    /* 팝업 */
+    .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.82); display: flex; align-items: center; justify-content: center;
+      padding: 24px; z-index: 100; }
+    .modal { max-width: 400px; background: var(--card); border: 1px solid var(--gold-d); border-radius: 16px;
+      padding: 26px 24px; text-align: center; box-shadow: 0 0 60px rgba(216,178,92,.2); }
+    .modal h2 { color: var(--gold); font-size: 1.2rem; margin: 0 0 14px; }
+    .modal p { color: #d5cfc2; font-size: .95rem; margin: 0 0 20px; }
+    .modal button { width: 100%; padding: 14px; font-weight: 800; color: #1a1410;
+      background: var(--gold); border: none; border-radius: 10px; cursor: pointer; }
+    .hidden { display: none !important; }
+
+    footer { text-align: center; color: var(--muted); font-size: .82rem; padding: 20px 18px 40px; }
+    footer a { color: var(--muted); }
   </style>
 </head>
 <body>
-  <nav class="back-nav"><a href="/">← 한국인계산기 전체 계산기</a></nav>
-
-  <header class="site-header">
-    <h1>🔮 무료 사주 계산기</h1>
-    <p class="subtitle">생년월일시로 사주팔자 · 일간 · 오행을 한 번에</p>
-  </header>
-
-  <div class="ad-container" aria-label="광고">
-    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7143828779500885"
-         data-ad-slot="0000000000" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  <!-- 안내 팝업 -->
+  <div class="modal-bg" id="introModal">
+    <div class="modal">
+      <h2 id="mTitle"></h2>
+      <p id="mBody"></p>
+      <button id="mBtn" type="button"></button>
+    </div>
   </div>
 
-  <main class="container">
-    <section class="card controls">
-      <div class="control-row">
-        <label>달력 종류</label>
-        <div class="segment" role="radiogroup" aria-label="달력 종류">
-          <label><input type="radio" name="calType" value="solar" checked><span>양력</span></label>
-          <label><input type="radio" name="calType" value="lunar"><span>음력</span></label>
-        </div>
-        <label class="checkbox-row" id="leapRow" style="margin-top:8px; display:none;">
-          <input type="checkbox" id="isLeap"> 윤달 <small>(해당 월이 윤달인 경우)</small>
-        </label>
-      </div>
+  <nav class="back-nav"><a href="/">← 한국인계산기</a></nav>
 
-      <div class="control-row">
-        <label for="birthDate">생년월일 <small id="dateHint">(양력)</small></label>
-        <input type="date" id="birthDate" min="1900-01-01" max="2100-12-31">
-        <p class="muted-small" id="lunarRange" style="margin:6px 0 0; display:none;">※ 음력은 1900~2050년만 지원합니다.</p>
-      </div>
+  <header class="hero">
+    <div class="avatar" id="avatar"></div>
+    <h1><span class="g" id="pTitle"></span></h1>
+    <p class="sub" id="pSub"></p>
+  </header>
 
-      <div class="control-row">
-        <label for="birthTime">태어난 시각</label>
-        <input type="time" id="birthTime" value="12:00">
-        <label class="checkbox-row" style="margin-top:8px;">
-          <input type="checkbox" id="timeUnknown"> 시간을 모름 <small>(연·월·일주만 계산)</small>
-        </label>
-      </div>
-
-      <div class="control-row">
-        <label>성별 <small>(대운 방향 계산용)</small></label>
-        <div class="segment" role="radiogroup" aria-label="성별">
-          <label><input type="radio" name="gender" value="m" checked><span>남성</span></label>
-          <label><input type="radio" name="gender" value="f"><span>여성</span></label>
+  <main class="wrap">
+    <!-- 입력 폼 -->
+    <section class="card" id="formCard">
+      <div class="field">
+        <label>성별</label>
+        <div class="seg" id="segGender" data-name="gender">
+          <button type="button" data-v="m" class="on">남</button>
+          <button type="button" data-v="f">여</button>
         </div>
       </div>
-
-      <div class="control-row">
-        <label class="checkbox-row">
-          <input type="checkbox" id="trueSolar"> 진태양시 보정 <small>(동경 127.5° 기준, 약 -30분 · 고급)</small>
-        </label>
+      <div class="field">
+        <label>연애 상태</label>
+        <div class="seg" id="segLove" data-name="love">
+          <button type="button" data-v="solo" class="on">솔로</button>
+          <button type="button" data-v="dating">연애중</button>
+          <button type="button" data-v="married">기혼</button>
+          <button type="button" data-v="divorced">돌싱</button>
+        </div>
       </div>
-
-      <p class="error" id="errorMsg" role="alert"></p>
-      <button id="calcBtn" class="btn-primary" type="button">사주 보기</button>
+      <div class="field">
+        <label>달력 기준</label>
+        <div class="seg" id="segCal" data-name="cal">
+          <button type="button" data-v="solar" class="on">양력</button>
+          <button type="button" data-v="lunar">음력</button>
+        </div>
+        <label class="chk" id="leapRow" style="display:none;"><input type="checkbox" id="isLeap"> 윤달</label>
+      </div>
+      <div class="field">
+        <label>생년월일 <small id="calHint">(양력)</small></label>
+        <div class="ymd">
+          <select id="selY" aria-label="연도"></select>
+          <select id="selM" aria-label="월"></select>
+          <select id="selD" aria-label="일"></select>
+        </div>
+      </div>
+      <div class="field">
+        <label>태어난 시간</label>
+        <select id="selH" aria-label="태어난 시간"></select>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+      <button class="btn-go" id="goBtn" type="button">사주 풀이 시작</button>
     </section>
 
-    <!-- 결과 탭 -->
-    <div class="result-tabs" id="resultTabs" hidden>
-      <button type="button" class="rtab active" data-tab="detail">🔮 상세 보기</button>
-      <button type="button" class="rtab" data-tab="text">📋 텍스트로 공유</button>
-    </div>
+    <!-- 결과 -->
+    <section id="result" class="hidden">
+      <div class="card">
+        <p class="speak" id="greeting"></p>
+        <div class="palja" id="palja"></div>
+      </div>
 
-    <!-- ▶ 텍스트 공유 탭 -->
-    <div id="tabText" hidden>
-      <section class="card">
-        <h2 style="margin:0 0 6px; font-size:1.2rem;">📋 내 사주 텍스트</h2>
-        <p class="muted-small" style="margin:0 0 10px;">아래 내용을 복사해 카카오톡·메시지로 전달하세요. 표와 자세한 풀이는 링크로 함께 볼 수 있어요.</p>
-        <textarea id="summaryText" readonly rows="18"
-          style="width:100%; font-size:.92rem; line-height:1.7; border:1px solid var(--border); border-radius:10px; padding:14px; color:var(--text); background:#fff; resize:vertical;"></textarea>
+      <div class="card">
+        <span class="lock-tag" style="background:#16241d;color:var(--teal);border-color:var(--teal);">무료</span>
+        <div id="freeSections"></div>
+        <div class="divider">· · ·</div>
+        <p class="speak" id="hookLead" style="font-weight:700;"></p>
+        <p class="hook" id="hook"></p>
+      </div>
+
+      <div class="card locked-wrap">
+        <span class="lock-tag">🔒 도깨비만 아는 것</span>
+        <h2 style="font-size:1.15rem; margin:12px 0 8px;">이 놈의 정체와 다스리는 법</h2>
+        <p class="blur" id="preview"></p>
+        <ol class="paid-list" id="paidList"></ol>
+      </div>
+
+      <div class="card">
+        <div class="price-box">
+          <p class="mini">도깨비의 전체 풀이 · 지금만</p>
+          <div class="orig" id="priceOrig"></div>
+          <div class="now" id="priceNow"></div>
+        </div>
+        <button class="btn-pay" id="payBtn" type="button">이어서 도깨비의 풀이 보기</button>
+        <p class="mini" style="text-align:center; margin:10px 0 0;">결제 후 아래로 결과 링크를 받을 수 있어요.</p>
+      </div>
+
+      <!-- 카카오톡 결과 링크 -->
+      <div class="card">
+        <h3 style="margin:0 0 6px; font-size:1.05rem;">💬 카카오톡으로 내 결과 받기</h3>
+        <p class="mini" style="margin:0 0 12px;">결제하면 이 카카오톡으로 상세 풀이 결과 링크를 보내드려요. 내 무료 결과를 지금 친구에게 보내줄 수도 있어요.</p>
+        <button class="btn-kakao" id="kakaoBtn" type="button">🟡 카카오톡으로 결과 링크 보내기</button>
         <div style="display:flex; gap:8px; margin-top:10px;">
-          <button class="btn-primary" id="copyTextBtn" type="button" style="flex:1;">텍스트 전체 복사</button>
-          <button class="btn-ghost" id="copyLinkBtn2" type="button">링크만 복사</button>
+          <input type="text" id="shareUrl" readonly
+            style="flex:1; padding:10px; font-size:.82rem; color:var(--muted); background:#100f16; border:1px solid var(--line); border-radius:9px;">
+          <button type="button" id="copyBtn"
+            style="padding:0 16px; font-weight:700; color:var(--gold); background:transparent; border:1px solid var(--gold-d); border-radius:9px; cursor:pointer;">복사</button>
         </div>
-      </section>
-    </div>
-
-    <!-- ▶ 상세 보기 탭 -->
-    <div id="tabDetail">
-    <section class="card results" id="resultsCard" hidden>
-      <!-- 사주팔자 -->
-      <h2 style="margin:0 0 4px; font-size:1.2rem;">사주팔자 (四柱八字)</h2>
-      <p class="muted-small" id="birthEcho" style="margin:0 0 10px;"></p>
-      <div class="saju-grid" id="sajuGrid"></div>
-      <p class="muted-small" style="text-align:center;">위=천간(天干) · 아래=지지(地支) · 색은 오행</p>
-    </section>
-
-    <section class="card" id="dmCard" hidden>
-      <div class="dm-hero">
-        <div class="dm-symbol" id="dmChar">甲</div>
-        <div class="dm-el" id="dmEl"></div>
-        <p class="dm-line" id="dmLine"></p>
       </div>
-      <div class="chips" id="dmChips"></div>
-      <p id="dmDesc" style="margin:12px 0 0;"></p>
-    </section>
 
-    <section class="card" id="qaCard" hidden>
-      <h2 style="margin:0 0 4px; font-size:1.2rem;">💬 내 사주로 보는 5가지 질문</h2>
-      <p class="muted-small" style="margin:0 0 6px;">당신의 사주(일간·오행)에 대입한 답변입니다.</p>
-      <div id="qaList"></div>
-    </section>
-
-    <section class="card" id="ohengCard" hidden>
-      <h2 style="margin:0 0 6px; font-size:1.2rem;">오행(五行) 분포</h2>
-      <div class="oheng-bars" id="ohengBars"></div>
-      <p class="muted-small" id="ohengComment" style="margin:8px 0 14px;"></p>
-      <h3 style="margin:0 0 6px; font-size:1.05rem;">음양(陰陽) 균형</h3>
-      <div class="yy-bar" id="yyBar"></div>
-      <p class="muted-small" id="yyComment" style="margin:8px 0 0;"></p>
-    </section>
-
-    <section class="card" id="shareCard" hidden>
-      <h3 style="margin:0 0 8px; font-size:1.05rem;">🔗 결과 공유하기</h3>
-      <p class="muted-small" style="margin:0 0 8px;">아래 링크를 복사해 친구에게 보내면, 같은 사주 결과를 볼 수 있어요.</p>
-      <div class="share-box">
-        <input type="text" id="shareUrl" readonly>
-        <button class="btn-ghost" id="copyBtn" type="button">복사</button>
+      <div class="card">
+        <p class="mini">※ 이 풀이는 정통 명리학에 도깨비의 토속적 해석을 더한 것이라, 정통 사주학과 차이가 있어요. 재미와 참고용으로 봐주세요. 궁합이 궁금하면 <a href="/gunghap/" style="color:var(--gold);">무료 궁합</a>도 있어요.</p>
       </div>
-    </section>
-
-    <!-- 유료 잠금 영역 -->
-    <section class="card" id="lockedCard" hidden>
-      <div class="locked-head">
-        <h2 style="margin:0; font-size:1.2rem;">🔒 더 궁금한 상세 풀이</h2>
-        <span class="badge-soon">결제 준비중</span>
-      </div>
-      <p class="muted-small" id="daeunDir" style="margin:8px 0 0;"></p>
-      <div class="locked-grid" id="lockedGrid"></div>
-      <div class="pay-note">
-        상세 풀이(대운·재물·연애·직업·용신)는 곧 결제 후 확인하실 수 있도록 준비 중입니다.
-        오픈 알림을 원하시면 즐겨찾기 해두세요.
-      </div>
-    </section>
-    </div><!-- /tabDetail -->
-
-    <section class="card info">
-      <h2>이용 안내 · 계산 방식</h2>
-      <ul>
-        <li><strong>만세력 기반</strong>으로 생년월일시를 사주팔자 8글자(천간·지지)로 변환합니다.</li>
-        <li><strong>연주</strong>는 입춘, <strong>월주</strong>는 24절기를 기준으로 바뀌며, 천문 계산으로 절기 시각을 분 단위까지 반영합니다.</li>
-        <li><strong>일주</strong>는 자정(00:00), <strong>시주</strong>는 입력하신 시각(한국 표준시)을 기준으로 합니다. 밤 23시 이후 출생은 야자시 관점에 따라 시주 해석이 달라질 수 있습니다.</li>
-        <li>현재는 <strong>양력</strong> 입력만 지원합니다. (음력 입력은 준비 중)</li>
-        <li>본 결과는 <strong>재미와 참고용</strong>이며, 특정한 사실이나 미래를 보장하지 않습니다.</li>
-      </ul>
     </section>
   </main>
 
-  <footer class="site-footer">
-    <p>© <span id="year"></span> 한국인계산기 · 무료 사주 계산기</p>
+  <footer>
+    <p>© <span id="year"></span> 한국인계산기 · 도깨비 사주</p>
   </footer>
 
-  <script src="saju.js?v=1"></script>
+  <script src="saju.js?v=2"></script>
   <script src="saju-lunar.js?v=1"></script>
-  <script src="saju-data.js?v=2"></script>
-  <script src="saju-ui.js?v=2"></script>
-  <script>
-    document.getElementById("year").textContent = new Date().getFullYear();
-    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
-  </script>
+  <script src="saju-dokkaebi.js?v=3"></script>
+  <script src="saju-ui.js?v=6"></script>
+  <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
 </body>
 </html>
