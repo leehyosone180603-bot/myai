@@ -8,11 +8,70 @@
 
   // 결제/공유 설정 (실서비스 시 값 교체)
   var CONFIG = {
-    PAYMENT_URL: "detail/",   // 상세 결과 페이지 (실결제 붙이면 결제 후 이 링크로 이동)
-    KAKAO_JS_KEY: "",         // 카카오 JavaScript 키 (비어있으면 링크복사 대체)
+    PAYMENT_URL: "detail/",       // 상세 결과 페이지 (결제 미설정 시 바로 이동)
+    // ── 포트원 결제 (콘솔에서 발급받아 채워넣기) ──
+    PORTONE_STORE_ID: "",         // 포트원 Store ID (store-xxxx)
+    PORTONE_CHANNEL_KEY: "",      // 포트원 채널 키 (channel-key-xxxx)
+    WORKER_URL: "",               // Cloudflare Worker 주소 (https://dokkaebi-pay.xxx.workers.dev)
+    KAKAO_JS_KEY: "",             // 카카오 JavaScript 키 (비어있으면 링크복사 대체)
     PRICE_ORIGINAL: "29,900",
     PRICE_NOW: "9,900"
   };
+
+  function payConfigured() {
+    return !!(CONFIG.PORTONE_STORE_ID && CONFIG.PORTONE_CHANNEL_KEY && CONFIG.WORKER_URL && typeof window !== "undefined" && window.PortOne);
+  }
+
+  // 쿼리스트링 → 사주 파라미터(토큰 서명 대상, Worker와 동일 키)
+  function chartParamsFromQuery(qs) {
+    var q = new URLSearchParams(qs);
+    return {
+      y: q.get("y") || "", m: q.get("m") || "", d: q.get("d") || "",
+      g: q.get("g") || "", h: q.get("h") || "", mi: q.get("mi") || "",
+      cal: q.get("cal") || "", leap: q.get("leap") || ""
+    };
+  }
+
+  // 결제 시작: 포트원 결제창 → Worker 검증 → onToken(token)
+  // 미설정이면 opts.fallbackUrl 로 이동(결제 없이 상세 열람).
+  function startPayment(params, opts) {
+    opts = opts || {};
+    if (!payConfigured()) {
+      if (opts.fallbackUrl) location.href = opts.fallbackUrl;
+      else alert("도깨비의 상세 풀이 결제는 곧 열린다. 조금만 기다려라.");
+      return;
+    }
+    var pid = "saju-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+    var amount = parseInt(String(CONFIG.PRICE_NOW).replace(/,/g, ""), 10);
+    window.PortOne.requestPayment({
+      storeId: CONFIG.PORTONE_STORE_ID,
+      channelKey: CONFIG.PORTONE_CHANNEL_KEY,
+      paymentId: pid,
+      orderName: "도깨비 사주 상세풀이",
+      totalAmount: amount,
+      currency: "CURRENCY_KRW",
+      payMethod: "CARD"
+    }).then(function (resp) {
+      if (!resp || resp.code != null) { if (!resp || resp.code !== "USER_CANCEL") alert("결제가 취소되었거나 실패했다. " + ((resp && resp.message) || "")); return; }
+      fetch(CONFIG.WORKER_URL + "/pay/complete", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId: resp.paymentId, params: params })
+      }).then(function (r) { return r.json(); }).then(function (data) {
+        if (data.ok && data.token) opts.onToken(data.token);
+        else alert("결제 검증에 실패했다. " + (data.reason || ""));
+      }).catch(function () { alert("검증 서버에 연결하지 못했다. 잠시 뒤 다시 시도해라."); });
+    }).catch(function () { alert("결제창을 여는 데 실패했다."); });
+  }
+
+  // 토큰 검증(상세 페이지 접근 확인)
+  function verifyAccess(params, token, cb) {
+    if (!CONFIG.WORKER_URL) { cb(null); return; } // 미설정 → 게이트 없음(전체 공개)
+    if (!token) { cb(false); return; }
+    fetch(CONFIG.WORKER_URL + "/pay/access", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: token, params: params })
+    }).then(function (r) { return r.json(); }).then(function (d) { cb(!!d.ok); }).catch(function () { cb(false); });
+  }
 
   var POPUP = {
     title: "잠깐, 들어오기 전에",
@@ -218,6 +277,8 @@
   root.SajuDokkaebi = {
     CONFIG: CONFIG, POPUP: POPUP, PERSONA: PERSONA,
     DAYMASTER: DAYMASTER, PAID: PAID, AVATAR_SVG: AVATAR_SVG,
-    buildReading: buildReading
+    buildReading: buildReading,
+    payConfigured: payConfigured, startPayment: startPayment,
+    verifyAccess: verifyAccess, chartParamsFromQuery: chartParamsFromQuery
   };
 })(typeof window !== "undefined" ? window : this);

@@ -160,10 +160,13 @@
 
   /* ---- 결제 / 카카오 / 복사 ---- */
   function goPay() {
-    var url = DK.CONFIG.PAYMENT_URL;
-    if (!url) { alert("도깨비의 상세 풀이 결제는 곧 열린다. 조금만 기다려라."); return; }
     var q = ($("shareUrl").value.split("?")[1]) || "";
-    location.href = url + (url.indexOf("?") < 0 ? "?" : "&") + q;
+    var detailUrl = DK.CONFIG.PAYMENT_URL + (DK.CONFIG.PAYMENT_URL.indexOf("?") < 0 ? "?" : "&") + q;
+    var params = DK.chartParamsFromQuery(q);
+    DK.startPayment(params, {
+      fallbackUrl: detailUrl, // 결제 미설정 시 바로 상세로
+      onToken: function (token) { location.href = detailUrl + "&pay=" + encodeURIComponent(token); }
+    });
   }
   function kakaoShare() {
     var url = $("shareUrl").value, text = "도깨비가 봐준 내 사주, 너도 봐라.";

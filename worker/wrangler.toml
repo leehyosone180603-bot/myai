@@ -1,0 +1,17 @@
+name = "dokkaebi-pay"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# 공개 변수 (민감정보 아님)
+[vars]
+PRICE = "9900"
+ALLOWED_ORIGIN = "https://calcbox.kr"
+
+# 시크릿은 커밋하지 말고 CLI로 등록:
+#   npx wrangler secret put PORTONE_API_SECRET
+#   npx wrangler secret put TOKEN_SECRET
+#
+# 배포:
+#   cd worker && npm i -g wrangler && wrangler deploy
+# 배포 후 나오는 URL(예: https://dokkaebi-pay.<계정>.workers.dev)을
+# 프론트 CONFIG.WORKER_URL 에 넣으세요.

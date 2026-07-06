@@ -89,6 +89,17 @@
     footer{text-align:center;color:var(--muted);font-size:.8rem;padding:26px 18px 40px;}
     footer a{color:var(--muted);}
     .loading{text-align:center;color:var(--muted);padding:60px 0;}
+    /* 페이월 */
+    .paywall{text-align:center;border:1px solid var(--gold-d);border-radius:16px;padding:32px 22px;margin:30px 0;
+      background:radial-gradient(circle at 50% 25%,#221a10,#0b0a0e);box-shadow:0 0 50px rgba(216,178,92,.15);}
+    .paywall .pw-hj{font-size:2.6rem;color:var(--gold);letter-spacing:.1em;}
+    .paywall h3{margin:12px 0 6px;font-size:1.2rem;}
+    .pw-price{margin:16px 0;}
+    .pw-price .o{color:var(--muted);text-decoration:line-through;font-size:.95rem;}
+    .pw-price .n{color:var(--gold);font-size:1.8rem;font-weight:900;margin-left:10px;}
+    .pw-btn{width:100%;max-width:340px;padding:16px;font-size:1.08rem;font-weight:800;color:#fff;
+      background:linear-gradient(180deg,#d9463a,#a92c22);border:none;border-radius:12px;cursor:pointer;}
+    .pw-btn:active{transform:translateY(1px);}
   </style>
 </head>
 <body>
@@ -106,12 +117,13 @@
     <p>© <span id="year"></span> 한국인계산기 · 도깨비 사주 · 재미·참고용</p>
   </footer>
 
+  <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
   <script src="../saju.js?v=2"></script>
   <script src="../saju-lunar.js?v=1"></script>
   <script src="../saju-detail.js?v=1"></script>
-  <script src="../saju-dokkaebi.js?v=4"></script>
+  <script src="../saju-dokkaebi.js?v=5"></script>
   <script src="../detail-content.js?v=4"></script>
-  <script src="detail-ui.js?v=4"></script>
+  <script src="detail-ui.js?v=5"></script>
   <script>document.getElementById("year").textContent=new Date().getFullYear();</script>
 </body>
 </html>
