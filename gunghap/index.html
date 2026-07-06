@@ -3,148 +3,127 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>무료 궁합 계산기 - 두 사람 사주로 보는 오행 궁합 | 한국인계산기</title>
-  <meta name="description" content="두 사람의 생년월일시로 사주 궁합을 무료로 봅니다. 일간 성향 궁합, 일지 부부궁, 오행 보완까지 분석하고 결과를 링크로 공유하세요.">
-  <meta name="keywords" content="궁합, 무료궁합, 궁합계산기, 사주궁합, 커플궁합, 오행궁합, 띠궁합, 결혼궁합">
+  <title>도깨비 궁합 - 두 사람 사주로 보는 무료 궁합 | 한국인계산기</title>
+  <meta name="description" content="천 년 묵은 도깨비가 두 사람의 사주로 궁합을 봐준다. 연애 스타일·끌림·속궁합·결혼 시기·권태기·재물 시너지까지 20가지로 무료 분석.">
+  <meta name="keywords" content="도깨비 궁합, 무료 궁합, 사주 궁합, 커플 궁합, 연애 궁합, 결혼 궁합, 속궁합, 띠 궁합">
   <meta name="robots" content="index, follow">
-  <meta property="og:title" content="무료 궁합 계산기 - 두 사람 사주로 보는 궁합">
-  <meta property="og:description" content="생년월일시로 사주 궁합을 무료로 분석. 결과는 링크로 공유하세요.">
+  <meta property="og:title" content="도깨비 궁합 - 두 사람 사주로 보는 무료 궁합">
+  <meta property="og:description" content="도깨비가 두 사람 궁합을 20가지로 봐준다. 무료로 시작해봐라.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://calcbox.kr/gunghap/">
   <meta property="og:site_name" content="한국인계산기">
   <link rel="canonical" href="https://calcbox.kr/gunghap/">
 
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "무료 궁합 계산기",
-    "url": "https://calcbox.kr/gunghap/",
-    "description": "두 사람의 사주로 일간 궁합, 일지 부부궁, 오행 보완을 분석하는 무료 궁합 도구.",
-    "applicationCategory": "LifestyleApplication",
-    "operatingSystem": "Any",
-    "inLanguage": "ko",
-    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" }
-  }
+  { "@context": "https://schema.org", "@type": "WebApplication", "name": "도깨비 궁합",
+    "url": "https://calcbox.kr/gunghap/", "description": "두 사람 사주로 보는 무료 도깨비 궁합.",
+    "applicationCategory": "LifestyleApplication", "operatingSystem": "Any", "inLanguage": "ko",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" } }
   </script>
 
-  <!-- Google AdSense 게시자 ID: ca-pub-7143828779500885 -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885"
-     crossorigin="anonymous"></script>
-
-  <link rel="stylesheet" href="../style.css?v=4">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885" crossorigin="anonymous"></script>
   <style>
-    input[type="date"], input[type="time"] {
-      width: 100%; padding: 11px 12px; font-size: 1rem;
-      border: 1px solid var(--border); border-radius: 9px; background: #fff; color: var(--text);
-    }
-    input[type="date"]:focus, input[type="time"]:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,91,219,.15); }
-    .person-title { display:flex; align-items:center; gap:8px; margin:0 0 12px; font-size:1.1rem; }
-    .person-badge { background: var(--primary); color:#fff; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:800; font-size:.9rem; }
-    .person-badge.b { background:#e64980; }
-    .muted-small { color: var(--muted); font-size: .85rem; }
+    :root { --bg:#0b0b0f; --card:#17161e; --card2:#131219; --line:#2a2833; --text:#ece7dd; --muted:#8f897c;
+      --gold:#d8b25c; --gold-d:#b8923d; --red:#c0392b; --pink:#e64980; --teal:#3fb08f; --shadow:0 8px 30px rgba(0,0,0,.5); }
+    * { box-sizing:border-box; }
+    body { margin:0; background:radial-gradient(120% 70% at 50% -8%, #1a1622 0%, var(--bg) 55%) fixed; color:var(--text);
+      line-height:1.75; font-family:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;-webkit-font-smoothing:antialiased; }
+    .wrap { max-width:600px; margin:0 auto; padding:0 18px 70px; }
+    .back-nav { max-width:600px; margin:0 auto; padding:16px 18px 0; }
+    .back-nav a { color:var(--muted); text-decoration:none; font-size:.85rem; }
+    .hero { text-align:center; padding:22px 0 6px; }
+    .hero .avatar { width:104px; height:104px; margin:0 auto 12px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+      background:radial-gradient(circle at 50% 35%, #23202c, #0c0b10); box-shadow:0 0 0 2px var(--gold-d), 0 0 40px rgba(216,178,92,.22); }
+    .hero h1 { font-size:1.6rem; margin:0; letter-spacing:.05em; font-weight:800; }
+    .hero h1 .g { color:var(--gold); } .hero .sub { color:var(--muted); font-size:.92rem; margin:8px 0 0; }
 
-    .score-hero { text-align:center; padding:8px 0 4px; }
-    .score-num { font-size: 3.4rem; font-weight: 900; color: var(--primary); line-height:1; }
-    .score-num small { font-size:1.2rem; color:var(--muted); font-weight:700; }
-    .score-tier { font-size:1.2rem; font-weight:800; margin:8px 0 2px; }
-    .pair-line { color:var(--muted); font-size:.92rem; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; margin:16px 0; box-shadow:var(--shadow); }
+    .ptitle { display:flex; align-items:center; gap:8px; margin:0 0 14px; font-size:1.05rem; font-weight:800; }
+    .pbadge { width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:800; font-size:.9rem; color:#1a1410; background:var(--gold); }
+    .pbadge.b { background:var(--pink); color:#fff; }
+    .field { margin-bottom:14px; }
+    .field > label { display:block; font-weight:700; font-size:.9rem; margin-bottom:7px; color:#d8d2c6; }
+    .field small { color:var(--muted); font-weight:400; }
+    input[type=text] { width:100%; padding:11px 12px; font-size:1rem; color:var(--text); background:#100f16; border:1px solid var(--line); border-radius:10px; }
+    .seg { display:flex; gap:8px; flex-wrap:wrap; }
+    .seg button { flex:1; min-width:60px; padding:10px 8px; font-size:.92rem; font-weight:700; color:var(--muted); background:#100f16; border:1px solid var(--line); border-radius:10px; cursor:pointer; }
+    .seg button.on { color:#1a1410; background:var(--gold); border-color:var(--gold); }
+    select { width:100%; padding:11px 10px; font-size:.98rem; color:var(--text); background:#100f16; border:1px solid var(--line); border-radius:10px; appearance:none;
+      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1l5 5 5-5' stroke='%238f897c' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");
+      background-repeat:no-repeat; background-position:right 12px center; }
+    .ymd { display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:7px; }
+    .hm { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+    .chk { display:inline-flex; align-items:center; gap:8px; margin-top:8px; font-size:.88rem; color:#d8d2c6; cursor:pointer; }
+    .chk input { width:16px; height:16px; accent-color:var(--gold); }
+    .btn-go { width:100%; padding:16px; font-size:1.1rem; font-weight:800; color:#1a1410; background:linear-gradient(180deg,#e6c469,var(--gold-d)); border:none; border-radius:12px; cursor:pointer; }
+    .err { color:#ff8a7a; font-size:.9rem; min-height:1em; margin:0 0 10px; }
 
-    .pair-grids { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:14px 0 4px; }
-    .pg-box { border:1px solid var(--border); border-radius:12px; padding:12px 8px; background:#fff; }
-    .pg-name { text-align:center; font-size:.82rem; color:var(--muted); font-weight:600; margin-bottom:8px; }
-    .mini-saju { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; }
-    .mini-col { text-align:center; }
-    .mini-l { font-size:.68rem; color:var(--muted); margin-bottom:3px; }
-    .mini-c { font-size:1.25rem; font-weight:800; line-height:1.25; }
+    .score-hero { text-align:center; padding:6px 0; }
+    .score-num { font-size:3.2rem; font-weight:900; color:var(--gold); line-height:1; }
+    .score-num small { font-size:1.1rem; color:var(--muted); font-weight:700; }
+    .score-tier { font-size:1.15rem; font-weight:800; margin:8px 0 2px; }
+    .pair-line { color:var(--muted); font-size:.9rem; }
+    .pair-grids { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0 4px; }
+    .pg-box { border:1px solid var(--line); border-radius:12px; padding:10px 6px; background:#100f16; }
+    .pg-name { text-align:center; font-size:.8rem; color:var(--muted); font-weight:700; margin-bottom:6px; }
+    .mini { display:grid; grid-template-columns:repeat(4,1fr); gap:3px; }
+    .mini .c { text-align:center; } .mini .l { font-size:.62rem; color:var(--muted); } .mini .h { font-size:1.1rem; font-weight:800; color:var(--gold); }
 
-    .axis { padding:14px 0; border-bottom:1px dashed var(--border); }
-    .axis:last-child { border-bottom:none; }
-    .axis-head { display:flex; align-items:center; gap:8px; margin:0 0 6px; }
-    .axis-ic { font-size:1.15rem; }
-    .axis-title { font-weight:700; }
-    .axis-tag { margin-left:auto; background:#f0f4ff; border:1px solid #d6e0ff; color:var(--primary); border-radius:999px; padding:3px 11px; font-size:.82rem; font-weight:700; }
-    .axis-body { margin:0; color:#33384a; }
-    .share-box { display:flex; gap:8px; margin-top:6px; }
-    .share-box input { flex:1; font-size:.85rem; color:var(--muted); }
+    .toc { background:var(--card2); border:1px solid var(--line); border-radius:14px; padding:12px 8px; margin:14px 0; }
+    .toc a { display:flex; align-items:center; gap:10px; padding:7px 8px; text-decoration:none; color:var(--text); border-bottom:1px solid var(--line); font-size:.92rem; }
+    .toc a:last-child { border-bottom:none; } .toc .hj { color:var(--pink); font-weight:800; width:20px; text-align:center; }
+    .sec { margin:26px 0; }
+    .sec-head { display:flex; align-items:baseline; gap:10px; margin:0 0 8px; padding-bottom:8px; border-bottom:1px solid var(--line); }
+    .sec-hj { font-size:1.5rem; font-weight:800; color:var(--pink); }
+    .sec-t { font-size:1.15rem; font-weight:800; }
+    .sec p { margin:0; color:#e7e1d6; }
+
+    .share-box { display:flex; gap:8px; }
+    .share-box input { flex:1; padding:10px; font-size:.82rem; color:var(--muted); background:#100f16; border:1px solid var(--line); border-radius:9px; }
+    .btn-ghost { padding:0 16px; font-weight:700; color:var(--gold); background:transparent; border:1px solid var(--gold-d); border-radius:9px; cursor:pointer; }
+    .mini-note { color:var(--muted); font-size:.84rem; }
+    .hidden { display:none !important; }
+    footer { text-align:center; color:var(--muted); font-size:.8rem; padding:22px 18px 40px; }
+    footer a { color:var(--gold-d); text-decoration:none; }
+    .ad-container { max-width:600px; margin:0 auto 8px; padding:0 18px; min-height:90px; text-align:center; }
   </style>
 </head>
 <body>
-  <nav class="back-nav"><a href="/">← 한국인계산기 전체 계산기</a></nav>
-
-  <header class="site-header">
-    <h1>💞 무료 궁합 계산기</h1>
-    <p class="subtitle">두 사람의 사주로 보는 오행 궁합</p>
+  <nav class="back-nav"><a href="/">← 한국인계산기</a> · <a href="/saju/">도깨비 사주</a></nav>
+  <header class="hero">
+    <div class="avatar" id="avatar">💞</div>
+    <h1><span class="g">도깨비 궁합</span></h1>
+    <p class="sub">천 년 묵은 도깨비가 두 사람 궁합을 봐주마</p>
   </header>
 
   <div class="ad-container" aria-label="광고">
-    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7143828779500885"
-         data-ad-slot="0000000000" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7143828779500885" data-ad-slot="0000000000" data-ad-format="auto" data-full-width-responsive="true"></ins>
   </div>
 
-  <main class="container">
-    <!-- A -->
-    <section class="card">
-      <p class="person-title"><span class="person-badge">A</span> 첫 번째 사람</p>
-      <div class="control-row">
-        <label for="nameA">이름/별칭 <small>(선택)</small></label>
-        <input type="text" id="nameA" placeholder="예: 나">
-      </div>
-      <div class="control-row">
-        <label>달력 종류</label>
-        <div class="segment" role="radiogroup" aria-label="A 달력 종류">
-          <label><input type="radio" name="calA" value="solar" checked><span>양력</span></label>
-          <label><input type="radio" name="calA" value="lunar"><span>음력</span></label>
-        </div>
-        <label class="checkbox-row" id="leapRowA" style="margin-top:8px; display:none;">
-          <input type="checkbox" id="leapA"> 윤달
-        </label>
-      </div>
-      <div class="control-row">
-        <label for="dateA">생년월일 <small id="hintA">(양력)</small></label>
-        <input type="date" id="dateA" min="1900-01-01" max="2100-12-31">
-      </div>
-      <div class="control-row">
-        <label for="timeA">태어난 시각</label>
-        <input type="time" id="timeA" value="12:00">
-        <label class="checkbox-row" style="margin-top:8px;"><input type="checkbox" id="timeUnknownA"> 시간을 모름</label>
-      </div>
+  <main class="wrap">
+    <section class="card" id="cardA">
+      <p class="ptitle"><span class="pbadge">A</span> 첫 번째 사람</p>
+      <div class="field"><label>이름/별칭</label><input type="text" id="nameA" maxlength="12" placeholder="예: 나"></div>
+      <div class="field"><label>성별</label><div class="seg" data-name="genderA"><button type="button" data-v="m" class="on">남</button><button type="button" data-v="f">여</button></div></div>
+      <div class="field"><label>달력</label><div class="seg" data-name="calA"><button type="button" data-v="solar" class="on">양력</button><button type="button" data-v="lunar">음력</button></div>
+        <label class="chk" id="leapRowA" style="display:none;"><input type="checkbox" id="leapA"> 윤달</label></div>
+      <div class="field"><label>생년월일 <small id="hintA">(양력)</small></label><div class="ymd"><select id="selYA"></select><select id="selMA"></select><select id="selDA"></select></div></div>
+      <div class="field"><label>태어난 시간</label><div class="hm"><select id="selHA"></select><select id="selMinA"></select></div></div>
     </section>
 
-    <!-- B -->
-    <section class="card">
-      <p class="person-title"><span class="person-badge b">B</span> 두 번째 사람</p>
-      <div class="control-row">
-        <label for="nameB">이름/별칭 <small>(선택)</small></label>
-        <input type="text" id="nameB" placeholder="예: 상대">
-      </div>
-      <div class="control-row">
-        <label>달력 종류</label>
-        <div class="segment" role="radiogroup" aria-label="B 달력 종류">
-          <label><input type="radio" name="calB" value="solar" checked><span>양력</span></label>
-          <label><input type="radio" name="calB" value="lunar"><span>음력</span></label>
-        </div>
-        <label class="checkbox-row" id="leapRowB" style="margin-top:8px; display:none;">
-          <input type="checkbox" id="leapB"> 윤달
-        </label>
-      </div>
-      <div class="control-row">
-        <label for="dateB">생년월일 <small id="hintB">(양력)</small></label>
-        <input type="date" id="dateB" min="1900-01-01" max="2100-12-31">
-      </div>
-      <div class="control-row">
-        <label for="timeB">태어난 시각</label>
-        <input type="time" id="timeB" value="12:00">
-        <label class="checkbox-row" style="margin-top:8px;"><input type="checkbox" id="timeUnknownB"> 시간을 모름</label>
-      </div>
+    <section class="card" id="cardB">
+      <p class="ptitle"><span class="pbadge b">B</span> 두 번째 사람</p>
+      <div class="field"><label>이름/별칭</label><input type="text" id="nameB" maxlength="12" placeholder="예: 상대"></div>
+      <div class="field"><label>성별</label><div class="seg" data-name="genderB"><button type="button" data-v="m" class="on">남</button><button type="button" data-v="f">여</button></div></div>
+      <div class="field"><label>달력</label><div class="seg" data-name="calB"><button type="button" data-v="solar" class="on">양력</button><button type="button" data-v="lunar">음력</button></div>
+        <label class="chk" id="leapRowB" style="display:none;"><input type="checkbox" id="leapB"> 윤달</label></div>
+      <div class="field"><label>생년월일 <small id="hintB">(양력)</small></label><div class="ymd"><select id="selYB"></select><select id="selMB"></select><select id="selDB"></select></div></div>
+      <div class="field"><label>태어난 시간</label><div class="hm"><select id="selHB"></select><select id="selMinB"></select></div></div>
     </section>
 
-    <section class="card">
-      <p class="error" id="errorMsg" role="alert" style="margin-top:0;"></p>
-      <button id="calcBtn" class="btn-primary" type="button">궁합 보기</button>
-    </section>
+    <section class="card"><p class="err" id="errorMsg"></p><button class="btn-go" id="calcBtn" type="button">두 사람 궁합 보기</button></section>
 
-    <div id="resultArea" hidden>
+    <div id="resultArea" class="hidden">
       <section class="card">
         <div class="score-hero">
           <div class="score-num"><span id="scoreNum">0</span><small> 점</small></div>
@@ -152,59 +131,34 @@
           <p class="pair-line" id="pairLine"></p>
         </div>
         <div class="pair-grids">
-          <div class="pg-box"><div class="pg-name" id="nameA2">A</div><div class="mini-saju" id="gridA"></div></div>
-          <div class="pg-box"><div class="pg-name" id="nameB2">B</div><div class="mini-saju" id="gridB"></div></div>
+          <div class="pg-box"><div class="pg-name" id="nameA2">A</div><div class="mini" id="gridA"></div></div>
+          <div class="pg-box"><div class="pg-name" id="nameB2">B</div><div class="mini" id="gridB"></div></div>
         </div>
-        <p class="muted-small" style="text-align:center;">위=천간 · 아래=지지 · 색은 오행</p>
+        <p class="mini-note" style="text-align:center;">위=천간 · 아래=지지 · 색은 오행</p>
       </section>
-
+      <div id="content"></div>
       <section class="card">
-        <h2 style="margin:0 0 4px; font-size:1.2rem;">궁합 풀이</h2>
-        <div class="axis">
-          <div class="axis-head"><span class="axis-ic">🧭</span><span class="axis-title">일간 성향 궁합</span><span class="axis-tag" id="relType"></span></div>
-          <p class="axis-body" id="relComment"></p>
-        </div>
-        <div class="axis">
-          <div class="axis-head"><span class="axis-ic">💑</span><span class="axis-title">일지 부부궁</span><span class="axis-tag" id="jiType"></span></div>
-          <p class="axis-body" id="jiComment"></p>
-        </div>
-        <div class="axis">
-          <div class="axis-head"><span class="axis-ic">⚖️</span><span class="axis-title">오행 보완</span></div>
-          <p class="axis-body" id="compComment"></p>
-        </div>
-      </section>
-
-      <section class="card">
-        <h3 style="margin:0 0 8px; font-size:1.05rem;">🔗 궁합 결과 공유하기</h3>
-        <p class="muted-small" style="margin:0 0 8px;">이 링크를 보내면 같은 궁합 결과를 볼 수 있어요.</p>
-        <div class="share-box">
-          <input type="text" id="shareUrl" readonly>
-          <button class="btn-ghost" id="copyBtn" type="button">복사</button>
-        </div>
-        <p class="muted-small" style="margin:12px 0 0;">더 자세한 사주 분석은 <a href="/saju/">무료 사주 계산기</a>에서 확인하세요.</p>
+        <h3 style="margin:0 0 8px; font-size:1.05rem;">🔗 궁합 결과 공유</h3>
+        <p class="mini-note" style="margin:0 0 8px;">이 링크를 보내면 같은 궁합 결과를 볼 수 있어요.</p>
+        <div class="share-box"><input type="text" id="shareUrl" readonly><button class="btn-ghost" id="copyBtn" type="button">복사</button></div>
+        <p class="mini-note" style="margin:12px 0 0;">내 사주가 더 궁금하면 <a href="/saju/" style="color:var(--gold);">도깨비 사주</a>도 있어요.</p>
       </section>
     </div>
 
-    <section class="card info">
-      <h2>이용 안내</h2>
-      <ul>
-        <li>두 사람의 <strong>일간(성향)·일지(부부궁)·오행 균형</strong>을 바탕으로 궁합을 분석합니다.</li>
-        <li><strong>상생·비화</strong>는 편안하고 북돋는 관계, <strong>상극·충</strong>은 자극과 긴장이 있는 관계로 봅니다.</li>
-        <li>시간을 모르면 시주를 빼고 계산하며, 음력(1900~2050)·윤달 입력을 지원합니다.</li>
-        <li>본 결과는 <strong>재미와 참고용</strong>이며, 두 사람의 인연은 사주보다 서로의 노력이 더 중요합니다. 🙂</li>
-      </ul>
-    </section>
+    <section class="card"><p class="mini-note">※ 도깨비 궁합은 전통 명리에 토속적 해석을 더한 재미·참고용입니다. 두 사람의 인연은 사주보다 서로의 노력이 더 중요합니다. 🙂</p></section>
   </main>
 
-  <footer class="site-footer">
-    <p>© <span id="year"></span> 한국인계산기 · 무료 궁합 계산기</p>
+  <footer>
+    <p><a href="/saju/terms/">이용약관</a> · <a href="/saju/privacy/">개인정보처리방침</a></p>
+    <p>© <span id="year"></span> 한국인계산기 · 도깨비 궁합 · 재미·참고용</p>
   </footer>
 
   <script src="../saju/saju.js?v=2"></script>
   <script src="../saju/saju-lunar.js?v=1"></script>
-  <script src="../saju/saju-data.js?v=3"></script>
-  <script src="gunghap.js?v=1"></script>
-  <script src="gunghap-ui.js?v=1"></script>
+  <script src="../saju/saju-detail.js?v=1"></script>
+  <script src="../saju/saju-dokkaebi.js?v=5"></script>
+  <script src="gunghap-content.js?v=1"></script>
+  <script src="gunghap-ui.js?v=2"></script>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
     try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
