@@ -5,7 +5,7 @@ import { createServer } from "node:http";
 import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join, normalize } from "node:path";
-import { config, ROOT, saveEnv, requireTextProvider } from "./config.js";
+import { config, ROOT, saveEnv, requireTextProvider, CHANNELS, applyChannel } from "./config.js";
 import {
   runAll,
   renderImages,
@@ -83,6 +83,7 @@ function health() {
     channelPersona: config.channelPersona,
     targetMinutes: config.targetMinutes,
     imageStyle: config.imageStyle,
+    channels: Object.keys(CHANNELS),
     tts: {
       hasKey: !!config.elevenlabs.apiKey,
       model: config.elevenlabs.model,
@@ -278,6 +279,8 @@ const server = createServer(async (req, res) => {
       try {
         requireTextProvider();
         if (!b.benchmark || !b.benchmark.trim()) throw new Error("대본/벤치마크 내용이 비어 있습니다.");
+        const ch = applyChannel(b.channel); // 채널별 그림체·톤 적용
+        emit({ type: "log", msg: `채널: ${ch} (그림체·톤 적용)` });
         const slug = sanitizeSlug(b.slug?.trim() || youtubeId(b.benchmark) || "video");
         const result = await runAll(slug, b.benchmark, {
           generateImages: !!b.images,

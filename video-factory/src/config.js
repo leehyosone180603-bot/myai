@@ -110,6 +110,37 @@ export function saveEnv(updates) {
   rebuildConfig();
 }
 
+// ── 채널별 설정 (그림체·페르소나) ────────────────────────────
+// 채널을 고르면 이미지 그림체와 대본 톤이 그 채널에 맞게 바뀐다.
+export const CHANNELS = {
+  "인생산책길": {
+    persona: "차분하고 사려 깊은 내레이터. 인생과 관계를 산책하듯 편안하고 따뜻하게 풀어준다.",
+    imageStyle:
+      "Korean romance webtoon / shoujo manga (sunjeong manhwa) illustration style, soft cel shading with clean delicate linework, warm pastel color palette, gentle soft lighting, tender expressive faces with soft eyes, semi-realistic proportions, cozy warm atmosphere, smooth gradients",
+  },
+  "포모룸": {
+    persona: "친근하고 다정한 내레이터. 곁에서 조곤조곤 조언해주는 친구 같은 톤.",
+    imageStyle:
+      "cozy soft 3D-rendered illustration, friendly rounded characters, warm muted earthy pastel tones, gentle soft studio lighting, clean approachable Pixar-like style, smooth shading, comfortable homey mood",
+  },
+  "라떼클럽": {
+    persona: "따뜻하고 감성적인 내레이터. 카페에서 도란도란 이야기 나누듯 편안하게.",
+    imageStyle:
+      "warm gouache painterly illustration, cozy cafe palette of cream caramel and soft brown tones, gentle textured brush strokes, soft warm lighting, relaxed friendly storybook mood, hand-painted feel, clean composition",
+  },
+};
+export const DEFAULT_CHANNEL = "인생산책길";
+
+// 선택 채널을 config 에 적용(이번 실행에 반영). 이미지 그림체·대본 페르소나·채널명이 바뀐다.
+export function applyChannel(name) {
+  const key = name && name in CHANNELS ? name : DEFAULT_CHANNEL;
+  const ch = CHANNELS[key];
+  config.channelName = key;
+  config.channelPersona = ch.persona;
+  config.imageStyle = ch.imageStyle;
+  return key;
+}
+
 export function requireTextProvider() {
   const p = config.textProvider;
   const key = { xai: config.xai.apiKey, openai: config.openai.apiKey, anthropic: config.anthropic.apiKey }[p];

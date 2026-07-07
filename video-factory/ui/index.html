@@ -108,7 +108,9 @@
   <!-- 1. 벤치마크 입력 -->
   <section class="card">
     <h2><span class="step">1</span> 벤치마크 영상 넣기</h2>
-    <label>유튜브 링크로 자막 자동 가져오기 <span class="hint">(yt-dlp 설치 + 외부망 필요)</span></label>
+    <label>📺 업로드할 채널 선택 <span class="hint">(채널에 맞게 이미지 그림체·대본 톤이 바뀝니다)</span></label>
+    <select id="channel"></select>
+    <label style="margin-top:14px">유튜브 링크로 자막 자동 가져오기 <span class="hint">(yt-dlp 설치 + 외부망 필요)</span></label>
     <div class="row">
       <input id="url" placeholder="https://www.youtube.com/watch?v=..." style="flex:3" />
       <button class="ghost" style="flex:1" onclick="doFetch()">자막 가져오기</button>
@@ -194,6 +196,8 @@ async function loadHealth(){
   $("channelPersona").value=HEALTH.channelPersona||"";
   $("targetMinutes").value=HEALTH.targetMinutes||7;
   $("imageStyle").value=HEALTH.imageStyle||"";
+  const chSel=$("channel");
+  if(chSel && !chSel.options.length){ (HEALTH.channels||[]).forEach(c=>{ const o=document.createElement("option"); o.value=c; o.textContent=c; chSel.appendChild(o); }); }
   $("ttsModel").value=HEALTH.tts?.model||"eleven_multilingual_v2";
   if(HEALTH.tts?.voiceId){ const sel=$("voiceSelect"); if(![...sel.options].some(o=>o.value===HEALTH.tts.voiceId)){ const o=document.createElement("option"); o.value=HEALTH.tts.voiceId; o.textContent="현재 보이스: "+HEALTH.tts.voiceId; sel.appendChild(o);} sel.value=HEALTH.tts.voiceId; }
 }
@@ -253,7 +257,7 @@ async function doRun(){
   $("runErr").textContent=""; const log=$("log"); log.style.display="block"; log.textContent="";
   $("runBtn").disabled=true;
   try{
-    await stream("/api/run", { benchmark, slug:$("slug").value.trim(), images:$("optImages").checked, videos:$("optVideos").checked }, (ev)=>{
+    await stream("/api/run", { benchmark, slug:$("slug").value.trim(), channel:$("channel")?.value, images:$("optImages").checked, videos:$("optVideos").checked }, (ev)=>{
       if(ev.type==="log") log.textContent += ev.msg+"\n";
       else if(ev.type==="error"){ $("runErr").textContent="❌ "+ev.msg; }
       else if(ev.type==="done"){ CURRENT=ev.result; renderResults(ev.result); }
