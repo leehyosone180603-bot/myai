@@ -131,6 +131,7 @@
       <div style="max-width:160px"><label>음성 속도</label><input id="batchSpeed" type="number" min="0.7" max="1.2" step="0.05" value="1.1"></div>
     </div>
     <button class="btn-primary" id="batchBtn" style="background:linear-gradient(90deg,var(--accent2),#3fe0c8)" onclick="doBatch()">📦 일괄 생성 시작</button>
+    <div id="batchDone" style="margin-top:8px"></div>
     <pre id="logBatch" style="display:none"></pre>
     <div class="hint" style="margin-top:6px">⏳ 10개면 시간이 오래 걸리고 비용도 그만큼 큽니다(영상당 $3~4). 순차 처리라 안정적이에요. 완료 후 위 "이전 결과 불러오기"에서 하나씩 확인하세요.</div>
   </section>
@@ -316,7 +317,11 @@ async function doBatch(){
     await stream("/api/batch", { jobs, channel:$("channel")?.value, speed:Number($("batchSpeed")?.value)||undefined }, (ev)=>{
       if(ev.type==="log") log.textContent+=ev.msg+"\n";
       else if(ev.type==="error") log.textContent+="❌ "+ev.msg+"\n";
-      else if(ev.type==="done"){ toast("일괄 완료 "+(ev.result.slugs?.length||0)+"개"); loadOutputs(); }
+      else if(ev.type==="done"){
+        toast("일괄 완료 "+(ev.result.slugs?.length||0)+"개"); loadOutputs();
+        const box=$("batchDone"); const slugs=ev.result.slugs||[];
+        if(box) box.innerHTML = slugs.length ? ("✅ 완성된 영상 — 클릭하면 제목·썸네일·설명·대본 등을 볼 수 있어요:<br>"+slugs.map(s=>`<button class="ghost sm" style="margin:3px" onclick="loadSlug('${s}')">📄 ${s}</button>`).join("")) : "";
+      }
       log.scrollTop=log.scrollHeight;
     });
   }catch(e){ log.textContent+="❌ "+e.message+"\n"; }
@@ -568,12 +573,16 @@ async function loadOutputs(){
   const sel=$("outputSelect"); sel.innerHTML='<option value="">— 목록 —</option>';
   (r.slugs||[]).forEach(s=>{ const o=document.createElement("option"); o.value=s; o.textContent=s; sel.appendChild(o); });
 }
-async function loadPrevious(){
-  const slug=$("outputSelect").value; if(!slug) return toast("불러올 항목을 고르세요");
+async function loadSlug(slug){
+  if(!slug) return;
   const r=await api("/api/result?slug="+encodeURIComponent(slug),null,"GET");
   if(!r.pkg){ return toast("이 폴더에 콘텐츠가 없습니다."); }
   r.slug=slug; CURRENT=r; $("slug").value=slug; renderResults(r);
   toast(slug+" 불러옴");
+}
+async function loadPrevious(){
+  const slug=$("outputSelect").value; if(!slug) return toast("불러올 항목을 고르세요");
+  loadSlug(slug);
 }
 
 loadHealth();
