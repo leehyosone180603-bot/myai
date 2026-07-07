@@ -43,6 +43,20 @@ export function buildSegments(alignment, { maxChars = 30, maxDur = 5 } = {}) {
   return out;
 }
 
+// SRT 문자열 → [{start, end, text}] (초 단위). 편집 가이드의 총 길이 계산 등에 사용.
+export function parseSrt(content) {
+  const out = [];
+  for (const block of String(content || "").split(/\r?\n\r?\n/)) {
+    const m = block.match(/(\d\d):(\d\d):(\d\d),(\d\d\d)\s*-->\s*(\d\d):(\d\d):(\d\d),(\d\d\d)/);
+    if (!m) continue;
+    const start = +m[1] * 3600 + +m[2] * 60 + +m[3] + +m[4] / 1000;
+    const end = +m[5] * 3600 + +m[6] * 60 + +m[7] + +m[8] / 1000;
+    const text = block.split(/\r?\n/).slice(2).join(" ").trim();
+    out.push({ start, end, text });
+  }
+  return out;
+}
+
 // 절대시간 줄 배열 → SRT 문자열
 export function formatSrt(lines) {
   return (

@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from 
 import { join } from "node:path";
 import { config, ROOT } from "./config.js";
 import { generateJson, generateImage, generateVideo, ttsWithTimestamps } from "./clients.js";
-import { buildSegments, formatSrt } from "./srt.js";
+import { buildSegments, formatSrt, parseSrt } from "./srt.js";
 import * as P from "./prompts.js";
 
 // onLog 가 있으면 UI로, 없으면 콘솔로 진행상황을 보낸다.
@@ -321,6 +321,73 @@ export async function generateChapterNarration(slug, index, { voiceId, model, sp
   writeFileSync(join(dir, `chapter-${n}.srt`), formatSrt(lines));
   emit(`✓ ${index + 1}번 챕터 음성(audio/ch-${n}.mp3) + 자막(chapter-${n}.srt) 완료`);
   return { index, audio: `audio/ch-${n}.mp3`, srt: `chapter-${n}.srt`, lines: lines.length };
+}
+
+// 초 → "M:SS"
+function tc(sec) {
+  const s = Math.max(0, Math.round(sec || 0));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+// 📋 편집 가이드: 음성(SRT) 타이밍 기준으로 '어느 이미지를 몇 초에' 표로 만든다.
+// 영상을 평면화하지 않으므로 브루에서 세부 조정은 그대로 가능. (편집 시간만 단축)
+export function generateEditGuide(slug) {
+  const dir = outDir(slug);
+  const srtPath = join(dir, "narration.srt");
+  if (!existsSync(srtPath)) {
+    throw new Error("먼저 '🎙️ 전체 음성 생성'을 해주세요. (자막 SRT가 있어야 타이밍을 계산합니다)");
+  }
+  const lines = parseSrt(readFileSync(srtPath, "utf8"));
+  const D = lines.length ? lines[lines.length - 1].end : 0;
+  const r = readResult(slug);
+  const chapters = r.pkg?.chapters || [];
+  const images = r.images?.images || [];
+  const intro = r.intro?.clips || [];
+
+  // 챕터 타임라인 (대본 글자수 비율로 시작 시각 추정)
+  const clean = (s) => (s || "").replace(/\s/g, "");
+  const lens = chapters.map((c) => clean(c.script).length || 1);
+  const totalChars = lens.reduce((a, b) => a + b, 0) || 1;
+  let acc = 0;
+  const chapterRows = chapters.map((c, i) => {
+    const start = (D * acc) / totalChars;
+    acc += lens[i];
+    return `- ${tc(start)} · ${c.title || `챕터 ${i + 1}`}`;
+  });
+
+  // 이미지 균등 분배 (img 순서대로 총 길이에 배치)
+  const per = images.length ? D / images.length : 0;
+  const imgRows = images.map((img, i) => {
+    const start = per * i;
+    const end = per * (i + 1);
+    const desc = (img.ko_desc || img.chapter || "").replace(/\|/g, "/");
+    return `| ${i + 1} | ${img.id} | ${tc(start)} ~ ${tc(end)} | ${img.chapter || ""} | ${desc} |`;
+  });
+
+  const introSec = config.introClipSeconds;
+  const introList = intro.map((c) => c.id).join(", ");
+
+  const md = `# 📋 편집 가이드 (브루 배치용)
+
+총 영상 길이(음성 기준): **${tc(D)}**
+
+## 🎬 인트로 영상 (영상 맨 앞, 도입 후킹)
+${introList || "(없음)"} — 각 약 ${introSec}초, 순서대로 배치
+
+## 📑 챕터 타임라인 (대략)
+${chapterRows.join("\n") || "(없음)"}
+
+## 🖼️ 이미지 배치 (총 ${images.length}장 · 균등 분배 기준)
+| 순서 | 이미지 | 구간 | 챕터 | 내용 |
+|---|---|---|---|---|
+${imgRows.join("\n")}
+
+---
+※ 시간은 음성 자막(SRT) 기준의 **대략값**입니다. 브루에서 자막·음성 싱크를 보며 미세조정하세요.
+※ 이미지는 img 순서(챕터 흐름)대로 균등 배치했습니다. 필요하면 특정 장면에 더 오래/짧게 조정하세요.
+`;
+  writeFileSync(join(dir, "edit-guide.md"), md);
+  return { file: "edit-guide.md", duration: tc(D), images: images.length };
 }
 
 // output 폴더의 slug 목록 (이전 결과 불러오기용)

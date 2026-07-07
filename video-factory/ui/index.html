@@ -390,6 +390,13 @@ function renderResults(r){
     <pre id="log3" style="display:none;margin-top:8px"></pre>
     <div id="ttsOut"></div>
   </div>`;
+  // 📋 편집 가이드 (이미지↔타임코드)
+  h+=`<h3>📋 편집 가이드 (브루 배치용)</h3>
+  <div style="background:#0d0f14;border:1px solid var(--line);border-radius:9px;padding:12px">
+    <span class="hint">음성(자막) 타이밍 기준으로 "어느 이미지를 몇 초에 넣어라" 표를 만듭니다. <b>영상은 합치지 않으니 브루 세부 조정은 그대로 가능</b>합니다. (먼저 🎙️ 전체 음성 생성 필요)</span>
+    <div style="margin-top:8px"><button class="ghost" onclick="doEditGuide()">📋 편집 가이드 만들기</button></div>
+    <div id="guideOut"></div>
+  </div>`;
   h+=`<div class="hint" style="margin-top:14px">📁 모든 파일은 <code>output/${esc(r.slug)}/</code> 폴더에 저장되었습니다.</div>`;
   $("result").innerHTML=h;
   $("resultCard").scrollIntoView({behavior:"smooth"});
@@ -439,6 +446,21 @@ function showTts(r, mode){
     </div></div>`;
   $("ttsOut").insertAdjacentHTML("afterbegin", html);
   toast(label+" 음성 생성 완료");
+}
+
+// 편집 가이드 생성
+async function doEditGuide(){
+  if(!CURRENT?.slug) return toast("먼저 콘텐츠를 생성/불러오세요");
+  toast("편집 가이드 만드는 중…");
+  const r=await api("/api/edit-guide",{slug:CURRENT.slug});
+  if(r.error){ $("guideOut").innerHTML='<span class="err">❌ '+esc(r.error)+'</span>'; return; }
+  const base="/output/"+CURRENT.slug+"/";
+  $("guideOut").innerHTML=`<div style="margin-top:8px">
+    ✅ 편집 가이드 생성 (총 길이 ${esc(r.duration)}, 이미지 ${r.images}장)
+    <a href="${base}edit-guide.md" download style="text-decoration:none"><button class="ghost sm">⬇️ 편집 가이드 다운로드</button></a>
+    <a href="${base}edit-guide.md" target="_blank" style="text-decoration:none"><button class="ghost sm">👁 열어보기</button></a>
+  </div>`;
+  toast("편집 가이드 완료");
 }
 
 // 썸네일 이미지 생성

@@ -16,6 +16,7 @@ import {
   generateNarration,
   generateChapterNarration,
   generateThumbnail,
+  generateEditGuide,
   listOutputs,
 } from "./pipeline.js";
 import { fetchTranscript, toBenchmarkMd, youtubeId } from "./transcript.js";
@@ -36,6 +37,7 @@ const MIME = {
   ".mp3": "audio/mpeg",
   ".srt": "text/plain; charset=utf-8",
   ".txt": "text/plain; charset=utf-8",
+  ".md": "text/plain; charset=utf-8",
   ".json": "application/json; charset=utf-8",
 };
 
@@ -225,6 +227,18 @@ const server = createServer(async (req, res) => {
         emit({ type: "error", msg: e.message });
       }
       return res.end();
+    }
+
+    // 편집 가이드 생성 (이미지↔타임코드 표)
+    if (path === "/api/edit-guide" && req.method === "POST") {
+      const b = await readBody(req);
+      try {
+        const slug = sanitizeSlug(b.slug?.trim());
+        if (!slug) throw new Error("slug 가 필요합니다.");
+        return send(res, 200, generateEditGuide(slug));
+      } catch (e) {
+        return send(res, 200, { error: e.message });
+      }
     }
 
     // 이전 결과 목록 (재구동 후 복사/붙여넣기용)
