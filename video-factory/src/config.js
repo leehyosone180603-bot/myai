@@ -118,12 +118,12 @@ export const CHANNELS = {
   "인생산책길": {
     persona: "차분하고 사려 깊은 내레이터. 인생과 관계를 산책하듯 편안하고 따뜻하게 풀어준다.",
     imageStyle:
-      "Korean romance webtoon / shoujo manga (sunjeong manhwa) illustration style, soft cel shading with clean delicate linework, warm pastel color palette, gentle soft lighting, tender expressive faces with soft eyes, semi-realistic proportions, cozy warm atmosphere, smooth gradients",
+      "Korean romance webtoon / shoujo manga (sunjeong manhwa) character style, soft clean linework, tender expressive faces with soft eyes, semi-realistic proportions; set the characters in realistic, detailed real-world backgrounds that change with each scene (cafe interior, home living room, city street, park, office, restaurant, subway) with natural realistic lighting and colors; do NOT use an all-pink or single pastel tone — background colors and settings must vary per scene and look like real places",
   },
   "포모룸": {
     persona: "친근하고 다정한 내레이터. 곁에서 조곤조곤 조언해주는 친구 같은 톤.",
     imageStyle:
-      "cozy soft 3D-rendered illustration, friendly rounded characters, warm muted earthy pastel tones, gentle soft studio lighting, clean approachable Pixar-like style, smooth shading, comfortable homey mood",
+      "minimalist 2D stick-figure cartoon (simple doodle style), bold clean black outlines, simple rounded oval heads with tiny dot eyes and simple friendly expressions, thin stick limbs, flat solid colors, very simple consistent characters; place them in varied, colorful real-world backgrounds that change each scene (cafe, park, street, home, office) using cheerful flat shapes and diverse bright colors — NOT a plain white background",
   },
   "라떼클럽": {
     persona: "따뜻하고 감성적인 내레이터. 카페에서 도란도란 이야기 나누듯 편안하게.",
