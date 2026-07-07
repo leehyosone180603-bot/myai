@@ -154,6 +154,8 @@ export function fetchTranscript(url, { langs = ["ko", "ko-orig", "en"], ytdlpPat
           ranOnce = true;
         } catch (e) {
           lastErr = e;
+          // e.status 가 숫자면 프로세스는 '실행'됐고 자막만 못 받은 것(스폰 실패 ENOENT/EACCES 와 구분)
+          if (typeof e.status === "number") ranOnce = true;
           continue;
         }
         if (readdirSync(dir).some(isSub)) break outer; // 자막 확보 성공
