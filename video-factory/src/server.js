@@ -249,6 +249,26 @@ const server = createServer(async (req, res) => {
       }
     }
 
+    // 결과 폴더 열기 (윈도우 탐색기/맥 파인더). slug 있으면 그 영상 폴더, 없으면 output 전체.
+    if (path === "/api/open-folder" && req.method === "POST") {
+      const b = await readBody(req);
+      const slug = b.slug ? sanitizeSlug(b.slug) : "";
+      let target = slug ? join(ROOT, "output", slug) : join(ROOT, "output");
+      if (!existsSync(target)) target = join(ROOT, "output");
+      mkdirSync(target, { recursive: true });
+      try {
+        const { spawn } = await import("node:child_process");
+        const cmd =
+          process.platform === "win32" ? ["explorer.exe", [target]]
+          : process.platform === "darwin" ? ["open", [target]]
+          : ["xdg-open", [target]];
+        spawn(cmd[0], cmd[1], { detached: true, stdio: "ignore" }).on("error", () => {});
+        return send(res, 200, { ok: true, path: target });
+      } catch (e) {
+        return send(res, 200, { error: e.message, path: target });
+      }
+    }
+
     // 이전 결과 목록 (재구동 후 복사/붙여넣기용)
     if (path === "/api/list-outputs" && req.method === "GET") {
       return send(res, 200, { slugs: listOutputs() });

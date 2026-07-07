@@ -54,6 +54,7 @@
   <h1>🎬 영상 제작 자동화</h1>
   <span id="statusBadge" class="badge">상태 확인 중…</span>
   <span style="flex:1"></span>
+  <button class="sm" style="background:var(--accent2);color:#03110e;font-weight:700" onclick="openFolder()">📂 결과 폴더 열기</button>
   <button class="ghost sm" onclick="toggleSettings()">⚙️ 설정</button>
 </header>
 
@@ -193,6 +194,11 @@ function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("sho
 function copy(text){ navigator.clipboard.writeText(text).then(()=>toast("복사됨")); }
 function esc(s){ return (s||"").replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 function toggleSettings(){ const c=$("settingsCard"); c.style.display = c.style.display==="none"?"block":"none"; }
+async function openFolder(slug){
+  const r=await api("/api/open-folder",{slug: slug || CURRENT?.slug || ""});
+  if(r.error) return toast("폴더 열기 실패: "+r.error);
+  toast("📂 폴더 열림");
+}
 
 async function api(path, body, method="POST"){
   const r = await fetch(path, { method, headers:{'Content-Type':'application/json'}, body: body?JSON.stringify(body):undefined });
@@ -434,7 +440,8 @@ function renderResults(r){
     <div style="margin-top:8px"><button class="ghost" onclick="doEditGuide()">📋 편집 가이드 만들기</button></div>
     <div id="guideOut"></div>
   </div>`;
-  h+=`<div class="hint" style="margin-top:14px">📁 모든 파일은 <code>output/${esc(r.slug)}/</code> 폴더에 저장되었습니다.</div>`;
+  h+=`<div style="margin-top:14px" class="hint">📁 모든 파일은 <code>output/${esc(r.slug)}/</code> 폴더에 저장되었습니다.
+    <button class="sm" style="background:var(--accent2);color:#03110e;font-weight:700;margin-left:8px" onclick="openFolder('${esc(r.slug)}')">📂 이 영상 폴더 열기</button></div>`;
   $("result").innerHTML=h;
   $("resultCard").scrollIntoView({behavior:"smooth"});
 }
