@@ -294,6 +294,42 @@ const server = createServer(async (req, res) => {
       return res.end();
     }
 
+    // 원클릭 전체 자동: (URL이면 자막수집) → 분석·대본 → 이미지 → 인트로영상 → 전체음성
+    if (path === "/api/run-all" && req.method === "POST") {
+      const b = await readBody(req);
+      const emit = startStream(res);
+      try {
+        requireTextProvider();
+        const ch = applyChannel(b.channel);
+        emit({ type: "log", msg: `채널: ${ch}` });
+        let benchmark = (b.benchmark || "").trim();
+        if (!benchmark) {
+          if (!b.url) throw new Error("유튜브 주소(또는 자막)를 넣어주세요.");
+          emit({ type: "log", msg: "유튜브 자막 수집 중..." });
+          const t = fetchTranscript(b.url, {});
+          benchmark = toBenchmarkMd(b.url, t);
+          emit({ type: "log", msg: `✓ 자막 ${t.text.length}자 수집` });
+        }
+        const slug = sanitizeSlug(b.slug?.trim() || youtubeId(b.url || "") || youtubeId(benchmark) || "video");
+        const result = await runAll(slug, benchmark, {
+          generateImages: true,
+          generateVideos: true,
+          onLog: (msg) => emit({ type: "log", msg }),
+        });
+        let narration = null;
+        if (config.elevenlabs.apiKey && config.elevenlabs.voiceId) {
+          narration = await generateNarration(slug, { onLog: (msg) => emit({ type: "log", msg }) });
+        } else {
+          emit({ type: "log", msg: "⚠ 음성 건너뜀: ElevenLabs 키/보이스 미설정 (⚙️설정 후 '음성 생성'을 따로 눌러주세요)" });
+        }
+        emit({ type: "log", msg: "🎉 전체 자동 생성 완료" });
+        emit({ type: "done", result: { ...result, narration } });
+      } catch (e) {
+        emit({ type: "error", msg: e.message });
+      }
+      return res.end();
+    }
+
     if (path === "/api/render" && req.method === "POST") {
       const b = await readBody(req);
       const emit = startStream(res);
