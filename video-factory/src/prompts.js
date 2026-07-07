@@ -95,7 +95,7 @@ export const imageSystem = `너는 영상용 일러스트레이션 아트 디렉
 - 각 이미지 prompt 에는 그 장면에 등장하는 인물만 넣되, cast 에 정의한 외모를 그대로 반영한다(다른 사람이 되지 않게).
 이미지 프롬프트 본문은 영어, 설명(ko_desc)은 한국어. 출력은 JSON 하나만.`;
 
-export const imagePrompt = (pkg) => `아래 콘텐츠 패키지의 챕터 흐름에 맞춰 이미지 ${Math.max(8, config.targetMinutes + 2)}장의 생성 프롬프트를 만들어라.
+export const imagePrompt = (pkg) => `아래 콘텐츠 패키지의 챕터 흐름에 맞춰 이미지 정확히 ${config.imageCount}장의 생성 프롬프트를 만들어라. (id는 img-01부터 순서대로)
 화면비 ${config.imageAspectRatio}. 그림체/분위기는 아래 스타일로 통일하라(보기 편하고 부드러운 톤):
 스타일: "${config.imageStyle}"
 

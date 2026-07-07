@@ -75,6 +75,7 @@ function buildConfig() {
     ),
     imageAspectRatio: env("IMAGE_ASPECT_RATIO", "16:9"),
     videoAspectRatio: env("VIDEO_ASPECT_RATIO", "16:9"),
+    imageCount: Number(env("IMAGE_COUNT", "20")),
     introClipSeconds: Number(env("INTRO_CLIP_SECONDS", "6")),
     introClipCount: Number(env("INTRO_CLIP_COUNT", "6")),
   };
