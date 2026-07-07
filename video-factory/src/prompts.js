@@ -139,7 +139,7 @@ export const introSystem = `너는 유튜브 인트로(0~15초) 연출가다.
 
 export const introPrompt = (pkg, images) => {
   const list = (images?.images || []).map((i) => `- ${i.id}: ${i.ko_desc || i.chapter || ""}`).join("\n");
-  return `아래 영상의 도입부에 깔 짧은 인트로 클립 3~5개를 만들어라. 각 클립 약 ${config.introClipSeconds}초.
+  return `아래 영상의 도입부에 깔 짧은 인트로 클립 정확히 ${config.introClipCount}개를 만들어라. 각 클립 약 ${config.introClipSeconds}초.
 
 [필수] 각 클립의 from_image_id 는 아래 '사용 가능한 이미지' id 중에서 고른다(가장 후킹 강한 컷 위주).
 prompt 는 그림체 설명 없이 카메라/움직임만 영어로 쓴다.
