@@ -21,6 +21,14 @@ import {
 } from "./pipeline.js";
 import { fetchTranscript, toBenchmarkMd, youtubeId } from "./transcript.js";
 import { listModels, listVoices } from "./clients.js";
+import { parseSrt } from "./srt.js";
+
+// SRT 파일을 넣어도 되게: 타임코드/번호 제거하고 대사 텍스트만 추출(아니면 원문 그대로)
+function cleanBenchmark(text) {
+  const t = String(text || "");
+  const lines = parseSrt(t);
+  return lines.length >= 3 ? lines.map((l) => l.text).filter(Boolean).join(" ") : t;
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UI_DIR = join(ROOT, "ui");
@@ -316,7 +324,7 @@ const server = createServer(async (req, res) => {
         requireTextProvider();
         const ch = applyChannel(b.channel);
         emit({ type: "log", msg: `채널: ${ch}` });
-        let benchmark = (b.benchmark || "").trim();
+        let benchmark = cleanBenchmark((b.benchmark || "").trim());
         if (!benchmark) {
           if (!b.url) throw new Error("유튜브 주소(또는 자막)를 넣어주세요.");
           emit({ type: "log", msg: "유튜브 자막 수집 중..." });
@@ -332,12 +340,53 @@ const server = createServer(async (req, res) => {
         });
         let narration = null;
         if (config.elevenlabs.apiKey && config.elevenlabs.voiceId) {
-          narration = await generateNarration(slug, { onLog: (msg) => emit({ type: "log", msg }) });
+          narration = await generateNarration(slug, { speed: b.speed || undefined, onLog: (msg) => emit({ type: "log", msg }) });
         } else {
           emit({ type: "log", msg: "⚠ 음성 건너뜀: ElevenLabs 키/보이스 미설정 (⚙️설정 후 '음성 생성'을 따로 눌러주세요)" });
         }
         emit({ type: "log", msg: "🎉 전체 자동 생성 완료" });
         emit({ type: "done", result: { ...result, narration } });
+      } catch (e) {
+        emit({ type: "error", msg: e.message });
+      }
+      return res.end();
+    }
+
+    // 일괄(배치): 자막 파일 여러 개 → 영상 여러 개를 '순차'로 전부 자동 생성
+    if (path === "/api/batch" && req.method === "POST") {
+      const b = await readBody(req);
+      const emit = startStream(res);
+      try {
+        requireTextProvider();
+        const jobs = Array.isArray(b.jobs) ? b.jobs : [];
+        if (!jobs.length) throw new Error("자막 파일을 하나 이상 올려주세요.");
+        emit({ type: "log", msg: `📦 일괄 생성 시작 — 총 ${jobs.length}개 (순차 진행)` });
+        const done = [];
+        for (let i = 0; i < jobs.length; i++) {
+          const j = jobs[i];
+          const slug = sanitizeSlug(j.name || `video-${i + 1}`);
+          emit({ type: "log", msg: `\n===== [${i + 1}/${jobs.length}] ${slug} =====` });
+          try {
+            const benchmark = cleanBenchmark((j.text || "").trim());
+            if (!benchmark) {
+              emit({ type: "log", msg: "  ⚠ 내용이 비어 건너뜀" });
+              continue;
+            }
+            applyChannel(b.channel); // 채널(그림체·톤) 각 영상에 적용
+            await runAll(slug, benchmark, { generateImages: true, generateVideos: true, onLog: (m) => emit({ type: "log", msg: "  " + m }) });
+            if (config.elevenlabs.apiKey && config.elevenlabs.voiceId) {
+              await generateNarration(slug, { speed: b.speed || undefined, onLog: (m) => emit({ type: "log", msg: "  " + m }) });
+            } else {
+              emit({ type: "log", msg: "  ⚠ 음성 건너뜀(ElevenLabs 미설정)" });
+            }
+            done.push(slug);
+            emit({ type: "log", msg: `  ✅ ${slug} 완료` });
+          } catch (e) {
+            emit({ type: "log", msg: `  ❌ ${slug} 실패: ${e.message}` });
+          }
+        }
+        emit({ type: "log", msg: `\n🎉 일괄 완료: ${done.length}/${jobs.length}개 성공` });
+        emit({ type: "done", result: { slugs: done } });
       } catch (e) {
         emit({ type: "error", msg: e.message });
       }

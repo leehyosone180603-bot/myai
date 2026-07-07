@@ -111,10 +111,27 @@
     <h2>🚀 전체 자동 생성 (원클릭)</h2>
     <div class="hint" style="margin-bottom:10px">아래 1단계에 <b>채널</b>과 <b>유튜브 주소</b>(또는 붙여넣은 자막)만 넣고 이 버튼을 누르면 →
       분석 · 대본 · 이미지 · 인트로영상 · 전체 음성까지 <b>한 번에</b> 만듭니다. (개별 버튼도 그대로 사용 가능)</div>
+    <div class="row" style="margin-bottom:8px">
+      <div style="max-width:200px"><label>음성 속도 (0.7~1.2)</label><input id="autoSpeed" type="number" min="0.7" max="1.2" step="0.05" value="1.1"></div>
+    </div>
     <button class="btn-primary" id="autoBtn" onclick="doAutoAll()">🚀 전체 자동 생성 시작</button>
     <pre id="logAuto" style="display:none"></pre>
     <div id="autoErr" class="err"></div>
     <div class="hint" style="margin-top:6px">💡 이미지·영상·음성까지 실제 생성되어 <b>비용이 발생</b>합니다. 음성은 ⚙️설정에 ElevenLabs 키·보이스가 있어야 함께 생성됩니다.</div>
+  </section>
+
+  <!-- 일괄(여러 영상) 생성 -->
+  <section class="card" style="border-color:var(--accent2)">
+    <h2>📦 여러 영상 일괄 생성 (자막 파일 여러 개 → 영상 여러 개)</h2>
+    <div class="hint" style="margin-bottom:10px">자막 파일(.txt/.srt) 여러 개를 한 번에 올리면, <b>파일마다 영상 1개씩 순차로</b> 전부 자동 생성합니다.
+      채널은 위 1단계에서 고른 채널이 적용돼요. (파일 이름이 저장 폴더명이 됩니다)</div>
+    <div class="row">
+      <div style="flex:3"><label>자막 파일들 선택 (여러 개)</label><input type="file" id="batchFiles" accept=".txt,.srt,.md,text/plain" multiple></div>
+      <div style="max-width:160px"><label>음성 속도</label><input id="batchSpeed" type="number" min="0.7" max="1.2" step="0.05" value="1.1"></div>
+    </div>
+    <button class="btn-primary" id="batchBtn" style="background:linear-gradient(90deg,var(--accent2),#3fe0c8)" onclick="doBatch()">📦 일괄 생성 시작</button>
+    <pre id="logBatch" style="display:none"></pre>
+    <div class="hint" style="margin-top:6px">⏳ 10개면 시간이 오래 걸리고 비용도 그만큼 큽니다(영상당 $3~4). 순차 처리라 안정적이에요. 완료 후 위 "이전 결과 불러오기"에서 하나씩 확인하세요.</div>
   </section>
 
   <section class="card">
@@ -270,13 +287,33 @@ async function doAutoAll(){
   $("autoErr").textContent=""; const log=$("logAuto"); log.style.display="block"; log.textContent="";
   const btn=$("autoBtn"); if(btn) btn.disabled=true;
   try{
-    await stream("/api/run-all", { url, benchmark, slug:$("slug").value.trim(), channel:$("channel")?.value }, (ev)=>{
+    await stream("/api/run-all", { url, benchmark, slug:$("slug").value.trim(), channel:$("channel")?.value, speed:Number($("autoSpeed")?.value)||undefined }, (ev)=>{
       if(ev.type==="log") log.textContent+=ev.msg+"\n";
       else if(ev.type==="error") $("autoErr").textContent="❌ "+ev.msg;
       else if(ev.type==="done"){ CURRENT=ev.result; renderResults(ev.result); if(ev.result.narration) showTts(ev.result.narration,'all'); }
       log.scrollTop=log.scrollHeight;
     });
   }catch(e){ $("autoErr").textContent="❌ "+e.message; }
+  if(btn) btn.disabled=false;
+}
+
+// 📦 일괄 생성: 자막 파일 여러 개 → 영상 여러 개(순차)
+async function doBatch(){
+  const input=$("batchFiles"); const files=input&&input.files;
+  if(!files||!files.length) return toast("자막 파일들을 선택하세요");
+  if(!HEALTH?.hasKey){ toggleSettings(); return toast("먼저 API 키(Grok)를 설정하세요"); }
+  const jobs=[];
+  for(const f of files){ const text=await f.text(); jobs.push({ name:f.name.replace(/\.[^.]+$/,""), text }); }
+  const log=$("logBatch"); log.style.display="block"; log.textContent="";
+  const btn=$("batchBtn"); if(btn) btn.disabled=true;
+  try{
+    await stream("/api/batch", { jobs, channel:$("channel")?.value, speed:Number($("batchSpeed")?.value)||undefined }, (ev)=>{
+      if(ev.type==="log") log.textContent+=ev.msg+"\n";
+      else if(ev.type==="error") log.textContent+="❌ "+ev.msg+"\n";
+      else if(ev.type==="done"){ toast("일괄 완료 "+(ev.result.slugs?.length||0)+"개"); loadOutputs(); }
+      log.scrollTop=log.scrollHeight;
+    });
+  }catch(e){ log.textContent+="❌ "+e.message+"\n"; }
   if(btn) btn.disabled=false;
 }
 
