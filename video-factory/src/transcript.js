@@ -130,38 +130,54 @@ export function fetchTranscript(url, { langs = ["ko", "ko-orig", "en"], ytdlpPat
       "-o", join(dir, "%(id)s.%(ext)s"),
       url,
     ];
-    // 최신 yt-dlp 는 유튜브 추출에 JS 런타임이 필요. 이 프로그램을 돌리는 Node 실행파일을 직접 지정.
-    // 구버전(옵션 미지원)을 위해 옵션 없는 변형도 폴백으로 둔다.
-    const jsRuntimeArg = process.env.YTDLP_JS_RUNTIME || `node:${process.execPath}`;
-    const argVariants = [["--js-runtimes", jsRuntimeArg, ...baseArgs], baseArgs];
+    // 최신 yt-dlp 는 유튜브 추출에 JS 런타임(Deno/Node)이 필요.
+    // 여러 방식을 순서대로: node(경로직접) → node(PATH) → deno → 옵션없음.
+    const jsVariants = [
+      ["--js-runtimes", `node:${process.execPath}`],
+      ["--js-runtimes", "node"],
+      ["--js-runtimes", "deno"],
+      [],
+    ];
+    if (process.env.YTDLP_JS_RUNTIME) jsVariants.unshift(["--js-runtimes", process.env.YTDLP_JS_RUNTIME]);
+    const argVariants = jsVariants.map((v) => [...v, ...baseArgs]);
+    const isSub = (f) => /\.(vtt|srt|json3|json)$/.test(f);
 
-    // 실행 후보(깨진 .exe launcher 자동 우회) × 인자 변형을 순서대로 시도.
+    // 실행 후보(깨진 .exe launcher 자동 우회) × JS런타임 변형을 시도.
+    // '실행 성공 + 자막파일 생성'까지 되면 멈춘다(그냥 실행만 되고 자막 없으면 다음 변형 시도).
     const candidates = ytdlpCandidates(ytdlpPath);
     let lastErr = null,
-      ran = false;
+      ranOnce = false;
     outer: for (const cmd of candidates) {
       for (const args of argVariants) {
         try {
           execFileSync(cmd[0], [...cmd.slice(1), ...args], { stdio: ["ignore", "ignore", "pipe"] });
-          ran = true;
-          break outer; // 정상 실행됨 (자막 없는 영상이면 파일이 안 생겨도 throw 는 안 남)
+          ranOnce = true;
         } catch (e) {
           lastErr = e;
+          continue;
         }
+        if (readdirSync(dir).some(isSub)) break outer; // 자막 확보 성공
       }
     }
-    if (!ran) {
+
+    if (!ranOnce) {
       const detail = (lastErr?.stderr || lastErr?.message || "").toString().slice(0, 400);
       throw new Error(
-        "yt-dlp 를 실행할 수 없습니다. (yt-dlp / python -m yt_dlp / py -m yt_dlp 모두 실패)\n" +
-          "PowerShell 에서 `python -m yt_dlp --version` 이 되는지 확인하세요.\n" +
+        "yt-dlp 를 실행할 수 없습니다. PowerShell 에서 `python -m yt_dlp --version` 이 되는지 확인하세요.\n" +
           (detail ? `(마지막 오류: ${detail})` : "")
       );
     }
 
-    const subs = readdirSync(dir).filter((f) => /\.(vtt|srt|json3|json)$/.test(f));
+    const subs = readdirSync(dir).filter(isSub);
     if (!subs.length) {
-      throw new Error("이 영상에서 자막을 찾지 못했습니다(자동자막 비활성/없음). 수동으로 --input 파일에 붙여넣어 주세요.");
+      const warn = (lastErr?.stderr || "").toString().slice(0, 300);
+      throw new Error(
+        "yt-dlp 는 실행됐지만 자막을 받지 못했습니다.\n" +
+          "원인: 유튜브가 JS 런타임을 요구하거나(가장 흔함), 이 영상에 자막이 없음.\n" +
+          "해결: PowerShell 에 `irm https://deno.land/install.ps1 | iex` 로 Deno 설치 후 재시도 → 가장 확실합니다.\n" +
+          "또는 자막을 직접 복사해 붙여넣기(유튜브 …더보기 → 스크립트 표시).\n" +
+          (warn ? `(yt-dlp 경고: ${warn})` : "")
+      );
     }
     const chosen = pickBest(subs, langs);
     const langMatch = chosen.match(/\.([\w-]+)\.(?:vtt|srt|json3|json)$/);
