@@ -128,7 +128,7 @@ export const CHANNELS = {
   "라떼클럽": {
     persona: "따뜻하고 감성적인 내레이터. 카페에서 도란도란 이야기 나누듯 편안하게.",
     imageStyle:
-      "warm gouache painterly illustration, cozy cafe palette of cream caramel and soft brown tones, gentle textured brush strokes, soft warm lighting, relaxed friendly storybook mood, hand-painted feel, clean composition",
+      "semi-realistic 2D cartoon illustration in a clean animated explainer/storytelling style, soft cel shading with subtle gradients, natural slightly-stylized human proportions, clean confident linework, calm muted natural color palette; place characters in varied, immersive real-world backgrounds with subtle painterly texture that change every scene (cafe, city street, home room, office, park, evening skyline) — atmospheric, cinematic and engaging so viewers feel drawn in, never flat or monotonous",
   },
 };
 export const DEFAULT_CHANNEL = "인생산책길";
