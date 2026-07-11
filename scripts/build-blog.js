@@ -33,7 +33,10 @@ const STATIC_URLS = [
   { loc: "https://calcbox.kr/saju/terms/", freq: "yearly", pri: "0.3" },
   { loc: "https://calcbox.kr/saju/privacy/", freq: "yearly", pri: "0.3" },
   { loc: "https://calcbox.kr/saju/refund/", freq: "yearly", pri: "0.3" },
-  { loc: "https://calcbox.kr/blog/", freq: "weekly", pri: "0.7" }
+  { loc: "https://calcbox.kr/blog/", freq: "weekly", pri: "0.7" },
+  { loc: "https://calcbox.kr/about/", freq: "yearly", pri: "0.3" },
+  { loc: "https://calcbox.kr/privacy/", freq: "yearly", pri: "0.3" },
+  { loc: "https://calcbox.kr/terms/", freq: "yearly", pri: "0.3" }
 ];
 
 function todayKST() {
@@ -112,6 +115,7 @@ items + '\n' +
 '  </main>\n' +
 '\n' +
 '  <footer class="site-footer">\n' +
+'    <nav class="footer-links"><a href="/about/">소개·문의</a> · <a href="/privacy/">개인정보처리방침</a> · <a href="/terms/">이용약관</a></nav>\n' +
 '    <p>© <span id="year"></span> 한국인계산기 (calcbox.kr)</p>\n' +
 '  </footer>\n' +
 '\n' +
