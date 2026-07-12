@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오리와 문어의 물방울 디펜스 🦆🐙</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, #b2ebf2, #80deea);
+    font-family: "Segoe UI", "Malgun Gothic", sans-serif;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  #wrap {
+    position: relative;
+    width: 800px;
+    height: 600px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+    background: #E0F7FA;
+  }
+  /* HUD */
+  #hud {
+    position: absolute;
+    top: 10px; left: 12px; right: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 700;
+    color: #01579b;
+    text-shadow: 0 1px 0 #fff;
+    pointer-events: none;
+    font-size: 16px;
+  }
+  #hud .item { background: rgba(255,255,255,0.55); padding: 4px 10px; border-radius: 20px; }
+  #hpbar-wrap {
+    width: 160px; height: 14px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 10px; overflow: hidden;
+    display: inline-block; vertical-align: middle;
+    margin-left: 6px;
+  }
+  #hpbar { height: 100%; width: 100%; background: linear-gradient(90deg,#66bb6a,#43a047); transition: width .15s; }
+  /* Overlay screens */
+  .overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    background: rgba(224,247,250,0.92);
+    color: #01579b;
+    gap: 14px;
+    padding: 24px;
+  }
+  .overlay h1 { font-size: 40px; letter-spacing: -1px; }
+  .overlay h2 { font-size: 30px; }
+  .overlay p { font-size: 15px; line-height: 1.6; color: #0277bd; max-width: 520px; }
+  .btn {
+    margin-top: 8px;
+    padding: 14px 34px;
+    font-size: 20px; font-weight: 800;
+    color: #fff;
+    background: linear-gradient(90deg,#29b6f6,#0288d1);
+    border: none; border-radius: 30px;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(2,136,209,0.4);
+    transition: transform .08s;
+  }
+  .btn:active { transform: scale(0.95); }
+  .keys { font-size: 13px; color: #0288d1; background: rgba(255,255,255,0.6); padding: 10px 16px; border-radius: 12px; }
+  .hidden { display: none !important; }
+  .big { font-size: 56px; }
+  #finalScore { font-size: 20px; font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game" width="800" height="600"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <span class="item">🏆 점수 <span id="score">0</span></span>
+    <span class="item">❤️ HP
+      <span id="hpbar-wrap"><span id="hpbar"></span></span>
+    </span>
+    <span class="item">🐚 조개 <span id="shells">0</span></span>
+  </div>
+
+  <!-- Start screen -->
+  <div id="startScreen" class="overlay">
+    <div class="big">🦆🐙</div>
+    <h1>오리와 문어의 물방울 디펜스</h1>
+    <p>귀여운 오리와 문어 콤비가 몰려오는 나쁜 오리들을 물리치세요!<br>
+       오리는 물방울(🫧)로 딜을, 문어는 먹물(🖤)로 적을 느리게 만듭니다.</p>
+    <div class="keys">
+      🕹️ 이동: <b>방향키</b> 또는 <b>WASD</b>　|
+      🔫 발사: <b>자동</b> + <b>스페이스바 / 마우스 클릭</b><br>
+      🐚 조개를 먹으면 공격 속도 ↑ 또는 물방울 개수 ↑
+    </div>
+    <button class="btn" id="startBtn">게임 시작 ▶</button>
+  </div>
+
+  <!-- Game over screen -->
+  <div id="overScreen" class="overlay hidden">
+    <div class="big">💥</div>
+    <h2>게임 오버</h2>
+    <div id="finalScore"></div>
+    <button class="btn" id="restartBtn">다시 시작 🔄</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+
+  // ---- UI refs ----
+  const hud = document.getElementById("hud");
+  const scoreEl = document.getElementById("score");
+  const shellsEl = document.getElementById("shells");
+  const hpbar = document.getElementById("hpbar");
+  const startScreen = document.getElementById("startScreen");
+  const overScreen = document.getElementById("overScreen");
+  const finalScore = document.getElementById("finalScore");
+  const startBtn = document.getElementById("startBtn");
+  const restartBtn = document.getElementById("restartBtn");
+
+  // ---- Game state ----
+  const STATE = { START: 0, PLAY: 1, OVER: 2 };
+  let state = STATE.START;
+
+  let player, octopus, bubbles, inks, enemies, shells, particles, floaters;
+  let score, shellCount, spawnTimer, spawnInterval, elapsed;
+
+  // player upgrade stats
+  let fireInterval;   // ms between duck shots
+  let fireTimer;
+  let bubbleCount;    // bubbles fired per shot (fan)
+  let octoTimer;
+  const OCTO_INTERVAL = 1400;
+
+  // input
+  const keys = {};
+  let mouseFiring = false;
+
+  // ---- Helpers ----
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const dist2 = (a, b) => { const dx = a.x - b.x, dy = a.y - b.y; return dx*dx + dy*dy; };
+
+  function resetGame() {
+    player = { x: 120, y: H/2, r: 22, speed: 5, hp: 100, maxHp: 100, invuln: 0 };
+    octopus = { x: 70, y: H/2 + 30, r: 16 };
+    bubbles = [];
+    inks = [];
+    enemies = [];
+    shells = [];
+    particles = [];
+    floaters = [];
+    score = 0;
+    shellCount = 0;
+    elapsed = 0;
+    spawnTimer = 0;
+    spawnInterval = 1300;
+    fireInterval = 350;
+    fireTimer = 0;
+    bubbleCount = 1;
+    octoTimer = 0;
+  }
+
+  // ---- Spawning ----
+  function spawnEnemy() {
+    const y = rand(50, H - 40);
+    // difficulty scales slightly with time
+    const speed = rand(1.2, 2.2) + Math.min(elapsed / 30000, 1.5);
+    enemies.push({
+      x: W + 30, y, r: 20,
+      baseSpeed: speed,
+      hp: 3, maxHp: 3,
+      slow: 0,          // ms of slow remaining
+      knock: 0,         // knockback velocity
+      wob: rand(0, Math.PI * 2)
+    });
+  }
+
+  function fireDuck() {
+    const spread = (bubbleCount - 1) * 0.18;
+    for (let i = 0; i < bubbleCount; i++) {
+      const ang = -spread / 2 + (bubbleCount > 1 ? spread * (i / (bubbleCount - 1)) : 0);
+      bubbles.push({
+        x: player.x + player.r, y: player.y,
+        vx: Math.cos(ang) * 9, vy: Math.sin(ang) * 9,
+        r: 9, dmg: 1
+      });
+    }
+  }
+
+  function fireOcto() {
+    inks.push({
+      x: octopus.x + octopus.r, y: octopus.y,
+      vx: 6, vy: 0, r: 9
+    });
+  }
+
+  function dropShell(x, y) {
+    shells.push({ x, y, r: 14, vy: 0, wob: 0 });
+  }
+
+  function applyShellPower() {
+    // pick a random upgrade
+    if (Math.random() < 0.5) {
+      // attack speed up
+      fireInterval = Math.max(90, fireInterval - 45);
+      addFloater(player.x, player.y - 30, "공격속도 ↑", "#0288d1");
+    } else {
+      // more bubbles
+      bubbleCount = Math.min(9, bubbleCount + 1);
+      addFloater(player.x, player.y - 30, "물방울 +1", "#00838f");
+    }
+  }
+
+  function addFloater(x, y, text, color) {
+    floaters.push({ x, y, text, color, life: 900 });
+  }
+
+  function burst(x, y, color, n) {
+    for (let i = 0; i < n; i++) {
+      const a = rand(0, Math.PI * 2), s = rand(1, 4);
+      particles.push({ x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s, life: rand(300, 600), color, r: rand(2, 5) });
+    }
+  }
+
+  // ---- Update ----
+  function update(dt) {
+    elapsed += dt;
+
+    // --- player movement ---
+    let mx = 0, my = 0;
+    if (keys["arrowleft"] || keys["a"]) mx -= 1;
+    if (keys["arrowright"] || keys["d"]) mx += 1;
+    if (keys["arrowup"] || keys["w"]) my -= 1;
+    if (keys["arrowdown"] || keys["s"]) my += 1;
+    if (mx || my) {
+      const len = Math.hypot(mx, my) || 1;
+      player.x += (mx / len) * player.speed;
+      player.y += (my / len) * player.speed;
+    }
+    player.x = clamp(player.x, player.r, W - player.r);
+    player.y = clamp(player.y, player.r + 20, H - player.r);
+    if (player.invuln > 0) player.invuln -= dt;
+
+    // --- octopus follows behind the duck ---
+    const targetX = player.x - 55, targetY = player.y + 25;
+    octopus.x += (targetX - octopus.x) * 0.08;
+    octopus.y += (targetY - octopus.y) * 0.08;
+
+    // --- auto fire ---
+    fireTimer += dt;
+    const wantFire = true; // duck fires automatically
+    if (fireTimer >= fireInterval) {
+      fireTimer = 0;
+      fireDuck();
+    }
+    // manual fire on space/mouse gives an extra volley responsiveness (already auto)
+    octoTimer += dt;
+    if (octoTimer >= OCTO_INTERVAL) {
+      octoTimer = 0;
+      fireOcto();
+    }
+
+    // --- spawn enemies ---
+    spawnTimer += dt;
+    spawnInterval = Math.max(500, 1300 - elapsed / 30);
+    if (spawnTimer >= spawnInterval) {
+      spawnTimer = 0;
+      spawnEnemy();
+    }
+
+    // --- bubbles ---
+    for (let i = bubbles.length - 1; i >= 0; i--) {
+      const b = bubbles[i];
+      b.x += b.vx; b.y += b.vy;
+      if (b.x > W + 20 || b.y < -20 || b.y > H + 20) { bubbles.splice(i, 1); }
+    }
+
+    // --- inks ---
+    for (let i = inks.length - 1; i >= 0; i--) {
+      const k = inks[i];
+      k.x += k.vx;
+      if (k.x > W + 20) inks.splice(i, 1);
+    }
+
+    // --- enemies ---
+    for (let i = enemies.length - 1; i >= 0; i--) {
+      const e = enemies[i];
+      let sp = e.baseSpeed;
+      if (e.slow > 0) { e.slow -= dt; sp *= 0.5; }
+      e.wob += dt * 0.005;
+      e.x -= sp;
+      e.y += Math.sin(e.wob) * 0.4;
+      // knockback
+      if (e.knock > 0) { e.x += e.knock; e.knock *= 0.8; if (e.knock < 0.3) e.knock = 0; }
+
+      // bubble collisions
+      for (let j = bubbles.length - 1; j >= 0; j--) {
+        const b = bubbles[j];
+        if (dist2(e, b) < (e.r + b.r) * (e.r + b.r)) {
+          e.hp -= b.dmg;
+          e.knock += 6;
+          burst(b.x, b.y, "#4fc3f7", 5);
+          bubbles.splice(j, 1);
+          if (e.hp <= 0) break;
+        }
+      }
+      if (e.hp <= 0) {
+        killEnemy(e, i);
+        continue;
+      }
+
+      // ink collisions -> slow 3s
+      for (let j = inks.length - 1; j >= 0; j--) {
+        const k = inks[j];
+        if (dist2(e, k) < (e.r + k.r) * (e.r + k.r)) {
+          e.slow = 3000;
+          burst(k.x, k.y, "#37474f", 6);
+          inks.splice(j, 1);
+        }
+      }
+
+      // hit player
+      if (player.invuln <= 0 && dist2(e, player) < (e.r + player.r) * (e.r + player.r)) {
+        player.hp -= 12;
+        player.invuln = 900;
+        burst(player.x, player.y, "#e57373", 12);
+        enemies.splice(i, 1);
+        if (player.hp <= 0) { player.hp = 0; gameOver(); return; }
+        continue;
+      }
+
+      // reached left edge -> also damages a bit and disappears
+      if (e.x < -40) {
+        player.hp -= 6;
+        addFloater(60, player.y - 40, "적 침투!", "#c62828");
+        enemies.splice(i, 1);
+        if (player.hp <= 0) { player.hp = 0; gameOver(); return; }
+      }
+    }
+
+    // --- shells ---
+    for (let i = shells.length - 1; i >= 0; i--) {
+      const sh = shells[i];
+      sh.wob += dt * 0.006;
+      sh.x -= 0.6;
+      sh.y += Math.sin(sh.wob) * 0.6;
+      if (dist2(sh, player) < (sh.r + player.r) * (sh.r + player.r)) {
+        shellCount++;
+        applyShellPower();
+        burst(sh.x, sh.y, "#ffb74d", 10);
+        shells.splice(i, 1);
+        continue;
+      }
+      if (sh.x < -30) shells.splice(i, 1);
+    }
+
+    // --- particles ---
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx; p.y += p.vy; p.vx *= 0.96; p.vy *= 0.96;
+      p.life -= dt;
+      if (p.life <= 0) particles.splice(i, 1);
+    }
+    // --- floaters ---
+    for (let i = floaters.length - 1; i >= 0; i--) {
+      const f = floaters[i];
+      f.y -= 0.4; f.life -= dt;
+      if (f.life <= 0) floaters.splice(i, 1);
+    }
+
+    // HUD
+    scoreEl.textContent = score;
+    shellsEl.textContent = shellCount;
+    hpbar.style.width = (player.hp / player.maxHp * 100) + "%";
+  }
+
+  function killEnemy(e, idx) {
+    score++;
+    burst(e.x, e.y, "#ef9a9a", 12);
+    if (Math.random() < 0.22) dropShell(e.x, e.y);
+    enemies.splice(idx, 1);
+  }
+
+  // ---- Draw ----
+  function drawBackground() {
+    ctx.fillStyle = "#E0F7FA";
+    ctx.fillRect(0, 0, W, H);
+    // soft water stripes
+    ctx.fillStyle = "rgba(178,235,242,0.5)";
+    for (let i = 0; i < 5; i++) {
+      const y = (elapsed * 0.02 + i * 130) % (H + 60) - 30;
+      ctx.beginPath();
+      ctx.ellipse(W * (0.15 + i * 0.2), y, 90, 26, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function emoji(char, x, y, size) {
+    ctx.font = size + "px serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(char, x, y);
+  }
+
+  function draw() {
+    drawBackground();
+
+    // shells
+    for (const sh of shells) emoji("🐚", sh.x, sh.y, 28);
+
+    // inks (black ink)
+    for (const k of inks) {
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(20,20,30,0.9)";
+      ctx.arc(k.x, k.y, k.r, 0, Math.PI * 2);
+      ctx.fill();
+      emoji("🖤", k.x, k.y, 16);
+    }
+
+    // bubbles
+    for (const b of bubbles) {
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(129,212,250,0.55)";
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fill();
+      emoji("🫧", b.x, b.y, 18);
+    }
+
+    // enemies (bad ducks - red tint)
+    for (const e of enemies) {
+      ctx.save();
+      if (e.slow > 0) {
+        // slow aura
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(55,71,79,0.25)";
+        ctx.arc(e.x, e.y, e.r + 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // red tint circle behind
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(229,57,53,0.35)";
+      ctx.arc(e.x, e.y, e.r + 2, 0, Math.PI * 2);
+      ctx.fill();
+      // flip so bad duck faces left
+      ctx.translate(e.x, e.y);
+      ctx.scale(-1, 1);
+      emoji("🦆", 0, 0, 36);
+      ctx.restore();
+      // hp bar
+      if (e.hp < e.maxHp) {
+        const w = 30;
+        ctx.fillStyle = "rgba(0,0,0,0.2)";
+        ctx.fillRect(e.x - w/2, e.y - e.r - 10, w, 4);
+        ctx.fillStyle = "#e53935";
+        ctx.fillRect(e.x - w/2, e.y - e.r - 10, w * (e.hp / e.maxHp), 4);
+      }
+    }
+
+    // octopus
+    emoji("🐙", octopus.x, octopus.y, 30);
+
+    // player duck (blink when invulnerable)
+    if (!(player.invuln > 0 && Math.floor(elapsed / 100) % 2 === 0)) {
+      emoji("🦆", player.x, player.y, 40);
+    }
+
+    // particles
+    for (const p of particles) {
+      ctx.globalAlpha = clamp(p.life / 600, 0, 1);
+      ctx.beginPath();
+      ctx.fillStyle = p.color;
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // floaters
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "bold 16px 'Malgun Gothic', sans-serif";
+    for (const f of floaters) {
+      ctx.globalAlpha = clamp(f.life / 900, 0, 1);
+      ctx.fillStyle = f.color;
+      ctx.fillText(f.text, f.x, f.y);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ---- Loop ----
+  let last = 0;
+  function loop(t) {
+    const dt = Math.min(48, t - last);
+    last = t;
+    if (state === STATE.PLAY) {
+      update(dt);
+      draw();
+    }
+    requestAnimationFrame(loop);
+  }
+
+  // ---- State transitions ----
+  function startGame() {
+    resetGame();
+    state = STATE.PLAY;
+    hud.classList.remove("hidden");
+    startScreen.classList.add("hidden");
+    overScreen.classList.add("hidden");
+  }
+
+  function gameOver() {
+    state = STATE.OVER;
+    finalScore.innerHTML = "처치한 나쁜 오리: <b>" + score + "</b>마리<br>획득한 조개: <b>" + shellCount + "</b>개";
+    overScreen.classList.remove("hidden");
+    hud.classList.add("hidden");
+  }
+
+  // ---- Input ----
+  window.addEventListener("keydown", (e) => {
+    const k = e.key.toLowerCase();
+    keys[k] = true;
+    if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(k)) e.preventDefault();
+    if (k === " " && state === STATE.PLAY) {
+      // manual instant volley
+      fireDuck();
+      fireTimer = 0;
+    }
+  });
+  window.addEventListener("keyup", (e) => { keys[e.key.toLowerCase()] = false; });
+
+  canvas.addEventListener("mousedown", () => {
+    if (state === STATE.PLAY) { fireDuck(); fireTimer = 0; }
+  });
+
+  startBtn.addEventListener("click", startGame);
+  restartBtn.addEventListener("click", startGame);
+
+  // initial screen draw
+  drawBackground();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
