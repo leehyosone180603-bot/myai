@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>도깨비에게 물어보기 - 이사·이직·투자 시기 사주로 묻기 | 한국인계산기</title>
+  <meta name="description" content="이사·이직·투자·계약·연애 시기가 나에게 괜찮은지 사주로 물어봐라. 그 시기의 월운·십성·신살로 판단하고 땜(예방)·실천법까지 도깨비가 답해준다.">
+  <meta name="keywords" content="사주 이사 시기, 이사 택일, 이직 시기 사주, 투자 시기, 사주 상담, 도깨비 사주, 월운, 신살 땜">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="도깨비에게 물어보기 - 사주로 시기를 묻다">
+  <meta property="og:description" content="이사·이직·투자·계약이 이 시기에 괜찮은지, 도깨비가 사주로 판단하고 땜까지 알려준다.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://calcbox.kr/saju/ask/">
+  <meta property="og:site_name" content="한국인계산기">
+  <link rel="canonical" href="https://calcbox.kr/saju/ask/">
+  <script type="application/ld+json">
+  { "@context": "https://schema.org", "@type": "WebApplication", "name": "도깨비에게 물어보기",
+    "url": "https://calcbox.kr/saju/ask/", "description": "사주로 시기(이사·이직·투자 등)를 묻고 땜까지 받는 자동 상담.",
+    "applicationCategory": "LifestyleApplication", "operatingSystem": "Any", "inLanguage": "ko",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" } }
+  </script>
+  <style>
+    :root { --bg:#0b0b0f; --card:#17161e; --card2:#131219; --line:#2a2833; --text:#ece7dd; --muted:#8f897c;
+      --gold:#d8b25c; --gold-d:#b8923d; --red:#c0392b; --pink:#e64980; --teal:#3fb08f; --shadow:0 8px 30px rgba(0,0,0,.5); }
+    * { box-sizing:border-box; }
+    body { margin:0; background:radial-gradient(120% 70% at 50% -8%, #1a1622 0%, var(--bg) 55%) fixed; color:var(--text);
+      line-height:1.75; font-family:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;-webkit-font-smoothing:antialiased; }
+    .wrap { max-width:600px; margin:0 auto; padding:0 18px 70px; }
+    .back-nav { max-width:600px; margin:0 auto; padding:16px 18px 0; }
+    .back-nav a { color:var(--muted); text-decoration:none; font-size:.85rem; }
+    .hero { text-align:center; padding:22px 0 6px; }
+    .hero .avatar { width:104px; height:104px; margin:0 auto 12px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+      background:radial-gradient(circle at 50% 35%, #23202c, #0c0b10); box-shadow:0 0 0 2px var(--gold-d), 0 0 40px rgba(216,178,92,.22); }
+    .hero h1 { font-size:1.55rem; margin:0; letter-spacing:.04em; font-weight:800; }
+    .hero h1 .g { color:var(--gold); } .hero .sub { color:var(--muted); font-size:.92rem; margin:8px 0 0; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; margin:16px 0; box-shadow:var(--shadow); }
+    .field { margin-bottom:14px; }
+    .field > label { display:block; font-weight:700; font-size:.9rem; margin-bottom:7px; color:#d8d2c6; }
+    .field small { color:var(--muted); font-weight:400; }
+    input[type=text] { width:100%; padding:11px 12px; font-size:1rem; color:var(--text); background:#100f16; border:1px solid var(--line); border-radius:10px; }
+    .seg { display:flex; gap:8px; flex-wrap:wrap; }
+    .seg button { flex:1; min-width:60px; padding:10px 8px; font-size:.92rem; font-weight:700; color:var(--muted); background:#100f16; border:1px solid var(--line); border-radius:10px; cursor:pointer; }
+    .seg button.on { color:#1a1410; background:var(--gold); border-color:var(--gold); }
+    select { width:100%; padding:11px 10px; font-size:.98rem; color:var(--text); background:#100f16; border:1px solid var(--line); border-radius:10px; appearance:none;
+      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1l5 5 5-5' stroke='%238f897c' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");
+      background-repeat:no-repeat; background-position:right 12px center; }
+    .ymd { display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:7px; }
+    .hm { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+    .when-row { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+    .chk { display:inline-flex; align-items:center; gap:8px; margin-top:8px; font-size:.88rem; color:#d8d2c6; cursor:pointer; }
+    .chk input { width:16px; height:16px; accent-color:var(--gold); }
+    .btn-go { width:100%; padding:16px; font-size:1.1rem; font-weight:800; color:#1a1410; background:linear-gradient(180deg,#e6c469,var(--gold-d)); border:none; border-radius:12px; cursor:pointer; }
+    .err { color:#ff8a7a; font-size:.9rem; min-height:1em; margin:0 0 10px; }
+    .ptitle { font-size:1.05rem; font-weight:800; margin:0 0 14px; }
+
+    .ans-head { text-align:center; padding:4px 0 2px; }
+    .ans-q { color:var(--muted); font-size:.9rem; }
+    .ans-badge { display:inline-block; margin:10px 0 4px; font-size:1.15rem; font-weight:800; padding:8px 16px; border-radius:999px; border:1px solid var(--gold-d); }
+    .ans-badge.good { color:var(--teal); border-color:var(--teal); }
+    .ans-badge.ok { color:var(--gold); border-color:var(--gold-d); }
+    .ans-badge.warn { color:#e8897e; border-color:var(--red); }
+    .ans-gz { color:var(--muted); font-size:.86rem; margin-top:6px; }
+    .blk { margin:16px 0; }
+    .blk .bsub { color:var(--gold); font-weight:700; font-size:.97rem; border-left:3px solid var(--gold-d); padding-left:9px; margin:0 0 6px; }
+    .blk p { margin:0; color:#ddd6c8; font-size:.95rem; }
+    .blk b { color:var(--gold); font-weight:700; }
+    .share-box { display:flex; gap:8px; margin-top:6px; }
+    .share-box input { flex:1; padding:10px; font-size:.82rem; color:var(--muted); background:#100f16; border:1px solid var(--line); border-radius:9px; }
+    .btn-ghost { padding:0 16px; font-weight:700; color:var(--gold); background:transparent; border:1px solid var(--gold-d); border-radius:9px; cursor:pointer; }
+    .mini-note { color:var(--muted); font-size:.84rem; }
+    .hidden { display:none !important; }
+    footer { text-align:center; color:var(--muted); font-size:.8rem; padding:22px 18px 40px; }
+    footer a { color:var(--gold-d); text-decoration:none; }
+  </style>
+</head>
+<body>
+  <nav class="back-nav"><a href="/">← 한국인계산기</a> · <a href="/saju/">도깨비 사주</a> · <a href="/gunghap/">도깨비 궁합</a></nav>
+  <header class="hero">
+    <div class="avatar" id="avatar">👺</div>
+    <h1>도깨비에게 <span class="g">물어보기</span></h1>
+    <p class="sub">"이 시기에 이거 해도 되나?" — 도깨비가 사주로 답해주마</p>
+  </header>
+
+  <main class="wrap">
+    <section class="card">
+      <p class="ptitle">내 사주</p>
+      <div class="field"><label>이름/별칭 <small>(선택)</small></label><input type="text" id="name" maxlength="12" placeholder="예: 나"></div>
+      <div class="field"><label>성별</label><div class="seg" data-name="gender"><button type="button" data-v="m" class="on">남</button><button type="button" data-v="f">여</button></div></div>
+      <div class="field"><label>달력</label><div class="seg" data-name="cal"><button type="button" data-v="solar" class="on">양력</button><button type="button" data-v="lunar">음력</button></div>
+        <label class="chk" id="leapRow" style="display:none;"><input type="checkbox" id="leap"> 윤달</label></div>
+      <div class="field"><label>생년월일 <small id="hint">(양력)</small></label><div class="ymd"><select id="selY"></select><select id="selM"></select><select id="selD"></select></div></div>
+      <div class="field"><label>태어난 시간</label><div class="hm"><select id="selH"></select><select id="selMin"></select></div></div>
+    </section>
+
+    <section class="card">
+      <p class="ptitle">무엇을, 언제?</p>
+      <div class="field"><label>고민 주제</label><select id="topic"></select></div>
+      <div class="field"><label>언제 일인가요?</label><div class="when-row"><select id="askY"></select><select id="askMon"></select></div>
+        <p class="mini-note" style="margin:7px 0 0;">특정 달을 고르면 그 달 월운으로, ‘한 해 전체’를 고르면 세운으로 봐준다.</p></div>
+    </section>
+
+    <section class="card"><p class="err" id="errorMsg"></p><button class="btn-go" id="askBtn" type="button">도깨비에게 물어보기</button></section>
+
+    <div id="resultArea" class="hidden">
+      <section class="card">
+        <div class="ans-head">
+          <p class="ans-q" id="ansQ"></p>
+          <div class="ans-badge" id="ansBadge"></div>
+          <p class="ans-gz" id="ansGz"></p>
+        </div>
+        <div id="ansBody"></div>
+      </section>
+      <section class="card">
+        <h3 style="margin:0 0 6px; font-size:1.02rem;">🔗 이 답변 공유</h3>
+        <p class="mini-note" style="margin:0;">링크를 보내면 같은 질문·답을 볼 수 있어요.</p>
+        <div class="share-box"><input type="text" id="shareUrl" readonly><button class="btn-ghost" id="copyBtn" type="button">복사</button></div>
+        <p class="mini-note" style="margin:12px 0 0;">더 깊은 풀이는 <a href="/saju/" style="color:var(--gold);">도깨비 사주 상세풀이</a>에서.</p>
+      </section>
+    </div>
+
+    <section class="card"><p class="mini-note">※ 도깨비에게 물어보기는 전통 명리(월운·십성·십이신살)에 토속적 해석을 더한 재미·참고용입니다. 최종 결정은 본인의 판단으로 하세요. 🙂</p></section>
+  </main>
+
+  <footer>
+    <p><a href="/saju/terms/">이용약관</a> · <a href="/saju/privacy/">개인정보처리방침</a></p>
+    <p>© <span id="year"></span> 한국인계산기 · 도깨비에게 물어보기 · 재미·참고용</p>
+  </footer>
+
+  <script src="../saju.js?v=2"></script>
+  <script src="../saju-lunar.js?v=1"></script>
+  <script src="../saju-detail.js?v=2"></script>
+  <script src="../saju-dokkaebi.js?v=6"></script>
+  <script src="../ask-content.js?v=1"></script>
+  <script src="ask-ui.js?v=1"></script>
+  <script>document.getElementById("year").textContent=new Date().getFullYear();</script>
+</body>
+</html>

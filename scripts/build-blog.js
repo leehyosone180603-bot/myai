@@ -29,6 +29,7 @@ const STATIC_URLS = [
   { loc: "https://calcbox.kr/military/", freq: "monthly", pri: "0.8" },
   { loc: "https://calcbox.kr/lotto/", freq: "weekly", pri: "0.8" },
   { loc: "https://calcbox.kr/saju/", freq: "weekly", pri: "0.9" },
+  { loc: "https://calcbox.kr/saju/ask/", freq: "weekly", pri: "0.8" },
   { loc: "https://calcbox.kr/gunghap/", freq: "monthly", pri: "0.9" },
   { loc: "https://calcbox.kr/saju/terms/", freq: "yearly", pri: "0.3" },
   { loc: "https://calcbox.kr/saju/privacy/", freq: "yearly", pri: "0.3" },
