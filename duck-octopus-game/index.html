@@ -2,27 +2,40 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>오리와 문어의 물방울 디펜스 🦆🐙</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
+    width: 100%;
     height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    overflow: hidden;
     background: linear-gradient(160deg, #b2ebf2, #80deea);
     font-family: "Segoe UI", "Malgun Gothic", sans-serif;
     -webkit-user-select: none;
     user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    overscroll-behavior: none;
+  }
+  /* full-viewport stage that centers the fixed-size game and scales it to fit */
+  #stage {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   #wrap {
     position: relative;
     width: 800px;
     height: 600px;
+    flex: 0 0 auto;
+    transform-origin: center center;
     box-shadow: 0 12px 40px rgba(0,0,0,0.25);
     border-radius: 14px;
     overflow: hidden;
+    touch-action: none;
   }
   canvas {
     display: block;
@@ -74,6 +87,7 @@
     cursor: pointer;
     box-shadow: 0 6px 16px rgba(2,136,209,0.4);
     transition: transform .08s;
+    touch-action: manipulation;
   }
   .btn:active { transform: scale(0.95); }
   .keys { font-size: 13px; color: #0288d1; background: rgba(255,255,255,0.6); padding: 10px 16px; border-radius: 12px; }
@@ -83,6 +97,7 @@
 </style>
 </head>
 <body>
+<div id="stage">
 <div id="wrap">
   <canvas id="game" width="800" height="600"></canvas>
 
@@ -102,8 +117,8 @@
     <p>귀여운 오리와 문어 콤비가 몰려오는 나쁜 오리들을 물리치세요!<br>
        오리는 물방울(🫧)로 딜을, 문어는 먹물(🖤)로 적을 느리게 만듭니다.</p>
     <div class="keys">
-      🕹️ 이동: <b>방향키</b> 또는 <b>WASD</b>　|
-      🔫 발사: <b>자동</b> + <b>스페이스바 / 마우스 클릭</b><br>
+      🖥️ PC: 이동 <b>방향키 / WASD</b>　|　발사 <b>자동 + 스페이스바 / 클릭</b><br>
+      📱 모바일: <b>화면을 손가락으로 눌러</b> 오리를 움직이세요 (발사는 자동)<br>
       🐚 조개를 먹으면 공격 속도 ↑ 또는 물방울 개수 ↑
     </div>
     <button class="btn" id="startBtn">게임 시작 ▶</button>
@@ -116,6 +131,7 @@
     <div id="finalScore"></div>
     <button class="btn" id="restartBtn">다시 시작 🔄</button>
   </div>
+</div>
 </div>
 
 <script>
@@ -154,6 +170,7 @@
   // input
   const keys = {};
   let mouseFiring = false;
+  const touch = { active: false, x: 0, y: 0 };
 
   // ---- Helpers ----
   const rand = (a, b) => a + Math.random() * (b - a);
@@ -256,6 +273,16 @@
       const len = Math.hypot(mx, my) || 1;
       player.x += (mx / len) * player.speed;
       player.y += (my / len) * player.speed;
+    }
+    // touch drag movement (mobile) — duck follows the finger
+    if (touch.active) {
+      const dx = touch.x - player.x, dy = touch.y - player.y;
+      const d = Math.hypot(dx, dy);
+      if (d > 1) {
+        const step = Math.min(player.speed * 1.5, d);
+        player.x += dx / d * step;
+        player.y += dy / d * step;
+      }
     }
     player.x = clamp(player.x, player.r, W - player.r);
     player.y = clamp(player.y, player.r + 20, H - player.r);
@@ -521,6 +548,7 @@
   // ---- State transitions ----
   function startGame() {
     resetGame();
+    touch.active = false;
     state = STATE.PLAY;
     hud.classList.remove("hidden");
     startScreen.classList.add("hidden");
@@ -551,8 +579,43 @@
     if (state === STATE.PLAY) { fireDuck(); fireTimer = 0; }
   });
 
+  // ---- Touch controls (mobile): drag anywhere on canvas to move the duck ----
+  function setTouchPos(e) {
+    const t = e.touches[0];
+    if (!t) return;
+    const rect = canvas.getBoundingClientRect();
+    touch.x = clamp((t.clientX - rect.left) / rect.width * W, 0, W);
+    touch.y = clamp((t.clientY - rect.top) / rect.height * H, 0, H);
+    touch.active = true;
+  }
+  canvas.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    if (state === STATE.PLAY) setTouchPos(e);
+  }, { passive: false });
+  canvas.addEventListener("touchmove", (e) => {
+    e.preventDefault();
+    if (state === STATE.PLAY) setTouchPos(e);
+  }, { passive: false });
+  canvas.addEventListener("touchend", (e) => { e.preventDefault(); touch.active = false; }, { passive: false });
+  canvas.addEventListener("touchcancel", () => { touch.active = false; });
+
   startBtn.addEventListener("click", startGame);
   restartBtn.addEventListener("click", startGame);
+
+  // ---- Responsive scaling: fit the fixed 800x600 stage into any screen ----
+  const wrap = document.getElementById("wrap");
+  function fitStage() {
+    const margin = 6;
+    const s = Math.min(
+      (window.innerWidth - margin) / W,
+      (window.innerHeight - margin) / H,
+      1
+    );
+    wrap.style.transform = "scale(" + s + ")";
+  }
+  window.addEventListener("resize", fitStage);
+  window.addEventListener("orientationchange", fitStage);
+  fitStage();
 
   // initial screen draw
   drawBackground();
