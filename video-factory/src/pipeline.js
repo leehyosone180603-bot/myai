@@ -216,6 +216,23 @@ export async function generateThumbnail(slug, instruction, { onLog } = {}) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// 윈도우에서 파일이 잠깐 잠겨(EBUSY/EPERM) 저장 실패할 때 잠시 기다렸다 재시도.
+async function writeFileRetry(path, data, onLog) {
+  for (let i = 0; ; i++) {
+    try {
+      writeFileSync(path, data);
+      return;
+    } catch (e) {
+      if ((e.code === "EBUSY" || e.code === "EPERM" || e.code === "EACCES") && i < 8) {
+        if (onLog && i === 0) onLog(`  · 파일이 잠겨 있어 대기 후 재시도: ${path.split(/[\\/]/).pop()}`);
+        await sleep(700);
+        continue;
+      }
+      throw e;
+    }
+  }
+}
+
 // 클립에 쓸 입력 이미지(base64)를 확보한다. 그림체 통일이 핵심:
 // 반드시 '영상용 이미지 세트'의 컷에서 출발한다(있으면 재사용, 없으면 그 컷의 이미지 프롬프트로 생성).
 // 클립의 모션 프롬프트로 이미지를 만들지 않는다(그림체가 흔들리므로).
@@ -295,10 +312,10 @@ export async function generateNarration(slug, { voiceId, model, speed, onLog } =
   emit(`전체 음성 생성 중... (${chunks.length}개 챕터, 총 ${text.length}자 · 한 번에)`);
   const { audioB64, alignment } = await ttsWithTimestamps(text, { voiceId, model, speed });
   if (!audioB64) throw new Error("음성 데이터를 받지 못했습니다.");
-  writeFileSync(join(dir, "audio", "narration.mp3"), Buffer.from(audioB64, "base64"));
+  await writeFileRetry(join(dir, "audio", "narration.mp3"), Buffer.from(audioB64, "base64"), emit);
   const lines = buildSegments(alignment);
-  writeFileSync(join(dir, "narration.srt"), formatSrt(lines));
-  writeFileSync(join(dir, "narration.txt"), text);
+  await writeFileRetry(join(dir, "narration.srt"), formatSrt(lines), emit);
+  await writeFileRetry(join(dir, "narration.txt"), text, emit);
   emit(`✓ 전체 음성(audio/narration.mp3) + 자막(narration.srt, ${lines.length}줄) 완료`);
   return { slug, audio: "audio/narration.mp3", srt: "narration.srt", lines: lines.length };
 }
@@ -316,9 +333,9 @@ export async function generateChapterNarration(slug, index, { voiceId, model, sp
   emit(`${index + 1}번 챕터 음성 생성 중... (${scriptText.length}자)`);
   const { audioB64, alignment } = await ttsWithTimestamps(scriptText, { voiceId, model, speed });
   if (!audioB64) throw new Error("음성 데이터를 받지 못했습니다.");
-  writeFileSync(join(dir, "audio", `ch-${n}.mp3`), Buffer.from(audioB64, "base64"));
+  await writeFileRetry(join(dir, "audio", `ch-${n}.mp3`), Buffer.from(audioB64, "base64"), emit);
   const lines = buildSegments(alignment);
-  writeFileSync(join(dir, `chapter-${n}.srt`), formatSrt(lines));
+  await writeFileRetry(join(dir, `chapter-${n}.srt`), formatSrt(lines), emit);
   emit(`✓ ${index + 1}번 챕터 음성(audio/ch-${n}.mp3) + 자막(chapter-${n}.srt) 완료`);
   return { index, audio: `audio/ch-${n}.mp3`, srt: `chapter-${n}.srt`, lines: lines.length };
 }
