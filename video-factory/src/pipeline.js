@@ -122,9 +122,9 @@ function composeImagePrompt(images, img) {
   return `${castBlock(images)}Scene: ${scene}. ${images?.style_token || ""} ${P.NO_TEXT_NEGATIVE}`.trim();
 }
 
-// 참조 이미지(사용자가 첨부한 "이런 느낌") data URI 배열 — output/<slug>/ref/*
-export function readRefDataUrls(dir) {
-  const rdir = join(dir, "ref");
+// 참조 이미지(사용자가 첨부한 "이런 느낌") data URI 배열 — output/<slug>/<sub>/*
+export function readRefDataUrls(dir, sub = "ref") {
+  const rdir = join(dir, sub);
   if (!existsSync(rdir)) return [];
   return readdirSync(rdir)
     .filter((f) => /\.(png|jpg|jpeg|webp)$/i.test(f))
@@ -205,13 +205,24 @@ export async function generateThumbnail(slug, instruction, { onLog } = {}) {
     `${cast}${style}. Eye-catching and emotionally expressive, one clear focal subject, ` +
     `dramatic but tasteful mood, strong composition that leaves some empty space on one side for a big text headline, high visual contrast. ` +
     P.NO_TEXT_NEGATIVE;
-  const out = await generateImage(prompt, { refImages: readRefDataUrls(dir) });
+  // 썸네일 전용 참고 이미지(ref-thumb) 우선, 없으면 일반 참고(ref)
+  const thumbRefs = readRefDataUrls(dir, "ref-thumb");
+  const refs = thumbRefs.length ? thumbRefs : readRefDataUrls(dir, "ref");
+  const out = await generateImage(prompt, { refImages: refs });
   const path = join(dir, "thumbnail.png");
   if (out.b64) writeFileSync(path, Buffer.from(out.b64, "base64"));
   else if (out.url) writeFileSync(path, Buffer.from(await (await fetch(out.url)).arrayBuffer()));
   else throw new Error("썸네일 이미지 응답이 비어 있습니다");
   emit("✓ 썸네일 생성: thumbnail.png");
   return { file: "thumbnail.png" };
+}
+
+// 대본 기반 썸네일 추천 프롬프트 3개
+export async function generateThumbnailIdeas(slug) {
+  const r = readResult(slug);
+  if (!r.pkg) throw new Error("먼저 콘텐츠(✨생성)를 만들어 주세요.");
+  const out = await generateJson({ system: P.thumbIdeaSystem, user: P.thumbIdeaPrompt(r.pkg, r.analysis) });
+  return { ideas: (out.ideas || []).slice(0, 3) };
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

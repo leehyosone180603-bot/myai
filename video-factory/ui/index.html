@@ -381,7 +381,14 @@ function renderResults(r){
 
   h+=`<h3>🖼️ 썸네일 이미지 생성 (AI)</h3>
   <div style="background:#0d0f14;border:1px solid var(--line);border-radius:9px;padding:12px">
-    <span class="hint">원하는 썸네일 지침을 적고 생성하세요. (대본 주제·그림체·인물·참고이미지가 자동 반영됩니다)</span>
+    <div style="margin-bottom:8px">
+      <label class="ghost sm" style="display:inline-block;cursor:pointer">📎 참고 이미지 첨부<input type="file" accept="image/*" style="display:none" onchange="uploadThumbRef(this)"></label>
+      <button class="ghost sm" onclick="clearThumbRef()">참고 비우기</button>
+      <button class="ghost sm" onclick="loadThumbIdeas()">💡 추천 프롬프트 3개</button>
+      <span id="thumbRefMsg" class="hint"></span>
+    </div>
+    <div id="thumbIdeas"></div>
+    <span class="hint">원하는 썸네일 지침을 적거나, 위 추천에서 골라 생성하세요. (대본 주제·그림체·인물·참고이미지 자동 반영)</span>
     <textarea id="thumbInstruction" style="min-height:64px;margin-top:6px" placeholder="예: 카페에서 여자가 남자를 흥미롭게 바라보는 클로즈업, 따뜻한 노을빛 배경, 오른쪽에 큰 글자 넣을 여백"></textarea>
     <div style="margin-top:6px"><button onclick="doThumbnail()">✨ 썸네일 이미지 생성</button> <span class="hint">여러 번 눌러 마음에 드는 컷을 뽑으세요(누를 때마다 과금)</span></div>
     <pre id="logThumb" style="display:none;margin-top:8px"></pre>
@@ -511,6 +518,37 @@ async function doEditGuide(){
   </div>`;
   toast("편집 가이드 완료");
 }
+
+// 썸네일 참고 이미지 첨부/비우기 (썸네일 전용 ref-thumb)
+async function uploadThumbRef(input){
+  const f=input.files&&input.files[0]; if(!f) return;
+  if(!CURRENT?.slug) return toast("먼저 콘텐츠를 생성/불러오세요");
+  try{
+    const dataUrl=await fileToDataUrl(f);
+    const r=await api("/api/upload-ref",{slug:CURRENT.slug,dataUrl,kind:"thumb"});
+    if(r.error) return toast("실패: "+r.error);
+    $("thumbRefMsg").textContent=`참고 이미지 ${r.count}장 첨부됨`;
+    toast("썸네일 참고 첨부됨");
+  }catch(e){ toast("실패: "+e.message); }
+  input.value="";
+}
+async function clearThumbRef(){
+  if(!CURRENT?.slug) return;
+  await api("/api/clear-ref",{slug:CURRENT.slug,kind:"thumb"});
+  $("thumbRefMsg").textContent="참고 이미지 비움";
+}
+
+// 대본 기반 추천 썸네일 프롬프트 3개
+async function loadThumbIdeas(){
+  if(!CURRENT?.slug) return toast("먼저 콘텐츠를 생성/불러오세요");
+  if(!HEALTH?.hasKey) return toast("API 키를 먼저 설정하세요");
+  $("thumbIdeas").innerHTML='<span class="hint">추천 프롬프트 만드는 중…</span>';
+  const r=await api("/api/thumbnail-ideas",{slug:CURRENT.slug});
+  if(r.error||!r.ideas||!r.ideas.length){ $("thumbIdeas").innerHTML='<span class="err">'+esc(r.error||"추천 실패")+'</span>'; return; }
+  $("thumbIdeas").innerHTML="<div class='hint' style='margin:4px 0'>💡 추천 컨셉 — 클릭하면 바로 생성:</div>"+
+    r.ideas.map((t)=>`<div class="pill"><span class="t" style="font-size:13px">${esc(t)}</span><button class="ghost sm" onclick='pickThumbIdea(${JSON.stringify(t)})'>이걸로 생성</button></div>`).join("");
+}
+function pickThumbIdea(text){ $("thumbInstruction").value=text; doThumbnail(); }
 
 // 썸네일 이미지 생성
 async function doThumbnail(){

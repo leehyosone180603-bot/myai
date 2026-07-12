@@ -161,3 +161,18 @@ JSON 스키마:
   ]
 }`;
 };
+
+// 5단계: 썸네일 이미지 컨셉(추천 프롬프트) 3개
+export const thumbIdeaSystem = `너는 유튜브 썸네일 기획자다. 대본 내용을 바탕으로 클릭을 유발하는 '썸네일 이미지' 컨셉 3개를 제안한다.
+각 컨셉은 이미지 생성에 바로 쓸 수 있는 한국어 지침(장면·인물·표정·구도·배경·분위기, 글자 넣을 여백 언급). 서로 다른 각도(감정/상황/대비 등). 출력은 JSON 하나.`;
+
+export const thumbIdeaPrompt = (pkg, analysis) => `아래 영상 내용으로 썸네일 이미지 컨셉 3개를 제안하라.
+
+<content>
+주제: ${analysis?.topic || pkg?.one_line_summary || ""}
+썸네일 문구 후보: ${(pkg?.thumbnail_title_options || [pkg?.thumbnail_title]).filter(Boolean).join(" / ")}
+도입 후킹: ${pkg?.chapters?.[0]?.script?.slice(0, 200) || ""}
+</content>
+
+JSON 스키마:
+{ "ideas": ["컨셉1: 장면 지침(한국어)", "컨셉2: ...", "컨셉3: ..."] }`;

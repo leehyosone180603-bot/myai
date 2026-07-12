@@ -16,6 +16,7 @@ import {
   generateNarration,
   generateChapterNarration,
   generateThumbnail,
+  generateThumbnailIdeas,
   generateEditGuide,
   listOutputs,
 } from "./pipeline.js";
@@ -221,6 +222,19 @@ const server = createServer(async (req, res) => {
       return res.end();
     }
 
+    // 썸네일 추천 프롬프트 3개 (대본 기반)
+    if (path === "/api/thumbnail-ideas" && req.method === "POST") {
+      const b = await readBody(req);
+      try {
+        requireTextProvider();
+        const slug = sanitizeSlug(b.slug?.trim());
+        if (!slug) throw new Error("slug 가 필요합니다.");
+        return send(res, 200, await generateThumbnailIdeas(slug));
+      } catch (e) {
+        return send(res, 200, { error: e.message });
+      }
+    }
+
     // 썸네일 이미지 생성 (사용자 지침 기반)
     if (path === "/api/thumbnail" && req.method === "POST") {
       const b = await readBody(req);
@@ -281,7 +295,8 @@ const server = createServer(async (req, res) => {
       const m = String(b.dataUrl || "").match(/^data:image\/(\w+);base64,(.+)$/s);
       if (!slug || !m) return send(res, 400, { error: "slug, 이미지 dataUrl 이 필요합니다." });
       const dir = outDir(slug);
-      const refDir = join(dir, "ref");
+      const sub = b.kind === "thumb" ? "ref-thumb" : "ref"; // 썸네일 전용 참고이미지 분리
+      const refDir = join(dir, sub);
       mkdirSync(refDir, { recursive: true });
       const idx = (readdirSync(refDir).filter((f) => /\.(png|jpg|jpeg|webp)$/i.test(f)).length % 3) + 1;
       writeFileSync(join(refDir, `reference-${idx}.png`), Buffer.from(m[2], "base64"));
@@ -292,7 +307,7 @@ const server = createServer(async (req, res) => {
     if (path === "/api/clear-ref" && req.method === "POST") {
       const b = await readBody(req);
       const slug = sanitizeSlug(b.slug);
-      const refDir = join(ROOT, "output", slug, "ref");
+      const refDir = join(ROOT, "output", slug, b.kind === "thumb" ? "ref-thumb" : "ref");
       if (existsSync(refDir)) rmSync(refDir, { recursive: true, force: true });
       return send(res, 200, { ok: true });
     }
