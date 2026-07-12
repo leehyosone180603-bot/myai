@@ -147,6 +147,54 @@
     };
   }
 
+  /* ── 십이신살(將星殺 등) ── 기준지지(보통 년지)의 삼합국으로 12지지에 배정 */
+  var SINSAL12 = ["겁살", "재살", "천살", "지살", "년살", "월살", "망신살", "장성살", "반안살", "역마살", "육해살", "화개살"];
+  function saengji(br) { // 그 지지가 속한 삼합국의 생지(生地)
+    if (br === 8 || br === 0 || br === 4) return 8;   // 신자진 水
+    if (br === 2 || br === 6 || br === 10) return 2;  // 인오술 火
+    if (br === 5 || br === 9 || br === 1) return 5;   // 사유축 金
+    return 11;                                        // 해묘미 木
+  }
+  function sinsal12(refBranch, targetBranch) {
+    var geop = (saengji(refBranch) + 9) % 12; // 겁살 위치 = 생지 - 3
+    return SINSAL12[(((targetBranch - geop) % 12) + 12) % 12];
+  }
+
+  /* ── 월운(그해 12달) ── year: 보는 시점의 연도 */
+  var MONTH_STEM_BASE = [2, 4, 6, 8, 0]; // 오호둔: 甲己→丙, 乙庚→戊, 丙辛→庚, 丁壬→壬, 戊癸→甲 (寅월 천간)
+  function monthlyLuck(res, year) {
+    var dm = res.dayMaster, ys = yearGanzhi(year).stem;
+    var base = MONTH_STEM_BASE[ys % 5];
+    var yearBr = res.pillars.year.branch;
+    var out = [];
+    for (var i = 0; i < 12; i++) {
+      var br = (2 + i) % 12, st = (base + i) % 10; // 寅월부터 순서대로
+      out.push({
+        greg: (br === 0 ? 12 : br),               // 양력 대략 월(寅=2월 … 子=12월, 丑=1월)
+        stem: st, branch: br,
+        ganKo: GAN_KO[st] + JI_KO[br], ganHan: GAN[st] + JI[br],
+        sipStem: tenGodStem(dm, st), sipBranch: tenGodBranch(dm, br),
+        stage: twelveStage(dm, br), sinsal: sinsal12(yearBr, br)
+      });
+    }
+    return out;
+  }
+
+  /* ── 세운(연도별) ── from년부터 count년 */
+  function yearLuck(res, from, count) {
+    var dm = res.dayMaster, yb = res.pillars.year.branch, out = [];
+    for (var k = 0; k < count; k++) {
+      var y = from + k, g = yearGanzhi(y);
+      out.push({
+        year: y, stem: g.stem, branch: g.branch,
+        ganKo: GAN_KO[g.stem] + JI_KO[g.branch], ganHan: GAN[g.stem] + JI[g.branch],
+        sipStem: tenGodStem(dm, g.stem), sipBranch: tenGodBranch(dm, g.branch),
+        stage: twelveStage(dm, g.branch), sinsal: sinsal12(yb, g.branch)
+      });
+    }
+    return out;
+  }
+
   /* ── 능력치 레이더 (십성 분포 기반) ── */
   function abilityScores(res) {
     var cnt = { 비겁: 0, 식상: 0, 재성: 0, 관성: 0, 인성: 0 };
@@ -193,6 +241,7 @@
     twelveStage: twelveStage, napeum: napeum,
     computeShinsal: computeShinsal, bodyStrength: bodyStrength, yongsin: yongsin,
     yearGanzhi: yearGanzhi, yearReading: yearReading,
+    sinsal12: sinsal12, monthlyLuck: monthlyLuck, yearLuck: yearLuck,
     abilityScores: abilityScores, tenGodTable: tenGodTable
   };
   if (typeof module !== "undefined" && module.exports) module.exports = root.SajuDetail;

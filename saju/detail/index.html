@@ -84,6 +84,18 @@
     .du-luck{margin-left:auto;font-weight:700;}
     .lg{color:var(--teal);} .ln{color:var(--muted);} .lc{color:#e2953f;}
 
+    /* 월운·세운 리스트 */
+    .luck-list{margin:6px 0 2px;}
+    .luck-item{border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin:8px 0;background:var(--card2);}
+    .luck-top{display:flex;align-items:center;flex-wrap:wrap;gap:7px;}
+    .luck-when{color:var(--text);font-size:.98rem;min-width:44px;}
+    .luck-age{color:var(--muted);font-size:.78rem;}
+    .luck-gz{color:var(--gold);font-weight:700;font-size:.9rem;}
+    .luck-top .tag{font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:999px;background:#100f16;border:1px solid var(--line);color:var(--muted);}
+    .luck-top .tag.t-sip{color:#1a1410;background:var(--gold);border-color:var(--gold);}
+    .luck-top .tag.t-sin{color:#e8897e;border-color:var(--red);}
+    .luck-desc{margin:9px 0 0;color:#ddd6c8;font-size:.9rem;line-height:1.65;}
+
     .cta{margin:34px 0 0;text-align:center;}
     .cta .note{color:var(--muted);font-size:.85rem;}
     footer{text-align:center;color:var(--muted);font-size:.8rem;padding:26px 18px 40px;}
@@ -132,10 +144,10 @@
   <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
   <script src="../saju.js?v=2"></script>
   <script src="../saju-lunar.js?v=1"></script>
-  <script src="../saju-detail.js?v=1"></script>
+  <script src="../saju-detail.js?v=2"></script>
   <script src="../saju-dokkaebi.js?v=6"></script>
-  <script src="../detail-content.js?v=4"></script>
-  <script src="detail-ui.js?v=5"></script>
+  <script src="../detail-content.js?v=5"></script>
+  <script src="detail-ui.js?v=6"></script>
   <script>document.getElementById("year").textContent=new Date().getFullYear();</script>
 </body>
 </html>
