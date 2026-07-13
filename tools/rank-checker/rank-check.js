@@ -94,16 +94,17 @@ async function checkKeyword(ctx, engineKey, keyword) {
       await page.close();
       await sleep(600 + Math.floor((keyword.length * 37) % 500)); // 예의상 지연
       if (hit) {
-        return { found: true, engine: def.label, vertical: vert, page: p, rank: hit.rank, title: hit.title, url: hit.href };
+        const type = hit.href.indexOf("/blog/") !== -1 ? "블로그 글" : "계산기/페이지";
+        return { found: true, engine: def.label, vertical: vert, page: p, rank: hit.rank, title: hit.title, url: hit.href, type: type };
       }
     }
   }
-  return { found: false, engine: def.label, vertical: "-", page: null, rank: null, title: "", url: "" };
+  return { found: false, engine: def.label, vertical: "-", page: null, rank: null, title: "", url: "", type: "-" };
 }
 
 function fmt(r) {
   if (!r.found) return `❌ 미노출 (${MAX_PAGES}페이지까지 확인)`;
-  return `✅ ${r.vertical} ${r.page}페이지 · 대략 ${r.rank}번째`;
+  return `✅ [${r.type}] ${r.vertical} ${r.page}페이지 · 대략 ${r.rank}번째`;
 }
 
 function buildHtml(rows, stamp) {
@@ -115,6 +116,7 @@ function buildHtml(rows, stamp) {
       <td>${r.keyword}</td>
       <td>${r.engine}</td>
       <td>${status}</td>
+      <td>${r.found ? r.type : "-"}</td>
       <td>${r.found ? r.vertical : "-"}</td>
       <td style="text-align:center">${r.found ? r.page + "페이지" : "-"}</td>
       <td style="text-align:center">${r.found ? "약 " + r.rank + "번째" : "-"}</td>
@@ -136,7 +138,7 @@ function buildHtml(rows, stamp) {
 <h1>🔎 검색 순위 리포트 — ${DOMAIN}</h1>
 <div class="meta">확인 시각: ${stamp} · 엔진: ${ENGINES.join(", ")} · 확인 영역: ${VERTS.join(", ")} · 최대 ${MAX_PAGES}페이지</div>
 <table>
-<thead><tr><th>키워드</th><th>검색엔진</th><th>노출</th><th>영역</th><th>페이지</th><th>대략 순위</th><th>발견된 결과(제목/URL)</th></tr></thead>
+<thead><tr><th>키워드</th><th>검색엔진</th><th>노출</th><th>구분</th><th>영역</th><th>페이지</th><th>대략 순위</th><th>발견된 결과(제목/URL)</th></tr></thead>
 <tbody>
 ${tr}
 </tbody></table>
@@ -168,8 +170,8 @@ ${tr}
   fs.writeFileSync(outHtml, buildHtml(rows, stamp));
 
   // CSV 도 저장
-  const csv = ["키워드,검색엔진,노출,영역,페이지,대략순위,URL"]
-    .concat(rows.map((r) => [r.keyword, r.engine, r.found ? "노출" : "미노출", r.found ? r.vertical : "", r.found ? r.page : "", r.found ? r.rank : "", r.url].join(",")))
+  const csv = ["키워드,검색엔진,노출,구분,영역,페이지,대략순위,URL"]
+    .concat(rows.map((r) => [r.keyword, r.engine, r.found ? "노출" : "미노출", r.found ? r.type : "", r.found ? r.vertical : "", r.found ? r.page : "", r.found ? r.rank : "", r.url].join(",")))
     .join("\n");
   fs.writeFileSync(path.join(__dirname, "report.csv"), "﻿" + csv);
 
