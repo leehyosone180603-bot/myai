@@ -259,16 +259,26 @@ def clamp(v, lo, hi):
     return max(lo, min(hi, v))
 
 
-def forecast(closes, current, horizon, scenario="neutral", sims=4000, seed=987654321):
+# 시나리오별: 추세추종 강도(damping)와 평균회귀 강도(kappa)
+SCEN_DAMPING = {"conservative": 0.1, "neutral": 0.4, "aggressive": 0.9}
+SCEN_KAPPA = {"conservative": 0.10, "neutral": 0.04, "aggressive": 0.015}
+
+
+def model_params(closes, current, scenario="neutral", vol_scale=1.0):
+    """
+    예측 엔진의 공통 파라미터를 계산해 반환한다(몬테카를로/해석적 예측이 공유).
+    vol_scale: 백테스트로 구한 변동성 보정 배수(구간 폭 조정).
+    반환: dict(mu_adj, sigma, kappa, theta, meta)
+    """
     mu, sigma = drift_vol(closes, 60)
+    sigma *= vol_scale
     s5 = sma(closes, 5) or current
     s20 = sma(closes, 20) or current
     s60 = sma(closes, 60) or s20
     rsi_val = rsi(closes, 14)
 
-    # 시나리오별: 추세추종 강도(damping)와 평균회귀 강도(kappa)
-    damping = {"conservative": 0.1, "neutral": 0.4, "aggressive": 0.9}[scenario]
-    kappa = {"conservative": 0.10, "neutral": 0.04, "aggressive": 0.015}[scenario]
+    damping = SCEN_DAMPING[scenario]
+    kappa = SCEN_KAPPA[scenario]
 
     trend_adj = 0.0
     if s5 > s20 > s60:
@@ -279,6 +289,46 @@ def forecast(closes, current, horizon, scenario="neutral", sims=4000, seed=98765
     mu_adj = clamp(mu * damping + trend_adj + rsi_adj, -2 * sigma, 2 * sigma)
 
     theta = math.log(current)                    # 앵커 = 현재가 (이동평균 편향 배제)
+    meta = {"mu": mu, "mu_adj": mu_adj, "sigma": sigma, "rsi": rsi_val,
+            "s5": s5, "s20": s20, "s60": s60, "kappa": kappa,
+            "ann_vol": sigma * math.sqrt(252)}
+    return {"mu_adj": mu_adj, "sigma": sigma, "kappa": kappa,
+            "theta": theta, "meta": meta}
+
+
+# 표준정규 분위수(해석적 예측 구간용)
+Z = {0.05: -1.644854, 0.25: -0.674490, 0.5: 0.0, 0.75: 0.674490, 0.95: 1.644854}
+
+
+def analytic_quantiles(current, params, horizon):
+    """
+    OU(AR(1)) 과정의 h-스텝 조건부 분포는 정규분포이므로,
+    몬테카를로 없이 각 영업일의 예측 분위수를 정확히 계산한다.
+      x_{t+1} = a·x_t + c + σ·Z,  a = 1-κ,  c = κ·θ + μ
+      E[x_h] = a^h·x0 + c·(1-a^h)/(1-a)
+      Var[x_h] = σ²·(1-a^{2h})/(1-a²)
+    가격 분위수 = exp(평균 + z·표준편차)  (로그정규)
+    """
+    kappa, theta, mu_adj, sigma = (params["kappa"], params["theta"],
+                                   params["mu_adj"], params["sigma"])
+    a = 1 - kappa
+    c = kappa * theta + mu_adj
+    x0 = math.log(current)
+    out = []
+    for h in range(1, horizon + 1):
+        ah = a ** h
+        mean_h = ah * x0 + c * (1 - ah) / (1 - a)
+        var_h = sigma ** 2 * (1 - a ** (2 * h)) / (1 - a ** 2)
+        sd_h = math.sqrt(max(var_h, 1e-12))
+        out.append({p: math.exp(mean_h + z * sd_h) for p, z in Z.items()})
+    return out
+
+
+def forecast(closes, current, horizon, scenario="neutral", sims=4000,
+             seed=987654321, vol_scale=1.0):
+    params = model_params(closes, current, scenario, vol_scale)
+    kappa, theta, mu_adj, sigma = (params["kappa"], params["theta"],
+                                   params["mu_adj"], params["sigma"])
     rng = random.Random(seed)
 
     # 시뮬레이션: 경로별로 진행하며 각 스텝의 가격을 열 단위로 저장
@@ -309,10 +359,7 @@ def forecast(closes, current, horizon, scenario="neutral", sims=4000, seed=98765
         })
         prev_col = col
 
-    meta = {"mu": mu, "mu_adj": mu_adj, "sigma": sigma, "rsi": rsi_val,
-            "s5": s5, "s20": s20, "s60": s60,
-            "ann_vol": sigma * math.sqrt(252)}
-    return days, meta
+    return days, params["meta"]
 
 
 # ===========================================================================
@@ -501,7 +548,7 @@ def normalize_code(raw):
 
 
 def predict_stock(code, days=10, scenario="neutral", sims=4000,
-                  manual_price=None, no_network=False):
+                  manual_price=None, no_network=False, vol_scale=1.0):
     """
     한 종목을 분석·예측해 결과 딕셔너리를 반환한다(출력은 하지 않음).
     GUI·일괄 예측 등 다른 모듈에서 재사용하는 공통 진입점.
@@ -559,7 +606,7 @@ def predict_stock(code, days=10, scenario="neutral", sims=4000,
     q["change"] = q["price"] - q["prev_close"]
     q["change_rate"] = (q["change"] / q["prev_close"] * 100) if q["prev_close"] else 0.0
 
-    fdays, meta = forecast(closes, current, days, scenario, sims)
+    fdays, meta = forecast(closes, current, days, scenario, sims, vol_scale=vol_scale)
     return {"code": code, "q": q, "meta": meta, "days": fdays,
             "closes": closes, "is_live": is_live, "scenario": scenario}
 
@@ -576,6 +623,8 @@ def main(argv=None):
     ap.add_argument("--csv", metavar="PATH", help="예측 결과 CSV 저장 경로")
     ap.add_argument("--chart", metavar="PATH", help="차트 PNG 저장 경로")
     ap.add_argument("--manual-price", type=float, help="현재가 직접 지정(원)")
+    ap.add_argument("--vol-scale", type=float, default=1.0,
+                    help="변동성 보정 배수(backtest.py로 구한 권장값). 기본 1.0")
     ap.add_argument("--no-network", action="store_true",
                     help="네트워크 없이 예시 데이터로만 실행")
     args = ap.parse_args(argv)
@@ -583,7 +632,7 @@ def main(argv=None):
     print("\n  실시간 데이터 수집 중…\n" if not args.no_network else "")
     try:
         res = predict_stock(args.code, args.days, args.scenario, args.sims,
-                            args.manual_price, args.no_network)
+                            args.manual_price, args.no_network, args.vol_scale)
     except ValueError as e:
         print(f"오류: {e}", file=sys.stderr)
         return 2

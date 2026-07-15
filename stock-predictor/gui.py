@@ -25,6 +25,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 import predict as P
+import backtest as BT
 
 SCENARIOS = {"보수적": "conservative", "중립": "neutral", "공격적": "aggressive"}
 UP_COLOR, DOWN_COLOR, FLAT_COLOR = "#e03131", "#1c6fd6", "#555555"
@@ -40,6 +41,7 @@ class StockGUI:
         self.msgq = queue.Queue()
         self.busy = False
         self.chart_canvas = None
+        self.vol_scale = 1.0            # 백테스트로 보정된 변동성 배수
 
         self._init_style()
         self._build_controls()
@@ -99,6 +101,9 @@ class StockGUI:
         self.btn_batch = ttk.Button(top, text="여러 종목 요약", command=self.on_batch,
                                     style="Big.TButton")
         self.btn_batch.grid(row=1, column=5, padx=4)
+        self.btn_bt = ttk.Button(top, text="정확도 검증", command=self.on_backtest,
+                                 style="Big.TButton")
+        self.btn_bt.grid(row=1, column=6, padx=4)
 
         self.status = ttk.Label(self.root, text="", foreground="#3b5bdb",
                                 padding=(14, 0))
@@ -168,6 +173,7 @@ class StockGUI:
         state = "disabled" if busy else "normal"
         self.btn_single.config(state=state)
         self.btn_batch.config(state=state)
+        self.btn_bt.config(state=state)
 
     def _read_opts(self):
         try:
@@ -197,9 +203,20 @@ class StockGUI:
         threading.Thread(target=self._work_batch,
                          args=(raw, days, scen, offline), daemon=True).start()
 
+    def on_backtest(self):
+        if self.busy:
+            return
+        code = self.code_var.get().split(",")[0]
+        _, scen, offline = self._read_opts()
+        self._set_busy(True)
+        self._set_status("정확도 검증 중… 과거 데이터로 백테스트하고 있습니다.")
+        threading.Thread(target=self._work_backtest,
+                         args=(code, scen, offline), daemon=True).start()
+
     def _work_single(self, code, days, scen, offline):
         try:
-            res = P.predict_stock(code, days=days, scenario=scen, no_network=offline)
+            res = P.predict_stock(code, days=days, scenario=scen,
+                                  no_network=offline, vol_scale=self.vol_scale)
             self.msgq.put(("single", res))
         except Exception as e:
             self.msgq.put(("error", str(e)))
@@ -208,11 +225,31 @@ class StockGUI:
         rows = []
         for raw in codes:
             try:
-                res = P.predict_stock(raw, days=days, scenario=scen, no_network=offline)
+                res = P.predict_stock(raw, days=days, scenario=scen,
+                                      no_network=offline, vol_scale=self.vol_scale)
                 rows.append({"ok": True, "res": res})
             except Exception as e:
                 rows.append({"ok": False, "code": raw, "error": str(e)})
         self.msgq.put(("batch", rows))
+
+    def _work_backtest(self, code, scen, offline):
+        try:
+            code = P.normalize_code(code)
+            closes, _hist, is_live = BT.load_closes(code, offline)
+            horizons = [1, 5, 10]
+            if len(closes) < 60 + max(horizons) + 20:
+                raise ValueError("백테스트에 필요한 과거 데이터가 부족합니다.")
+            base = BT.evaluate(closes, horizons, scen, 1.0)
+            scale, _ = BT.calibrate(closes, horizons, scen, 60, 1)
+            cal = BT.evaluate(closes, horizons, scen, scale)
+            self.msgq.put(("backtest", {
+                "code": code, "is_live": is_live, "horizons": horizons,
+                "base": {h: BT.finalize(base[h]) for h in horizons},
+                "cal": {h: BT.finalize(cal[h]) for h in horizons},
+                "scale": scale, "scenario": scen,
+                "n": base[horizons[0]]["n"]}))
+        except Exception as e:
+            self.msgq.put(("error", str(e)))
 
     # --------------------------------------------------------------- render
     def _poll_queue(self):
@@ -223,9 +260,11 @@ class StockGUI:
                     self._render_single(payload)
                 elif kind == "batch":
                     self._render_batch(payload)
+                elif kind == "backtest":
+                    self._render_backtest(payload)
                 elif kind == "error":
                     self._set_status("오류가 발생했습니다.")
-                    messagebox.showerror("예측 실패", payload)
+                    messagebox.showerror("실패", payload)
                 self._set_busy(False)
         except queue.Empty:
             pass
@@ -292,6 +331,35 @@ class StockGUI:
                 "실시간" if res["is_live"] else "예시"))
         self.nb.select(self.tab2)
         self._set_status(f"완료: {ok}/{len(rows)} 종목 예측이 갱신되었습니다.")
+
+    def _render_backtest(self, s):
+        self.vol_scale = s["scale"]        # 이후 예측에 자동 반영
+        code, hs = s["code"], s["horizons"]
+        name = P.SEED.get(code, {}).get("name", code)
+        src = "🟢 실시간" if s["is_live"] else "예시 데이터"
+
+        def row(label, key, fmt):
+            return "  " + label + "  " + "   ".join(
+                f"{h}일 {fmt(s[key][h])}" for h in hs)
+
+        base_cov = sum(s["base"][h]["cov90"] for h in hs) / len(hs)
+        new_cov = sum(s["cal"][h]["cov90"] for h in hs) / len(hs)
+        msg = (
+            f"[정확도 검증]  {name} ({code})\n"
+            f"데이터: {src} · 평가 시점 {s['n']}개 · 시나리오 {s['scenario']}\n"
+            f"{'─' * 34}\n"
+            + row("방향 적중률 (무작위 50%)\n ", "base", lambda f: f"{f['dir'] * 100:.0f}%") + "\n"
+            + row("90% 구간 포함율 (목표 90%)\n ", "base", lambda f: f"{f['cov90'] * 100:.0f}%") + "\n"
+            + row("평균오차 MAPE\n ", "base", lambda f: f"{f['mape']:.1f}%") + "\n"
+            + f"{'─' * 34}\n"
+            f"📐 구간 보정: 전체 {base_cov * 100:.0f}% "
+            f"→ 배수 {s['scale']} → {new_cov * 100:.0f}%\n"
+            f"✅ 권장 배수가 이후 예측에 자동 반영됩니다.\n\n"
+            "⚠️ 백테스트 성적이 미래 수익을 보장하지 않습니다."
+        )
+        self._set_status(f"정확도 검증 완료 · 변동성 보정 배수 {s['scale']} 적용됨 "
+                         f"(이후 [예측]에 반영)")
+        messagebox.showinfo("정확도 검증 결과", msg)
 
     def _draw_chart(self, res):
         if self.chart_canvas is not None:
