@@ -321,6 +321,24 @@ def forecast(closes, current, horizon, scenario="neutral", sims=4000, seed=98765
 KRW = lambda n: f"{round(n):,}"  # noqa: E731
 
 
+def disp_width(s):
+    """한글 등 전각 문자를 2칸으로 계산한 표시 너비."""
+    import unicodedata
+    return sum(2 if unicodedata.east_asian_width(c) in "WF" else 1 for c in str(s))
+
+
+def pad(s, width, align="<"):
+    """표시 너비 기준 정렬(한글 표 정렬용). align: '<' 좌, '>' 우, '^' 중앙."""
+    s = str(s)
+    gap = max(0, width - disp_width(s))
+    if align == ">":
+        return " " * gap + s
+    if align == "^":
+        left = gap // 2
+        return " " * left + s + " " * (gap - left)
+    return s + " " * gap
+
+
 def diagnose(meta, current):
     up = meta["s5"] > meta["s20"] > meta["s60"]
     down = meta["s5"] < meta["s20"] < meta["s60"]
@@ -377,16 +395,18 @@ def print_report(code, q, meta, days, is_live, scenario):
 
     print(line)
     print("  일자별 예상 주가")
-    print(f"  {'날짜':<12}{'예상종가':>12}{'전일대비':>10}{'예상범위(90%)':>24}{'상승확률':>9}")
-    print("  " + "-" * 65)
+    print("  " + pad("날짜", 12) + pad("예상종가", 12, ">") + pad("전일대비", 11, ">")
+          + pad("예상범위(90%)", 24, ">") + pad("상승확률", 10, ">"))
+    print("  " + "-" * 67)
     wd = "월화수목금토일"
     for d in days:
         date = d["date"]
         label = f"{date.month:>2}/{date.day:02d}({wd[date.weekday()]})"
         chg = (d["p50"] - q["price"]) / q["price"] * 100
         rng_s = f"{KRW(d['p5'])} ~ {KRW(d['p95'])}"
-        print(f"  {label:<12}{KRW(d['p50']):>12}{chg:>+9.1f}%"
-              f"{rng_s:>24}{d['up_prob'] * 100:>8.0f}%")
+        print("  " + pad(label, 12) + pad(KRW(d["p50"]), 12, ">")
+              + pad(f"{chg:+.1f}%", 11, ">") + pad(rng_s, 24, ">")
+              + pad(f"{d['up_prob'] * 100:.0f}%", 10, ">"))
     last = days[-1]
     lchg = (last["p50"] - q["price"]) / q["price"] * 100
     print("  " + "-" * 65)
@@ -472,46 +492,41 @@ def load_data(code, no_network):
     return history, quote, is_live
 
 
-def main(argv=None):
-    ap = argparse.ArgumentParser(
-        description="국내 주식 실시간 분석 + 일자별 예상 주가 예측")
-    ap.add_argument("code", nargs="?", default="214450",
-                    help="종목코드 6자리 (기본: 214450 파마리서치)")
-    ap.add_argument("--days", type=int, default=10, help="예측 영업일 수 (기본 10)")
-    ap.add_argument("--scenario", choices=["conservative", "neutral", "aggressive"],
-                    default="neutral", help="예측 시나리오 (기본 neutral)")
-    ap.add_argument("--sims", type=int, default=4000, help="몬테카를로 시뮬레이션 횟수")
-    ap.add_argument("--csv", metavar="PATH", help="예측 결과 CSV 저장 경로")
-    ap.add_argument("--chart", metavar="PATH", help="차트 PNG 저장 경로")
-    ap.add_argument("--manual-price", type=float, help="현재가 직접 지정(원)")
-    ap.add_argument("--no-network", action="store_true",
-                    help="네트워크 없이 예시 데이터로만 실행")
-    args = ap.parse_args(argv)
-
-    code = "".join(ch for ch in args.code if ch.isdigit())
+def normalize_code(raw):
+    """입력에서 숫자만 추출해 6자리 종목코드 반환. 형식 오류 시 ValueError."""
+    code = "".join(ch for ch in str(raw) if ch.isdigit())
     if len(code) != 6:
-        print("오류: 종목코드는 숫자 6자리여야 합니다 (예: 214450).", file=sys.stderr)
-        return 2
+        raise ValueError(f"종목코드는 숫자 6자리여야 합니다 (입력: '{raw}').")
+    return code
 
-    print("\n  실시간 데이터 수집 중…\n" if not args.no_network else "")
-    history, quote, is_live = load_data(code, args.no_network)
+
+def predict_stock(code, days=10, scenario="neutral", sims=4000,
+                  manual_price=None, no_network=False):
+    """
+    한 종목을 분석·예측해 결과 딕셔너리를 반환한다(출력은 하지 않음).
+    GUI·일괄 예측 등 다른 모듈에서 재사용하는 공통 진입점.
+
+    반환: {code, q, meta, days, closes, is_live, scenario}
+    실패(데이터 없음/형식 오류) 시 ValueError.
+    """
+    code = normalize_code(code)
+    history, quote, is_live = load_data(code, no_network)
 
     seed = SEED.get(code)
     if not history:
         if seed:
             history = synthetic_history(seed, code)
         else:
-            print(f"오류: '{code}' 실시간 데이터를 가져오지 못했고 예시 데이터도 "
-                  "없습니다. 파마리서치(214450)로 시도하거나 네트워크를 확인하세요.",
-                  file=sys.stderr)
-            return 1
+            raise ValueError(
+                f"'{code}' 실시간 데이터를 가져오지 못했고 예시 데이터도 없습니다. "
+                "네트워크를 확인하거나 파마리서치(214450)로 시도하세요.")
     closes = [h["close"] for h in history]
 
     # 현재가 확정: 실시간 > 수동입력 > 시드 > 히스토리 마지막
     if quote and quote.get("price"):
         current = quote["price"]
-    elif args.manual_price:
-        current = args.manual_price
+    elif manual_price:
+        current = manual_price
     elif seed:
         current = seed["price"]
     else:
@@ -544,13 +559,41 @@ def main(argv=None):
     q["change"] = q["price"] - q["prev_close"]
     q["change_rate"] = (q["change"] / q["prev_close"] * 100) if q["prev_close"] else 0.0
 
-    days, meta = forecast(closes, current, args.days, args.scenario, args.sims)
+    fdays, meta = forecast(closes, current, days, scenario, sims)
+    return {"code": code, "q": q, "meta": meta, "days": fdays,
+            "closes": closes, "is_live": is_live, "scenario": scenario}
 
-    print_report(code, q, meta, days, is_live, args.scenario)
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(
+        description="국내 주식 실시간 분석 + 일자별 예상 주가 예측")
+    ap.add_argument("code", nargs="?", default="214450",
+                    help="종목코드 6자리 (기본: 214450 파마리서치)")
+    ap.add_argument("--days", type=int, default=10, help="예측 영업일 수 (기본 10)")
+    ap.add_argument("--scenario", choices=["conservative", "neutral", "aggressive"],
+                    default="neutral", help="예측 시나리오 (기본 neutral)")
+    ap.add_argument("--sims", type=int, default=4000, help="몬테카를로 시뮬레이션 횟수")
+    ap.add_argument("--csv", metavar="PATH", help="예측 결과 CSV 저장 경로")
+    ap.add_argument("--chart", metavar="PATH", help="차트 PNG 저장 경로")
+    ap.add_argument("--manual-price", type=float, help="현재가 직접 지정(원)")
+    ap.add_argument("--no-network", action="store_true",
+                    help="네트워크 없이 예시 데이터로만 실행")
+    args = ap.parse_args(argv)
+
+    print("\n  실시간 데이터 수집 중…\n" if not args.no_network else "")
+    try:
+        res = predict_stock(args.code, args.days, args.scenario, args.sims,
+                            args.manual_price, args.no_network)
+    except ValueError as e:
+        print(f"오류: {e}", file=sys.stderr)
+        return 2
+
+    print_report(res["code"], res["q"], res["meta"], res["days"],
+                 res["is_live"], res["scenario"])
     if args.csv:
-        save_csv(args.csv, code, q, days)
+        save_csv(args.csv, res["code"], res["q"], res["days"])
     if args.chart:
-        save_chart(args.chart, code, q, closes, days)
+        save_chart(args.chart, res["code"], res["q"], res["closes"], res["days"])
     return 0
 
 
