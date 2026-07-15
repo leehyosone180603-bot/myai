@@ -1,0 +1,2 @@
+# Windows 배치 파일은 CRLF 줄바꿈으로 체크아웃되도록 강제
+*.bat text eol=crlf

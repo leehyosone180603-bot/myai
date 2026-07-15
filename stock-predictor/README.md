@@ -117,6 +117,15 @@ python batch.py 214450 005930 --scenario aggressive --workers 8
 
 터미널이 익숙하지 않다면 그래픽 창으로 실행하세요.
 
+### 🪟 Windows 빠른 시작 (가장 쉬움)
+1. 이 폴더(`stock-predictor`)를 내려받습니다.
+2. 파이썬이 없다면 [python.org](https://www.python.org/downloads/)에서 설치
+   (설치 화면에서 **“Add Python to PATH” 체크**).
+3. **`run_gui.bat` 파일을 더블클릭**하면 끝입니다.
+   차트용 `matplotlib`을 자동으로 설치하고 창을 띄웁니다.
+
+명령으로 실행하려면:
+
 ```bash
 python gui.py
 ```

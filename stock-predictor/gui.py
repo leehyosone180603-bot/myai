@@ -28,21 +28,44 @@ import predict as P
 
 SCENARIOS = {"보수적": "conservative", "중립": "neutral", "공격적": "aggressive"}
 UP_COLOR, DOWN_COLOR, FLAT_COLOR = "#e03131", "#1c6fd6", "#555555"
+ROW_EVEN, ROW_ODD = "#ffffff", "#f2f5fb"   # 표 줄무늬(가독성)
 
 
 class StockGUI:
     def __init__(self, root):
         self.root = root
         root.title("📈 주가 예측 프로그램")
-        root.geometry("880x720")
+        root.geometry("920x760")
+        root.minsize(820, 640)
         self.msgq = queue.Queue()
         self.busy = False
         self.chart_canvas = None
 
+        self._init_style()
         self._build_controls()
         self._build_tabs()
         self._set_status("종목코드를 입력하고 [예측]을 누르세요. 예시: 214450 (파마리서치)")
         root.after(80, self._poll_queue)
+
+    def _init_style(self):
+        """Windows에서 보기 편하도록 글꼴·행 높이·표 스타일 지정."""
+        import tkinter.font as tkfont
+        fams = set(tkfont.families())
+        base = next((f for f in ("Malgun Gothic", "AppleGothic", "NanumGothic",
+                                 "Noto Sans CJK KR") if f in fams), None)
+        self.font_base = (base or "TkDefaultFont", 10)
+        self.font_big = (base or "TkDefaultFont", 12, "bold")
+        if base:
+            self.root.option_add("*Font", self.font_base)
+        style = ttk.Style()
+        try:
+            style.theme_use("vista")        # Windows 기본 테마(없으면 예외)
+        except tk.TclError:
+            pass
+        style.configure("Treeview", rowheight=28, font=self.font_base)
+        style.configure("Treeview.Heading", font=(base or "TkDefaultFont", 10, "bold"))
+        style.configure("Big.TButton", font=(base or "TkDefaultFont", 10, "bold"),
+                        padding=6)
 
     # ------------------------------------------------------------------ UI
     def _build_controls(self):
@@ -70,9 +93,11 @@ class StockGUI:
         ttk.Checkbutton(top, text="오프라인(예시)", variable=self.offline_var).grid(
             row=1, column=3, padx=(0, 10))
 
-        self.btn_single = ttk.Button(top, text="예측", command=self.on_single)
+        self.btn_single = ttk.Button(top, text="예측", command=self.on_single,
+                                     style="Big.TButton")
         self.btn_single.grid(row=1, column=4, padx=4)
-        self.btn_batch = ttk.Button(top, text="여러 종목 요약", command=self.on_batch)
+        self.btn_batch = ttk.Button(top, text="여러 종목 요약", command=self.on_batch,
+                                    style="Big.TButton")
         self.btn_batch.grid(row=1, column=5, padx=4)
 
         self.status = ttk.Label(self.root, text="", foreground="#3b5bdb",
@@ -106,6 +131,8 @@ class StockGUI:
         self.tree1.pack(fill="both", expand=True, padx=6, pady=8)
         self.tree1.tag_configure("up", foreground=UP_COLOR)
         self.tree1.tag_configure("down", foreground=DOWN_COLOR)
+        self.tree1.tag_configure("even", background=ROW_EVEN)
+        self.tree1.tag_configure("odd", background=ROW_ODD)
 
         # --- 여러 종목 탭 ---
         self.tab2 = ttk.Frame(self.nb)
@@ -124,6 +151,8 @@ class StockGUI:
         self.tree2.pack(fill="both", expand=True, padx=6, pady=8)
         self.tree2.tag_configure("up", foreground=UP_COLOR)
         self.tree2.tag_configure("down", foreground=DOWN_COLOR)
+        self.tree2.tag_configure("even", background=ROW_EVEN)
+        self.tree2.tag_configure("odd", background=ROW_ODD)
 
         disc = ("⚠️ 참고용 시뮬레이션입니다. 과거 통계 기반이며 미래 주가를 보장하지 "
                 "않습니다. 투자 판단과 책임은 본인에게 있습니다.")
@@ -226,12 +255,13 @@ class StockGUI:
 
         self.tree1.delete(*self.tree1.get_children())
         wd = "월화수목금토일"
-        for d in days:
+        for i, d in enumerate(days):
             dt = d["date"]
             label = f"{dt.month}/{dt.day:02d}({wd[dt.weekday()]})"
             chg = (d["p50"] - q["price"]) / q["price"] * 100
-            tag = "up" if d["p50"] > q["price"] else "down" if d["p50"] < q["price"] else ""
-            self.tree1.insert("", "end", tags=(tag,), values=(
+            color = "up" if d["p50"] > q["price"] else "down" if d["p50"] < q["price"] else ""
+            stripe = "even" if i % 2 == 0 else "odd"
+            self.tree1.insert("", "end", tags=(color, stripe), values=(
                 label, P.KRW(d["p50"]), f"{chg:+.1f}%", P.KRW(d["p5"]),
                 P.KRW(d["p95"]), f"{d['up_prob'] * 100:.0f}%"))
 
@@ -242,9 +272,10 @@ class StockGUI:
     def _render_batch(self, rows):
         self.tree2.delete(*self.tree2.get_children())
         ok = 0
-        for r in rows:
+        for i, r in enumerate(rows):
+            stripe = "even" if i % 2 == 0 else "odd"
             if not r["ok"]:
-                self.tree2.insert("", "end", values=(
+                self.tree2.insert("", "end", tags=(stripe,), values=(
                     "(실패)", r["code"], "-", "-", "-", "-", "-", "-", r["error"][:20]))
                 continue
             ok += 1
@@ -253,8 +284,8 @@ class StockGUI:
             verdict, _, _ = P.diagnose(res["meta"], q["price"])
             chg = (last["p50"] - q["price"]) / q["price"] * 100
             arrow = "▲" if q["change"] > 0 else "▼" if q["change"] < 0 else "―"
-            tag = "up" if chg > 0 else "down" if chg < 0 else ""
-            self.tree2.insert("", "end", tags=(tag,), values=(
+            color = "up" if chg > 0 else "down" if chg < 0 else ""
+            self.tree2.insert("", "end", tags=(color, stripe), values=(
                 q["name"], res["code"], P.KRW(q["price"]),
                 f"{arrow}{q['change_rate']:+.1f}%", verdict.split()[0],
                 P.KRW(last["p50"]), f"{chg:+.1f}%", f"{last['up_prob'] * 100:.0f}%",
