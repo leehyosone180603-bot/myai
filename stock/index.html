@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>파마리서치 주가 예측 | 실시간 주가 흐름·일자별 예상 주가 - 한국인계산기</title>
+  <meta name="description" content="파마리서치(214450) 등 국내 주식의 실시간 주가 흐름과 현재 상황을 파악해 일자별 예상 주가를 예측하는 무료 프로그램. 이동평균·RSI·변동성 기반 몬테카를로 시뮬레이션으로 예상 종가와 상단·하단 밴드, 상승 확률을 계산합니다.">
+  <meta name="keywords" content="파마리서치 주가, 파마리서치 주가전망, 214450, 주가예측, 주가예측프로그램, 예상주가, 주식예측, 코스닥, 주가전망, 몬테카를로 주가">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="파마리서치 주가 예측 - 실시간 흐름·일자별 예상 주가">
+  <meta property="og:description" content="파마리서치(214450) 실시간 주가와 기술적 지표를 분석해 일자별 예상 주가·확률 밴드를 계산하는 무료 주가 예측 프로그램.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://calcbox.kr/stock/">
+  <meta property="og:site_name" content="한국인계산기">
+  <link rel="canonical" href="https://calcbox.kr/stock/">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "파마리서치 주가 예측",
+    "url": "https://calcbox.kr/stock/",
+    "description": "국내 주식의 실시간 주가 흐름과 기술적 지표를 분석해 일자별 예상 주가와 확률 밴드를 계산하는 주가 예측 프로그램.",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Any",
+    "inLanguage": "ko",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" }
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"주가 예측은 어떤 원리로 계산되나요?","acceptedAnswer":{"@type":"Answer","text":"최근 주가의 추세(이동평균·선형회귀)와 변동성(일간 수익률의 표준편차), RSI 같은 모멘텀 지표, 52주 최고·최저 대비 위치를 종합해 미래 주가 경로를 수천 번 몬테카를로 시뮬레이션한 뒤, 각 날짜의 중앙값을 예상 주가로, 분위수를 상단·하단 밴드로 제시합니다."}},{"@type":"Question","name":"실시간 데이터는 어디서 가져오나요?","acceptedAnswer":{"@type":"Answer","text":"공개 금융 데이터를 브라우저에서 best-effort로 불러옵니다. 네트워크나 CORS 제한으로 실패하면 예시 데이터로 동작하며, 현재가를 직접 입력해 예측할 수도 있습니다."}},{"@type":"Question","name":"예측 결과를 믿고 투자해도 되나요?","acceptedAnswer":{"@type":"Answer","text":"아니요. 본 도구는 과거 통계에 기반한 참고용 시뮬레이션이며, 실제 주가는 실적·수급·뉴스 등 예측 불가능한 요인으로 크게 달라질 수 있습니다. 투자 판단과 책임은 본인에게 있습니다."}}]}
+  </script>
+
+  <!-- Google AdSense 게시자 ID: ca-pub-7143828779500885 -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885"
+     crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" href="../style.css?v=6">
+  <style>
+    /* 주가 예측 도구 전용 스타일 */
+    .quote-hero { text-align: center; padding: 4px 0 8px; }
+    .quote-hero .name { font-size: 1.15rem; font-weight: 800; }
+    .quote-hero .name small { font-weight: 500; color: var(--muted); font-size: 0.85rem; }
+    .quote-hero .price { font-size: 2.4rem; font-weight: 800; margin: 6px 0 2px; font-variant-numeric: tabular-nums; }
+    .quote-hero .change { font-size: 1.05rem; font-weight: 700; }
+    .up { color: #e03131; }      /* 상승: 빨강 (한국 증시 관례) */
+    .down { color: #1c6fd6; }    /* 하락: 파랑 */
+    .flat { color: var(--muted); }
+    .src-badge {
+      display: inline-block; margin-top: 8px; padding: 3px 10px; border-radius: 999px;
+      font-size: 0.78rem; font-weight: 700; border: 1px solid var(--border);
+    }
+    .src-badge.live { background: #eaffea; border-color: #b7e5b7; color: #1a7d1a; }
+    .src-badge.demo { background: #fff6e6; border-color: #ffdca8; color: #a56a00; }
+    .src-badge.loading { background: #eef2ff; border-color: #d6e0ff; color: var(--primary); }
+
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 18px; margin-top: 12px; }
+    .stat-grid .st { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px dashed var(--border); font-size: 0.92rem; }
+    .stat-grid .st span:first-child { color: var(--muted); }
+    .stat-grid .st span:last-child { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    .range-bar { margin: 14px 0 4px; }
+    .range-bar .track { position: relative; height: 8px; border-radius: 999px; background: linear-gradient(90deg,#1c6fd6,#e9ecf3 50%,#e03131); }
+    .range-bar .dot { position: absolute; top: -4px; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 3px solid var(--primary); transform: translateX(-50%); box-shadow: var(--shadow); }
+    .range-bar .labels { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
+
+    #chartWrap { overflow-x: auto; }
+    #chart { width: 100%; height: 300px; display: block; }
+
+    .signal-list { list-style: none; padding: 0; margin: 8px 0 0; }
+    .signal-list li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px dashed var(--border); font-size: 0.93rem; }
+    .signal-list li:last-child { border-bottom: none; }
+    .pill { padding: 2px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; }
+    .pill.buy { background: #eaffea; color: #1a7d1a; }
+    .pill.sell { background: #ffecec; color: #e03131; }
+    .pill.hold { background: #eef2ff; color: var(--primary); }
+
+    .forecast-table td.mid { font-weight: 800; color: var(--text); }
+    .forecast-table td small { color: var(--muted); font-weight: 500; }
+    .forecast-table th:first-child, .forecast-table td:first-child { text-align: left; }
+    .prob-bar { display: inline-block; height: 8px; border-radius: 4px; vertical-align: middle; min-width: 2px; }
+
+    .muted-note { color: var(--muted); font-size: 0.85rem; margin-top: 10px; }
+    .disclaimer { background: #fff6e6; border: 1px solid #ffdca8; border-radius: 10px; padding: 14px 16px; font-size: 0.9rem; color: #7a5200; }
+    details.adv summary { cursor: pointer; font-weight: 700; color: var(--primary); }
+    details.adv[open] { margin-top: 6px; }
+    .adv .control-row { margin-top: 14px; }
+    .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid #cdd6ff; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: -2px; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <nav class="back-nav"><a href="/">← 한국인계산기 전체 도구</a></nav>
+
+  <header class="site-header">
+    <h1>📈 주가 예측 프로그램</h1>
+    <p class="subtitle">실시간 주가 흐름을 분석해 일자별 예상 주가를 계산합니다</p>
+  </header>
+
+  <!-- 상단 광고 -->
+  <div class="ad-container" aria-label="광고">
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7143828779500885"
+         data-ad-slot="0000000000"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+  </div>
+
+  <main class="container">
+    <!-- 종목/조건 입력 -->
+    <section class="card controls">
+      <div class="control-row">
+        <label for="ticker">종목코드 <small>(6자리, 예: 파마리서치 214450)</small></label>
+        <input type="text" id="ticker" value="214450" inputmode="numeric" maxlength="6" placeholder="214450" autocomplete="off">
+      </div>
+
+      <div class="control-row">
+        <label for="horizon">예측 기간</label>
+        <select id="horizon">
+          <option value="5">5 영업일 (약 1주)</option>
+          <option value="10" selected>10 영업일 (약 2주)</option>
+          <option value="20">20 영업일 (약 1개월)</option>
+          <option value="40">40 영업일 (약 2개월)</option>
+        </select>
+      </div>
+
+      <div class="control-row">
+        <label>시나리오</label>
+        <div class="segment" id="scenario">
+          <label><input type="radio" name="scen" value="con"><span>보수적</span></label>
+          <label><input type="radio" name="scen" value="neu" checked><span>중립</span></label>
+          <label><input type="radio" name="scen" value="agg"><span>공격적</span></label>
+        </div>
+      </div>
+
+      <details class="adv">
+        <summary>고급 설정 · 현재가 직접 입력</summary>
+        <div class="control-row">
+          <label for="manualPrice">현재가 직접 입력 <small>(실시간 로딩 실패 시 사용, 원)</small></label>
+          <input type="text" id="manualPrice" inputmode="numeric" placeholder="예: 327500" autocomplete="off">
+        </div>
+        <label class="checkbox-row"><input type="checkbox" id="forceManual"> <span>실시간 로딩 없이 입력값으로만 예측 <small>(예시 데이터 사용)</small></span></label>
+      </details>
+
+      <p class="error" id="errorMsg" role="alert"></p>
+      <button id="predictBtn" class="btn-primary" type="button">실시간 분석 · 예측하기</button>
+    </section>
+
+    <!-- 현재 시세 -->
+    <section class="card" id="quoteCard" hidden>
+      <div class="quote-hero">
+        <div class="name" id="qName">—</div>
+        <div class="price" id="qPrice">—</div>
+        <div class="change" id="qChange">—</div>
+        <div class="src-badge loading" id="srcBadge">불러오는 중…</div>
+      </div>
+
+      <div class="range-bar" id="rangeBar" hidden>
+        <div class="track"><div class="dot" id="rangeDot"></div></div>
+        <div class="labels"><span id="lo52">52주 최저 —</span><span id="hi52">52주 최고 —</span></div>
+      </div>
+
+      <div class="stat-grid" id="statGrid"></div>
+    </section>
+
+    <!-- 차트 -->
+    <section class="card" id="chartCard" hidden>
+      <div class="results-head"><h2>주가 흐름 & 예측 밴드</h2></div>
+      <div id="chartWrap"><canvas id="chart" width="960" height="300"></canvas></div>
+      <p class="muted-note" id="chartLegend"></p>
+    </section>
+
+    <!-- 본문 중간 광고 -->
+    <div class="ad-container" aria-label="광고">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-7143828779500885"
+           data-ad-slot="1111111111"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+    </div>
+
+    <!-- 기술적 신호 요약 -->
+    <section class="card" id="signalCard" hidden>
+      <div class="results-head"><h2>현재 상황 진단</h2></div>
+      <div class="result-hero">
+        <div class="big" id="verdictText">—</div>
+        <div class="result-sub" id="verdictSub">—</div>
+      </div>
+      <ul class="signal-list" id="signalList"></ul>
+    </section>
+
+    <!-- 일자별 예상 주가 -->
+    <section class="card" id="forecastCard" hidden>
+      <div class="results-head">
+        <h2>일자별 예상 주가</h2>
+        <button id="copyBtn" class="btn-ghost" type="button">표 복사</button>
+      </div>
+      <table class="calc-table forecast-table">
+        <thead>
+          <tr><th>날짜</th><th>예상 종가</th><th>예상 범위 (90%)</th><th>상승확률</th></tr>
+        </thead>
+        <tbody id="forecastBody"></tbody>
+      </table>
+      <p class="muted-note">‘예상 종가’는 시뮬레이션 중앙값(50%)이며, ‘예상 범위’는 90% 신뢰구간(하위 5%~상위 95%)입니다. 상승확률은 예측일 종가가 <strong>전일 종가</strong>보다 높을 확률입니다.</p>
+    </section>
+
+    <!-- 안내 -->
+    <section class="card info">
+      <h2>이용 안내 · 계산 원리</h2>
+      <ul>
+        <li><strong>실시간 시세</strong> — 종목의 현재가, 등락률, 거래량, PER/PBR, 52주 최고·최저 등을 불러와 현재 상황을 진단합니다.</li>
+        <li><strong>추세 분석</strong> — 5·20·60일 이동평균과 최근 종가의 회귀선으로 상승·하락 추세와 강도를 판단합니다.</li>
+        <li><strong>모멘텀·과열</strong> — RSI(14)로 과매수·과매도 여부를, 52주 위치로 지지·저항을 반영합니다.</li>
+        <li><strong>변동성 예측</strong> — 일간 수익률의 표준편차를 구해 <strong>몬테카를로 시뮬레이션(수천 회)</strong>으로 미래 주가 경로를 만들고, 날짜별 중앙값을 예상가, 분위수를 상단·하단 밴드로 제시합니다.</li>
+        <li>예시 종목은 <strong>파마리서치(214450·KOSDAQ)</strong>이며, 종목코드를 바꿔 다른 국내 주식도 예측할 수 있습니다.</li>
+      </ul>
+    </section>
+
+    <section class="card info faq-section">
+      <h2>자주 묻는 질문</h2>
+      <h3>Q. 주가 예측은 어떤 원리로 계산되나요?</h3>
+      <p>최근 주가의 추세(이동평균·선형회귀)와 변동성(일간 수익률 표준편차), RSI 같은 모멘텀, 52주 위치를 종합해 미래 주가 경로를 수천 번 시뮬레이션한 뒤, 각 날짜의 중앙값을 예상 주가로, 분위수를 상단·하단 밴드로 제시합니다.</p>
+      <h3>Q. 실시간 데이터는 어디서 가져오나요?</h3>
+      <p>공개 금융 데이터를 브라우저에서 best-effort로 불러옵니다. 네트워크나 CORS 제한으로 실패하면 예시 데이터로 동작하며, 현재가를 직접 입력해 예측할 수도 있습니다.</p>
+      <h3>Q. 예측 결과를 믿고 투자해도 되나요?</h3>
+      <p>아니요. 본 도구는 과거 통계에 기반한 참고용 시뮬레이션입니다. 실제 주가는 실적·수급·뉴스 등 예측 불가능한 요인으로 크게 달라질 수 있으며, 투자 판단과 책임은 본인에게 있습니다.</p>
+    </section>
+
+    <section class="card">
+      <p class="disclaimer">⚠️ <strong>투자 유의</strong> — 본 도구는 과거 통계에 기반한 <strong>참고용 시뮬레이션</strong>일 뿐, 투자 자문이나 수익을 보장하는 예측이 아닙니다. 어떤 모델도 미래 주가를 정확히 맞출 수 없습니다. 투자에 대한 모든 판단과 책임은 이용자 본인에게 있습니다.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <nav class="footer-links"><a href="/about/">소개·문의</a> · <a href="/privacy/">개인정보처리방침</a> · <a href="/terms/">이용약관</a></nav>
+    <p>© <span id="year"></span> 한국인계산기 · 주가 예측 프로그램 · 참고용이며 투자 손실을 보장·책임지지 않습니다.</p>
+  </footer>
+
+  <script src="script.js?v=1"></script>
+</body>
+</html>
