@@ -221,7 +221,8 @@ function main() {
     }
     const dir = path.join(BLOG, entry.slug);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, "index.html"), render(entry));
+    // 콘텐츠에 장식용으로 섞인 백틱(`) 문자는 본문에 그대로 노출되므로 제거
+    fs.writeFileSync(path.join(dir, "index.html"), render(entry).replace(/`/g, ""));
     fs.writeFileSync(path.join(dir, "hero.svg"), heroSvg(entry));
     created++;
 
