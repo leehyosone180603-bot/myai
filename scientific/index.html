@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>공학용 계산기 - 함수·삼각함수·로그 온라인 계산기 | 한국인계산기</title>
+  <meta name="description" content="사인·코사인·탄젠트, 로그, 제곱, 제곱근, 계승 등 함수 계산이 가능한 무료 공학용(과학용) 계산기입니다. 각도(DEG)·라디안(RAD) 모드를 지원하며 키보드 입력도 가능합니다.">
+  <meta name="keywords" content="공학용 계산기, 함수 계산기, 과학용 계산기, 삼각함수 계산기, 로그 계산기, 제곱 계산기, 온라인 계산기">
+  <meta name="robots" content="index, follow">
+  <meta name="author" content="한국인계산기">
+  <meta property="og:title" content="공학용 계산기 - 함수·삼각함수·로그 온라인 계산기">
+  <meta property="og:description" content="삼각함수·로그·제곱·제곱근 등 함수 계산이 가능한 무료 공학용 계산기.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://calcbox.kr/scientific/">
+  <meta property="og:site_name" content="한국인계산기">
+  <link rel="canonical" href="https://calcbox.kr/scientific/">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "공학용 계산기",
+    "url": "https://calcbox.kr/scientific/",
+    "description": "삼각함수·로그·제곱·제곱근 등 함수 계산이 가능한 무료 공학용 계산기.",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Any",
+    "inLanguage": "ko",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" }
+  }
+  </script>
+
+  <!-- Google AdSense 게시자 ID: ca-pub-7143828779500885 -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885"
+     crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" href="../style.css?v=7">
+</head>
+<body>
+  <nav class="back-nav"><a href="/">← 한국인계산기 전체 계산기</a></nav>
+
+  <header class="site-header">
+    <h1>🧮 공학용 계산기</h1>
+    <p class="subtitle">삼각함수·로그·제곱 등 함수 계산이 가능한 계산기</p>
+  </header>
+
+  <div class="ad-container" aria-label="광고">
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7143828779500885"
+         data-ad-slot="0000000000" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+
+  <main class="container">
+    <section class="card calc-shell">
+      <div class="calc-display">
+        <div class="calc-expr" id="expr">0</div>
+        <div class="calc-result" id="result"></div>
+      </div>
+
+      <div class="calc-toolbar">
+        <button id="degBtn" type="button" class="calc-mode">RAD</button>
+      </div>
+
+      <div class="calc-keys" id="keys">
+        <button type="button" class="k-fn" data-v="sin(">sin</button>
+        <button type="button" class="k-fn" data-v="cos(">cos</button>
+        <button type="button" class="k-fn" data-v="tan(">tan</button>
+        <button type="button" class="k-fn" data-v="^">x<sup>y</sup></button>
+        <button type="button" class="k-fn" data-v="sqrt(">√</button>
+
+        <button type="button" class="k-fn" data-v="asin(">sin⁻¹</button>
+        <button type="button" class="k-fn" data-v="acos(">cos⁻¹</button>
+        <button type="button" class="k-fn" data-v="atan(">tan⁻¹</button>
+        <button type="button" class="k-fn" data-v="log(">log</button>
+        <button type="button" class="k-fn" data-v="ln(">ln</button>
+
+        <button type="button" class="k-fn" data-v="π">π</button>
+        <button type="button" class="k-fn" data-v="e">e</button>
+        <button type="button" class="k-fn" data-v="!">n!</button>
+        <button type="button" class="k-fn" data-v="(">(</button>
+        <button type="button" class="k-fn" data-v=")">)</button>
+
+        <button type="button" class="k-num" data-v="7">7</button>
+        <button type="button" class="k-num" data-v="8">8</button>
+        <button type="button" class="k-num" data-v="9">9</button>
+        <button type="button" class="k-op" data-v="/">÷</button>
+        <button type="button" class="k-clear" data-act="clear">C</button>
+
+        <button type="button" class="k-num" data-v="4">4</button>
+        <button type="button" class="k-num" data-v="5">5</button>
+        <button type="button" class="k-num" data-v="6">6</button>
+        <button type="button" class="k-op" data-v="*">×</button>
+        <button type="button" class="k-clear" data-act="back">⌫</button>
+
+        <button type="button" class="k-num" data-v="1">1</button>
+        <button type="button" class="k-num" data-v="2">2</button>
+        <button type="button" class="k-num" data-v="3">3</button>
+        <button type="button" class="k-op" data-v="-">−</button>
+        <button type="button" class="k-op" data-v="%">%</button>
+
+        <button type="button" class="k-num" data-v="0">0</button>
+        <button type="button" class="k-num" data-v=".">.</button>
+        <button type="button" class="k-op" data-v="+">+</button>
+        <button type="button" class="k-eq" data-act="equal">=</button>
+      </div>
+    </section>
+
+    <section class="card info">
+      <h2>공학용 계산기 사용법</h2>
+      <ul>
+        <li><strong>함수 계산</strong> — sin, cos, tan과 역삼각함수(sin⁻¹ 등), 로그(log·ln), 제곱근(√), 지수(x<sup>y</sup>), 계승(n!)을 지원합니다.</li>
+        <li><strong>DEG/RAD</strong> — 삼각함수의 각도 단위를 도(DEG)와 라디안(RAD)으로 전환할 수 있습니다. 예: DEG 모드에서 sin(30) = 0.5</li>
+        <li><strong>키보드 입력</strong> — 숫자·연산자를 키보드로 입력하고 Enter로 계산할 수 있습니다.</li>
+        <li>상수 <strong>π</strong>(원주율)와 <strong>e</strong>(자연상수)를 바로 사용할 수 있습니다.</li>
+      </ul>
+    </section>
+
+    <section class="card info">
+      <h2>공학용 계산기란?</h2>
+      <h3>일반 계산기와의 차이</h3>
+      <p>공학용(과학용) 계산기는 사칙연산만 하는 일반 계산기와 달리 <strong>삼각함수, 로그, 지수, 제곱근</strong> 등 수학·과학·공학에서 자주 쓰이는 함수 계산을 지원합니다. 중고등학교 수학, 공학 계산, 통계 등에서 널리 사용됩니다.</p>
+      <h3>각도(DEG)와 라디안(RAD)</h3>
+      <p>삼각함수를 계산할 때 각도의 단위가 중요합니다. <strong>도(degree)</strong>는 한 바퀴를 360°로 나눈 단위이고, <strong>라디안(radian)</strong>은 호의 길이를 반지름으로 나눈 단위로 한 바퀴가 2π입니다. 예를 들어 DEG 모드에서 sin(30)은 0.5지만, RAD 모드에서 sin(30)은 전혀 다른 값이 나오므로 계산 전 모드를 확인해야 합니다.</p>
+      <h3>연산 우선순위</h3>
+      <p>본 계산기는 수학의 연산 순서를 그대로 따릅니다. 괄호가 가장 먼저, 그다음 지수(^), 곱셈·나눗셈, 마지막으로 덧셈·뺄셈 순서로 계산합니다. 복잡한 식은 괄호를 활용하면 원하는 순서로 정확히 계산할 수 있습니다.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <nav class="footer-links"><a href="/about/">소개·문의</a> · <a href="/privacy/">개인정보처리방침</a> · <a href="/terms/">이용약관</a></nav>
+    <p>© <span id="year"></span> 한국인계산기 · 공학용 계산기</p>
+  </footer>
+
+  <script src="scientific.js?v=1"></script>
+  <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+</body>
+</html>
