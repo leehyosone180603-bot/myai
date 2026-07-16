@@ -131,6 +131,7 @@ function render(entry) {
 '<html lang="ko">\n' +
 '<head>\n' +
 '  <meta charset="UTF-8">\n' +
+'  <link rel="icon" type="image/svg+xml" href="/favicon.svg">\n' +
 '  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
 '  <title>' + esc(entry.title) + ' | 한국인계산기</title>\n' +
 '  <meta name="description" content="' + plain(desc) + '">\n' +

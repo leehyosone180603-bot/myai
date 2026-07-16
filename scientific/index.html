@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>공학용 계산기 - 함수·삼각함수·로그 온라인 계산기 | 한국인계산기</title>
   <meta name="description" content="사인·코사인·탄젠트, 로그, 제곱, 제곱근, 계승 등 함수 계산이 가능한 무료 공학용(과학용) 계산기입니다. 각도(DEG)·라디안(RAD) 모드를 지원하며 키보드 입력도 가능합니다.">
@@ -26,6 +27,35 @@
     "operatingSystem": "Any",
     "inLanguage": "ko",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" }
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "공학용 계산기에서 sin·cos·tan 결과가 이상하게 나와요.",
+        "acceptedAnswer": { "@type": "Answer", "text": "각도 모드를 확인하세요. 30°, 60° 같은 값은 DEG(도) 모드에서 계산해야 합니다. RAD(라디안) 모드에서는 다른 값이 나옵니다. DEG/RAD 버튼으로 모드를 전환할 수 있습니다." }
+      },
+      {
+        "@type": "Question",
+        "name": "제곱과 제곱근은 어떻게 입력하나요?",
+        "acceptedAnswer": { "@type": "Answer", "text": "제곱은 ^ 기호를 사용합니다. 2^3은 8입니다. 제곱근은 sqrt 버튼으로 sqrt(9)처럼 입력하면 3이 됩니다." }
+      },
+      {
+        "@type": "Question",
+        "name": "계승(팩토리얼)은 어떻게 계산하나요?",
+        "acceptedAnswer": { "@type": "Answer", "text": "숫자 뒤에 !를 붙이면 됩니다. 5!는 5×4×3×2×1 = 120입니다." }
+      },
+      {
+        "@type": "Question",
+        "name": "키보드로 입력할 수 있나요?",
+        "acceptedAnswer": { "@type": "Answer", "text": "네, 숫자와 +, -, *, /, ^, ( ) 등은 키보드로 입력할 수 있고 Enter로 계산됩니다." }
+      }
+    ]
   }
   </script>
 
@@ -121,6 +151,18 @@
       <p>삼각함수를 계산할 때 각도의 단위가 중요합니다. <strong>도(degree)</strong>는 한 바퀴를 360°로 나눈 단위이고, <strong>라디안(radian)</strong>은 호의 길이를 반지름으로 나눈 단위로 한 바퀴가 2π입니다. 예를 들어 DEG 모드에서 sin(30)은 0.5지만, RAD 모드에서 sin(30)은 전혀 다른 값이 나오므로 계산 전 모드를 확인해야 합니다.</p>
       <h3>연산 우선순위</h3>
       <p>본 계산기는 수학의 연산 순서를 그대로 따릅니다. 괄호가 가장 먼저, 그다음 지수(^), 곱셈·나눗셈, 마지막으로 덧셈·뺄셈 순서로 계산합니다. 복잡한 식은 괄호를 활용하면 원하는 순서로 정확히 계산할 수 있습니다.</p>
+    </section>
+
+    <section class="card info faq-section">
+      <h2>자주 묻는 질문</h2>
+      <h3>Q. sin·cos·tan 계산 시 결과가 이상하게 나와요.</h3>
+      <p>각도 모드를 확인하세요. 우리가 흔히 쓰는 30°, 60° 같은 값은 <strong>DEG(도)</strong> 모드에서 계산해야 합니다. RAD(라디안) 모드에서는 같은 숫자라도 전혀 다른 값이 나옵니다. 화면의 DEG/RAD 버튼으로 모드를 전환할 수 있습니다.</p>
+      <h3>Q. 제곱과 제곱근은 어떻게 입력하나요?</h3>
+      <p>제곱은 <strong>^</strong> 기호를 사용합니다. 예를 들어 2의 3제곱은 <strong>2^3</strong>으로 입력하면 8이 나옵니다. 제곱근은 <strong>√(√ 또는 sqrt)</strong> 버튼을 눌러 sqrt(9)처럼 입력하면 3이 됩니다.</p>
+      <h3>Q. 계승(팩토리얼)은 어떻게 계산하나요?</h3>
+      <p>숫자 뒤에 <strong>!</strong>를 붙이면 됩니다. 예를 들어 5!는 5×4×3×2×1 = 120입니다.</p>
+      <h3>Q. 키보드로 입력할 수 있나요?</h3>
+      <p>네, 숫자와 +, -, *, /, ^, ( ) 등은 키보드로 바로 입력할 수 있고 Enter로 계산됩니다. PC에서 빠르게 계산할 때 편리합니다.</p>
     </section>
   </main>
 

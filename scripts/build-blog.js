@@ -81,6 +81,7 @@ function buildBlogIndex(posts) {
 '<html lang="ko">\n' +
 '<head>\n' +
 '  <meta charset="UTF-8">\n' +
+'  <link rel="icon" type="image/svg+xml" href="/favicon.svg">\n' +
 '  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
 '  <title>블로그 - 계산기 사용법과 생활 정보 | 한국인계산기</title>\n' +
 '  <meta name="description" content="연봉 실수령액, 세금, 날짜 계산 등 한국인계산기의 계산기 사용법과 알아두면 좋은 생활·금융 정보를 정리한 블로그입니다.">\n' +
