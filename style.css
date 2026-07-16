@@ -489,7 +489,17 @@ input[type="text"]:focus {
   padding: 14px 18px;
   margin: 16px 0 24px;
 }
+.post .post-meta .cat-badge {
+  display: inline-block;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
 .post .toc strong { display: block; margin-bottom: 6px; }
+.post .toc a { display: inline-block; padding: 1px 0; }
 .post .toc a { color: var(--primary); text-decoration: none; }
 .post .toc a:hover { text-decoration: underline; }
 
