@@ -41,7 +41,7 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885"
      crossorigin="anonymous"></script>
 
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
   <header class="site-header">
@@ -60,83 +60,121 @@
   </div>
 
   <main class="container">
-    <nav class="tool-grid" aria-label="계산기 목록">
-      <a class="tool-card" href="/saju/">
-        <span class="tc-icon">👺</span>
-        <span class="tc-body"><strong>도깨비 사주</strong><small>천 년 묵은 도깨비가 봐주는 무료 사주풀이</small></span>
-        <span class="tc-arrow">→</span>
-      </a>
-      <a class="tool-card" href="/gunghap/">
-        <span class="tc-icon">💞</span>
-        <span class="tc-body"><strong>무료 궁합 계산기</strong><small>두 사람 사주로 보는 오행 궁합</small></span>
-        <span class="tc-arrow">→</span>
-      </a>
-      <a class="tool-card" href="/salary/">
-        <span class="tc-icon">💰</span>
-        <span class="tc-body"><strong>연봉 실수령액 계산기</strong><small>4대보험·세금 공제 후 월 실수령액</small></span>
-        <span class="tc-arrow">→</span>
-      </a>
-      <a class="tool-card" href="/age/">
-        <span class="tc-icon">🎂</span>
-        <span class="tc-body"><strong>만 나이 계산기</strong><small>생년월일로 만 나이·띠·다음 생일</small></span>
-        <span class="tc-arrow">→</span>
-      </a>
-      <a class="tool-card" href="/birth-year/">
-        <span class="tc-icon">🗓️</span>
-        <span class="tc-body"><strong>몇년생 계산기</strong><small>나이로 출생연도·띠 찾기 (조견표)</small></span>
-        <span class="tc-arrow">→</span>
-      </a>
-      <a class="tool-card" href="/business-days/">
-        <span class="tc-icon">📅</span>
-        <span class="tc-body"><strong>영업일 계산기</strong><small>주말·공휴일을 제외한 영업일 수</small></span>
-        <span class="tc-arrow">→</span>
-      </a>
-      <a class="tool-card" href="/vat/">
-        <span class="tc-icon">🧾</span>
-        <span class="tc-body"><strong>부가세 계산기</strong><small>부가가치세 10% 빠르게 계산</small></span>
-        <span class="tc-arrow">→</span>
-      </a>
-      <a class="tool-card" href="/severance/">
-        <span class="tc-icon">💼</span>
-        <span class="tc-body"><strong>퇴직금 계산기</strong><small>평균임금 기준 예상 퇴직금</small></span>
-        <span class="tc-arrow">→</span>
-      </a>
-      <a class="tool-card" href="/freelancer/">
-        <span class="tc-icon">🧑‍💻</span>
-        <span class="tc-body"><strong>프리랜서 세금 계산기</strong><small>3.3% 원천징수 후 실수령액</small></span>
-        <span class="tc-arrow">→</span>
-      </a>
-      <a class="tool-card" href="/lotto-prize/">
-        <span class="tc-icon">🍀</span>
-        <span class="tc-body"><strong>로또 당첨금 실수령액</strong><small>당첨금 세금 공제 후 실수령액</small></span>
-        <span class="tc-arrow">→</span>
-      </a>
-      <a class="tool-card" href="/military/">
-        <span class="tc-icon">🎖️</span>
-        <span class="tc-body"><strong>전역일 계산기</strong><small>입대일 기준 전역일·D-day</small></span>
-        <span class="tc-arrow">→</span>
-      </a>
-      <a class="tool-card" href="/lotto/">
-        <span class="tc-icon">🎱</span>
-        <span class="tc-body"><strong>로또 번호 추출기</strong><small>로또 6/45 번호 자동 추출</small></span>
-        <span class="tc-arrow">→</span>
-      </a>
-      <a class="tool-card" href="/spy-game/">
-        <span class="tc-icon">🕵️</span>
-        <span class="tc-body"><strong>스파이 위장 게임</strong><small>패턴이 어긋나는 스파이를 찾는 관찰력 게임</small></span>
-        <span class="tc-arrow">→</span>
-      </a>
-      <a class="tool-card" href="/duck-octopus-game/">
-        <span class="tc-icon">🦆</span>
-        <span class="tc-body"><strong>오리와 문어의 물방울 디펜스</strong><small>물방울을 막아내는 캐주얼 디펜스 게임</small></span>
-        <span class="tc-arrow">→</span>
-      </a>
-      <a class="tool-card" href="/blog/">
-        <span class="tc-icon">📝</span>
-        <span class="tc-body"><strong>블로그</strong><small>계산기 사용법과 생활·금융 정보</small></span>
-        <span class="tc-arrow">→</span>
-      </a>
+    <!-- 카테고리 -->
+    <nav class="category-chips" aria-label="카테고리">
+      <a href="#cat-calc"><span class="cc-emoji">🧮</span> 계산기</a>
+      <a href="#cat-game"><span class="cc-emoji">🎮</span> 게임</a>
+      <a href="#cat-saju"><span class="cc-emoji">🔮</span> 사주·궁합</a>
+      <a href="#cat-blog"><span class="cc-emoji">📝</span> 블로그</a>
     </nav>
+
+    <!-- 계산기 -->
+    <section class="category-section" id="cat-calc">
+      <h2>🧮 계산기</h2>
+      <nav class="tool-grid" aria-label="계산기 목록">
+        <a class="tool-card" href="/scientific/">
+          <span class="tc-icon">🧮</span>
+          <span class="tc-body"><strong>공학용 계산기</strong><small>삼각함수·로그·제곱 등 함수 계산</small></span>
+          <span class="tc-arrow">→</span>
+        </a>
+        <a class="tool-card" href="/salary/">
+          <span class="tc-icon">💰</span>
+          <span class="tc-body"><strong>연봉 실수령액 계산기</strong><small>4대보험·세금 공제 후 월 실수령액</small></span>
+          <span class="tc-arrow">→</span>
+        </a>
+        <a class="tool-card" href="/age/">
+          <span class="tc-icon">🎂</span>
+          <span class="tc-body"><strong>만 나이 계산기</strong><small>생년월일로 만 나이·띠·다음 생일</small></span>
+          <span class="tc-arrow">→</span>
+        </a>
+        <a class="tool-card" href="/birth-year/">
+          <span class="tc-icon">🗓️</span>
+          <span class="tc-body"><strong>몇년생 계산기</strong><small>나이로 출생연도·띠 찾기 (조견표)</small></span>
+          <span class="tc-arrow">→</span>
+        </a>
+        <a class="tool-card" href="/business-days/">
+          <span class="tc-icon">📅</span>
+          <span class="tc-body"><strong>영업일 계산기</strong><small>주말·공휴일을 제외한 영업일 수</small></span>
+          <span class="tc-arrow">→</span>
+        </a>
+        <a class="tool-card" href="/vat/">
+          <span class="tc-icon">🧾</span>
+          <span class="tc-body"><strong>부가세 계산기</strong><small>부가가치세 10% 빠르게 계산</small></span>
+          <span class="tc-arrow">→</span>
+        </a>
+        <a class="tool-card" href="/severance/">
+          <span class="tc-icon">💼</span>
+          <span class="tc-body"><strong>퇴직금 계산기</strong><small>평균임금 기준 예상 퇴직금</small></span>
+          <span class="tc-arrow">→</span>
+        </a>
+        <a class="tool-card" href="/freelancer/">
+          <span class="tc-icon">🧑‍💻</span>
+          <span class="tc-body"><strong>프리랜서 세금 계산기</strong><small>3.3% 원천징수 후 실수령액</small></span>
+          <span class="tc-arrow">→</span>
+        </a>
+        <a class="tool-card" href="/lotto-prize/">
+          <span class="tc-icon">🍀</span>
+          <span class="tc-body"><strong>로또 당첨금 실수령액</strong><small>당첨금 세금 공제 후 실수령액</small></span>
+          <span class="tc-arrow">→</span>
+        </a>
+        <a class="tool-card" href="/military/">
+          <span class="tc-icon">🎖️</span>
+          <span class="tc-body"><strong>전역일 계산기</strong><small>입대일 기준 전역일·D-day</small></span>
+          <span class="tc-arrow">→</span>
+        </a>
+        <a class="tool-card" href="/lotto/">
+          <span class="tc-icon">🎱</span>
+          <span class="tc-body"><strong>로또 번호 추출기</strong><small>로또 6/45 번호 자동 추출</small></span>
+          <span class="tc-arrow">→</span>
+        </a>
+      </nav>
+    </section>
+
+    <!-- 게임 -->
+    <section class="category-section" id="cat-game">
+      <h2>🎮 게임</h2>
+      <nav class="tool-grid" aria-label="게임 목록">
+        <a class="tool-card" href="/spy-game/">
+          <span class="tc-icon">🕵️</span>
+          <span class="tc-body"><strong>스파이 위장 게임</strong><small>패턴이 어긋나는 스파이를 찾는 관찰력 게임</small></span>
+          <span class="tc-arrow">→</span>
+        </a>
+        <a class="tool-card" href="/duck-octopus-game/">
+          <span class="tc-icon">🦆</span>
+          <span class="tc-body"><strong>오리와 문어의 물방울 디펜스</strong><small>물방울을 막아내는 캐주얼 디펜스 게임</small></span>
+          <span class="tc-arrow">→</span>
+        </a>
+      </nav>
+    </section>
+
+    <!-- 사주·궁합 -->
+    <section class="category-section" id="cat-saju">
+      <h2>🔮 사주·궁합</h2>
+      <nav class="tool-grid" aria-label="사주 궁합 목록">
+        <a class="tool-card" href="/saju/">
+          <span class="tc-icon">👺</span>
+          <span class="tc-body"><strong>도깨비 사주</strong><small>천 년 묵은 도깨비가 봐주는 무료 사주풀이</small></span>
+          <span class="tc-arrow">→</span>
+        </a>
+        <a class="tool-card" href="/gunghap/">
+          <span class="tc-icon">💞</span>
+          <span class="tc-body"><strong>무료 궁합 계산기</strong><small>두 사람 사주로 보는 오행 궁합</small></span>
+          <span class="tc-arrow">→</span>
+        </a>
+      </nav>
+    </section>
+
+    <!-- 블로그 -->
+    <section class="category-section" id="cat-blog">
+      <h2>📝 블로그</h2>
+      <nav class="tool-grid" aria-label="블로그">
+        <a class="tool-card" href="/blog/">
+          <span class="tc-icon">📝</span>
+          <span class="tc-body"><strong>블로그</strong><small>계산기 사용법과 생활·금융 정보</small></span>
+          <span class="tc-arrow">→</span>
+        </a>
+      </nav>
+    </section>
 
     <!-- 본문 중간 광고 -->
     <div class="ad-container" aria-label="광고">

@@ -18,6 +18,7 @@ const POSTS_FILE = path.join(ROOT, "blog", "posts.json");
 // 사이트맵에 항상 포함되는 정적 URL
 const STATIC_URLS = [
   { loc: "https://calcbox.kr/", freq: "weekly", pri: "1.0" },
+  { loc: "https://calcbox.kr/scientific/", freq: "monthly", pri: "0.9" },
   { loc: "https://calcbox.kr/salary/", freq: "monthly", pri: "0.9" },
   { loc: "https://calcbox.kr/age/", freq: "monthly", pri: "0.9" },
   { loc: "https://calcbox.kr/birth-year/", freq: "monthly", pri: "0.9" },
