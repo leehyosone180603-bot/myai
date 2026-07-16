@@ -29,6 +29,8 @@ const STATIC_URLS = [
   { loc: "https://calcbox.kr/lotto-prize/", freq: "monthly", pri: "0.8" },
   { loc: "https://calcbox.kr/military/", freq: "monthly", pri: "0.8" },
   { loc: "https://calcbox.kr/lotto/", freq: "weekly", pri: "0.8" },
+  { loc: "https://calcbox.kr/spy-game/", freq: "monthly", pri: "0.6" },
+  { loc: "https://calcbox.kr/duck-octopus-game/", freq: "monthly", pri: "0.6" },
   { loc: "https://calcbox.kr/saju/", freq: "weekly", pri: "0.9" },
   { loc: "https://calcbox.kr/saju/ask/", freq: "weekly", pri: "0.8" },
   { loc: "https://calcbox.kr/gunghap/", freq: "monthly", pri: "0.9" },
