@@ -1,10 +1,17 @@
-name: 블로그 일일 자동 발행
+name: 블로그 예약 발행 (하루 4회)
 
-# 매일 00:10 KST(전날 15:10 UTC)에 대기열의 다음 글 1개를 발행합니다.
+# 하루 4번, 대기열의 다음 글을 1개씩 발행합니다.
+#   09:00 KST = 00:00 UTC
+#   13:00 KST = 04:00 UTC
+#   17:00 KST = 08:00 UTC
+#   21:00 KST = 12:00 UTC
 # 참고: GitHub 예약(schedule) 워크플로는 기본 브랜치(main)에서만 실행됩니다.
 on:
   schedule:
-    - cron: "10 15 * * *"
+    - cron: "0 0 * * *"
+    - cron: "0 4 * * *"
+    - cron: "0 8 * * *"
+    - cron: "0 12 * * *"
   workflow_dispatch:   # 수동 실행(테스트)용
 
 permissions:
@@ -31,7 +38,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ -n "$(git status --porcelain)" ]; then
             git add -A
-            git commit -m "chore: 블로그 글 자동 발행 ($(TZ=Asia/Seoul date +%Y-%m-%d))"
+            git commit -m "chore: 블로그 글 자동 발행 ($(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M'))"
             git push
           else
             echo "발행할 새 글이 없습니다. 변경 없음."
