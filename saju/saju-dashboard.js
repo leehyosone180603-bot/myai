@@ -75,16 +75,21 @@
     }
     var jae = starCount(res, "재성"), gwan = starCount(res, "관성"), inseong = starCount(res, "인성"),
       sik = starCount(res, "식상"), bi = starCount(res, "비겁");
+    var munchang = D.computeShinsal(res).some(function (s) { return s.key === "문창귀인"; });
     var money = clamp(48 + jae * 10 + sik * 4 + todayAdj(["재성", "식상"], ["비겁"]), 30, 98);
     var love = clamp(48 + gwan * 7 + jae * 5 + todayAdj(["재성", "관성"], ["비겁"]) + (tbO === el(c.dm) ? 0 : 3), 30, 98);
+    var job = clamp(46 + gwan * 9 + inseong * 3 + todayAdj(["관성", "인성"], ["식상"]), 30, 98);
+    var study = clamp(46 + inseong * 9 + (munchang ? 8 : 0) + todayAdj(["인성"], ["재성"]), 30, 98);
     var health = clamp(50 + inseong * 6 + bi * 4 + (c.bs.strong ? 4 : 2) + todayAdj(["인성", "비겁"], ["관성"]), 30, 98);
-    var total = clamp((money + love + health) / 3 + (c.yongO.indexOf(tO) >= 0 ? 4 : 0), 30, 99);
+    var total = clamp((money + love + job + study + health) / 5 + (c.yongO.indexOf(tO) >= 0 ? 4 : 0), 30, 99);
     return {
       today: D.GAN_KO[t.stem] + D.JI_KO[t.branch],
       items: [
         { label: "총운", v: total, key: "total" },
         { label: "재물운", v: money, key: "money" },
         { label: "연애운", v: love, key: "love" },
+        { label: "직장운", v: job, key: "job" },
+        { label: "학업운", v: study, key: "study" },
         { label: "건강운", v: health, key: "health" }
       ]
     };
@@ -138,7 +143,11 @@
     "화-인성": { job: "등불 밝히던 학승", d: "불빛 아래 경을 읽던 수행자였다. 밝은 지혜와 가르침의 기운이 남았다." },
     "토-관성": { job: "성을 지킨 성주", d: "너른 땅과 백성을 다스리던 우두머리였다. 든든한 책임감과 포용력이 남았다." },
     "금-식상": { job: "쇠붙이 다루던 대장장이", d: "쇠를 두드려 연장을 벼리던 장인이었다. 끈기와 손재주, 승부 근성이 남았다." },
-    "수-관성": { job: "수군을 이끈 장수", d: "물길을 지키던 지략 있는 무장이었다. 유연한 판단과 통솔력이 남았다." }
+    "금-인성": { job: "칼과 병법을 익힌 책사", d: "무예와 지략을 함께 닦던 참모였다. 날카로운 판단력과 전략의 재능이 남았다." },
+    "수-관성": { job: "수군을 이끈 장수", d: "물길을 지키던 지략 있는 무장이었다. 유연한 판단과 통솔력이 남았다." },
+    "수-식상": { job: "이야기 짓던 소리꾼", d: "물처럼 흐르는 말과 소리로 사람을 울리고 웃기던 예인이었다. 감성과 표현의 재능이 남았다." },
+    "화-재성": { job: "가마 다루던 도공", d: "불을 다뤄 그릇을 빚어 팔던 장인이자 상인이었다. 열정과 장사 수완을 함께 타고났다." },
+    "토-식상": { job: "약재·음식 짓던 숙수", d: "땅의 재료로 먹거리·약을 짓던 손맛의 달인이었다. 사람을 먹이고 돌보는 재능이 남았다." }
   };
   var FB_JOB = { "비겁": "이름난 장인", "식상": "떠돌던 예인", "재성": "장사 밝던 상인", "관성": "고을 지킨 관원", "인성": "글 읽던 학인" };
   var FB_DESC = {
@@ -154,7 +163,10 @@
     groups.sort(function (a, b) { return b.n - a.n; });
     var top = groups[0].g === "비겁" ? (groups[1] && groups[1].n > 0 ? groups[1].g : "재성") : groups[0].g;
     var p = PASTLIFE[OHENG[e] + "-" + top] || { job: FB_JOB[top], d: FB_DESC[top] };
-    return { job: p.job, desc: p.d, oheng: OHENG[e] };
+    var flavor = D.bodyStrength(res).strong
+      ? " 기가 세서 그 시절에도 남 밑에 잘 안 들어가는 우두머리 기질이었다."
+      : " 기가 여려 재주로 사람을 돕고 곁을 지키는 조력자였다.";
+    return { job: p.job, desc: p.d + flavor, oheng: OHENG[e] };
   }
 
   /* ── SVG 렌더 헬퍼 ── */

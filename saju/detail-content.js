@@ -56,6 +56,55 @@
     return n;
   }
 
+  // 조직 vs 사업 판정
+  function orgVsBiz(res, bs) {
+    var org = starCount(res, "관성") * 2 + starCount(res, "인성") * 1.5 + (!bs.strong ? 2 : 0);
+    var biz = starCount(res, "재성") * 2 + starCount(res, "식상") * 2 + starCount(res, "비겁") * 1.2 + (bs.strong ? 2 : 0);
+    if (biz >= org + 2) return "너는 ‘사업·자유업형’이다. 남 밑보다 네 판을 벌였을 때 크게 되는 기질이라, 실력을 쌓아 독립·창업·프리랜서로 가는 길이 맞다. 조직에 있어도 성과·재량이 큰 자리라야 숨통이 트인다.";
+    if (org >= biz + 2) return "너는 ‘조직생활형’이다. 좋은 회사·조직 안에서 전문성과 자리로 크는 기질이라, 안정된 조직에서 승부하는 게 유리하다. 섣부른 창업보다 몸값을 올려 받는 쪽이 실속 있다.";
+    return "너는 ‘혼합형’이다. 조직에서 실력·인맥·자본을 쌓은 뒤 때가 되면 독립하는 2단계 전략이 가장 잘 맞는다. 준비 없이 나오면 고생하니 시기를 잘 봐라.";
+  }
+  // 재물 그릇 수치화
+  function moneyBowl(res, bs) {
+    var jae = starCount(res, "재성"), sik = starCount(res, "식상");
+    var y = D.yongsin(res), jaeYong = [y.primary, y.second].indexOf(jaeseong(res.dayMaster)) >= 0;
+    var score = Math.max(30, Math.min(97, Math.round(42 + jae * 11 + sik * 5 + (bs.strong ? 7 : 0) + (jaeYong ? 6 : 0))));
+    var grade = score >= 82 ? "대(大)그릇 — 큰 부를 담고 굴릴 그릇" : score >= 68 ? "중상(中上) — 넉넉히 굴리는 그릇" :
+      score >= 54 ? "중(中) — 알뜰히 채워가는 그릇" : "실속형 — 돈보다 명예·실력으로 크는 그릇";
+    return { score: score, grade: grade };
+  }
+  // 투자 성향
+  function investStyle(res) {
+    var pyeon = 0, jeong = 0;
+    ["year", "month", "day", "hour"].forEach(function (k) {
+      var p = res.pillars[k]; if (!p) return;
+      if (k !== "day") { var s = D.tenGodStem(res.dayMaster, p.stem); if (s === "편재") pyeon++; if (s === "정재") jeong++; }
+      var b = D.tenGodBranch(res.dayMaster, p.branch); if (b === "편재") pyeon++; if (b === "정재") jeong++;
+    });
+    if (pyeon > jeong) return "‘편재’가 강해 주식·코인·사업 같은 유동적 투자에 감각이 있다. 크게 벌 수 있지만 한 방을 노리다 크게 잃기도 하니, 분산·손절 원칙을 반드시 지켜라.";
+    if (jeong > pyeon) return "‘정재’가 강해 부동산·저축·연금 같은 안정 자산이 맞다. 한 방보다 착실히 모아 지키는 쪽에서 네 재물이 단단히 커진다.";
+    return "편재·정재가 고루 있어 유동 자산(주식 등)과 안정 자산(부동산·저축)을 반반 섞는 균형 투자가 네게 맞다.";
+  }
+  // 올해 연애 기상도
+  function loveWeather(res, thisYear, gender) {
+    var dm = res.dayMaster, mateGroup = (gender === "m" ? "재성" : "관성");
+    var yr = D.yearReading(dm, thisYear);
+    var hit = (starGroup(yr.sipStem) === mateGroup || starGroup(yr.sipBranch) === mateGroup);
+    var dohwa = D.sinsal12(res.pillars.year.branch, D.yearGanzhi(thisYear).branch) === "년살";
+    if (hit && dohwa) return "☀️ 활짝 맑음 — 배우자성과 도화가 함께 들어 인연운이 활짝 열리는 해다. 적극적으로 나서면 좋은 사람을 만난다.";
+    if (hit) return "🌤️ 맑음 — 배우자성이 들어 인연이 무르익기 좋은 해다. 소개·만남에 마음을 열어라.";
+    if (dohwa) return "⛅ 구름 조금 — 도화가 들어 인기·만남은 많으나 진짜를 가려야 한다. 스치는 인연에 흔들리지 마라.";
+    return "🌥️ 흐림 — 배우자성이 약해 큰 인연보다 나를 다지는 해다. 조급해 말고 다음 배우자성의 해를 노려라.";
+  }
+  function goodLoveMonths(res, thisYear, gender) {
+    var mateGroup = (gender === "m" ? "재성" : "관성");
+    var rows = D.monthlyLuck(res, thisYear), out = [];
+    rows.forEach(function (r) {
+      if (starGroup(r.sipStem) === mateGroup || starGroup(r.sipBranch) === mateGroup || r.sinsal === "년살" || r.sinsal === "반안살") out.push(r.greg + "월");
+    });
+    return out;
+  }
+
   function build(res, ctx) {
     var dm = res.dayMaster, y = ctx.yongsin, bs = D.bodyStrength(res);
     var shin = D.computeShinsal(res);
@@ -122,6 +171,8 @@
         { sub: "네 연애 스타일과 이상형", text: "너는 " + loveStyle(dm, bs.strong) + " 네 " + mateWord + "는 " + mateTypeLine(mateOheng) + " " + (dohwa ? "도화살이 있어 이성이 늘 따르나, 스치는 인연도 많으니 진짜를 가려라." : "여럿보다 한 사람과 깊게 가는 인연이 맞다.") },
         { sub: "인연이 들어오는 시기 (연도별)", text: mateStar + "이 드는 해가 인연이 무르익는 때다. " + (mateY.length ? mateY.slice(0, 5).map(function (x) { return x.age + "세(" + x.year + "년)"; }).join(", ") : "가까운 몇 해") + ". 이 해에 만나거나 깊어지는 사람은 그냥 스칠 인연이 아니다." },
         { sub: "결혼운 · 적령기", text: "결혼운이 강해지는 건 " + (marryAges.length ? marryAges.slice(0, 2).map(function (a) { return a.age + "세부터의 " + a.gan + " 대운"; }).join(", ") + " 무렵" : "배우자성 대운이 들 때") + "이다. " + (lateMarry ? "배우자성이 뚜렷이 드러나지 않아, 서두른 결혼보다 인연이 무르익는 만혼(늦은 결혼)이 오히려 복이 된다." : "이 시기에 만난 인연과 맺으면 결혼 후 운이 함께 오른다.") },
+        { sub: thisYear + "년 연애 기상도", text: loveWeather(res, thisYear, gender) },
+        { sub: "올해 연애·결혼하기 좋은 달", text: (function () { var mm = goodLoveMonths(res, thisYear, gender); return mm.length ? "올해는 " + mm.slice(0, 6).join(", ") + " 무렵에 배우자성·인연 기운이 살아난다. 이 달에 만남·고백·상견례를 잡으면 흐름을 탄다." : "올해는 특정 달보다, 네 마음이 편해지는 때가 곧 좋은 때다. 조급함을 내려놓는 순간 인연이 든다."; })() },
         { sub: "연애할 때 주의할 점", text: (gender === "m" ? "재는 티를 내지 마라. 여자는 계산하는 남자를 싫어한다." : "튕기지 말고 마음을 솔직히 보여라. 남자는 속 모르는 여자 앞에서 물러선다.") + " 처음 세 번은 밥 먹고 낮에 만나며 사람을 봐라. 밤·술로 시작한 인연은 오래 못 간다." },
         { love: true }
       ]
@@ -181,6 +232,8 @@
       blocks: [
         { text: "네 돈 그릇은 " + (jaeCnt >= 3 ? "여러 개라 크게 벌고 크게 쓰는 큰 그릇" : jaeCnt >= 1 ? "적당히 있어 한 우물을 단단히 파는 그릇" : "돈보다 명예·실력으로 크는 그릇") + "이다. " + (bs.strong ? "기운이 세니 배짱 있게 굴려 큰돈을 만진다." : "무리한 투기보다 꾸준함과 저축이 네 돈을 지킨다. 빚·보증은 특히 조심해라.") },
         { sub: "돈 버는 방식·재테크 성향", text: (starCount(res, "식상") >= 1 ? "네 재능·손재주·말솜씨로 버는 사람이라 몸값을 올려 받는 쪽이 맞다. 재테크도 네가 아는 분야에 집중해라." : "성실함과 관리로 모으는 사람이라, 한 방보다 차곡차곡·분산이 네 방식이다.") },
+        { sub: "평생 재물 그릇 크기", text: (function () { var mb = moneyBowl(res, bs); return "네 재물 그릇을 수치로 보면 " + mb.score + "점 / 100 — " + mb.grade + "이다. 그릇은 크다고 절로 차는 게 아니라, 제 그릇에 맞게 굴려야 넘치지 않고 채워진다."; })() },
+        { sub: "투자 성향 — 주식형이냐 부동산형이냐", text: investStyle(res) },
         { sub: "돈이 열리는 시기", text: "재성 대운이 드는 " + (jaeAges.length ? daeunAges(jaeAges) + " 무렵" : "중년 이후") + "이 돈이 크게 열리는 때다. 세운으로는 " + (jaeY.length ? fmtY(jaeY, 3) : "가까운 재성의 해") + "에 돈 이야기가 온다." },
         { sub: "돈이 새는 시기", text: "비겁이 드는 " + (leakY.length ? fmtY(leakY, 3) : "특정 해") + "엔 친구·동업·보증으로 돈이 샌다. 이 해엔 큰돈을 남과 엮지 마라." }
       ]
@@ -205,6 +258,7 @@
       blocks: [
         { text: "네가 힘을 쓰는 길은 " + jobMap(big.name).path + "다. 억지로 남 따라 틀지 말고 네 그릇대로 가야 크게 된다." },
         { sub: "네 능력의 생김새", text: abilityText(D.abilityScores(res)) },
+        { sub: "조직 vs 사업, 어느 쪽?", text: orgVsBiz(res, bs) },
         { sub: "어울리는 일 · 피할 일", text: "잘 맞는 건 " + jobMap(big.name).list + " 쪽이다. 반대로 " + jobMap(big.name).avoid + "은 네 기운과 어긋나 애써도 안 풀리니 피해라." }
       ]
     });
