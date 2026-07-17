@@ -115,6 +115,18 @@
 
     $("greeting").textContent = (name ? name + "아, " : "") + DK.PERSONA.greeting;
     $("palja").textContent = reading.palja;
+
+    // 대시보드 (오행·행운지수·운의흐름·MBTI·전생)
+    if (window.SajuDash) {
+      var dash = window.SajuDash.render(res, new Date().getFullYear(), y);
+      $("ohengRadar").innerHTML = dash.ohengRadar;
+      $("ohengNote").innerHTML = dash.ohengNote;
+      $("luckIndex").innerHTML = dash.luckIndex;
+      $("lifeCurve").innerHTML = dash.lifeCurve;
+      $("curveNote").innerHTML = dash.curveNote;
+      $("sajuMbti").innerHTML = dash.sajuMbti;
+      $("pastLife").innerHTML = dash.pastLife;
+    }
     var fs = $("freeSections"); fs.innerHTML = "";
     reading.sections.forEach(function (sec, i) {
       var h = document.createElement("h2");
