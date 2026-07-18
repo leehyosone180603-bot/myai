@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>인스타 카드뉴스 메이커 — AI 이미지·본문 분석 & 다국어 번역 카드 생성</title>
+<meta name="description" content="인스타그램 게시물 이미지와 본문을 AI(Anthropic Claude)로 분석해 카드뉴스 제목·본문을 자동 생성하고, 한국어·일본어 등 원하는 언어로 번역해 게시물/릴스 규격 이미지로 다운로드하는 무료 도구.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://calcbox.kr/insta-card/">
+<meta property="og:title" content="인스타 카드뉴스 메이커 — AI 카드뉴스 생성기">
+<meta property="og:description" content="인스타 게시물을 AI로 분석·번역해 카드뉴스 이미지로 만드는 무료 도구.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://calcbox.kr/insta-card/">
+<meta property="og:site_name" content="한국인계산기">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root{
+    --bg:#0b0e14; --panel:#12161f; --panel2:#161b26; --line:#232a38;
+    --line2:#2c3444; --txt:#e6edf3; --muted:#8b97a8; --muted2:#657085;
+    --accent:#7c5cff; --accent2:#6d4dff; --accent-soft:#2a2350;
+    --danger:#ff5f6d; --gold:#ffcc00; --field:#0e121a;
+  }
+  html,body{ height:100%; }
+  body{
+    background:var(--bg); color:var(--txt);
+    font-family:"Pretendard","Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    -webkit-font-smoothing:antialiased; overflow:hidden;
+  }
+  button{ font-family:inherit; cursor:pointer; }
+  input,textarea,select{ font-family:inherit; }
+
+  /* ── 상단바 ───────────────────── */
+  .topbar{
+    height:56px; display:flex; align-items:center; justify-content:space-between;
+    padding:0 22px; background:var(--panel); border-bottom:1px solid var(--line);
+  }
+  .brand{ display:flex; align-items:center; gap:10px; font-weight:800; font-size:16px; letter-spacing:.2px; }
+  .brand .dot{ width:10px; height:10px; border-radius:50%; background:#00d68f; box-shadow:0 0 10px #00d68f; }
+  .brand small{ font-weight:500; color:var(--muted); font-size:12px; }
+  .topbar .meta{ color:var(--muted); font-size:12px; }
+
+  /* ── 3-컬럼 레이아웃 ───────────── */
+  .layout{
+    display:grid; grid-template-columns:340px 1fr 340px;
+    height:calc(100vh - 56px);
+  }
+  .col{ overflow-y:auto; overflow-x:hidden; }
+  .col.left{ background:var(--panel); border-right:1px solid var(--line); padding:18px; }
+  .col.right{ background:var(--panel); border-left:1px solid var(--line); padding:18px; }
+  .col.stage{ display:flex; flex-direction:column; align-items:center; padding:22px; }
+
+  .col::-webkit-scrollbar{ width:9px; }
+  .col::-webkit-scrollbar-thumb{ background:#2a3242; border-radius:6px; }
+  .col::-webkit-scrollbar-track{ background:transparent; }
+
+  /* ── 공통 폼 요소 ─────────────── */
+  h3.sec{ font-size:12px; font-weight:800; letter-spacing:.5px; color:var(--muted);
+    text-transform:uppercase; margin:6px 0 10px; }
+  .lbl{ display:block; font-size:12.5px; color:var(--muted); margin:14px 0 6px; }
+  .lbl:first-of-type{ margin-top:4px; }
+  .lbl .hint{ color:var(--muted2); font-weight:400; }
+  input[type=text],input[type=password],textarea,select{
+    width:100%; background:var(--field); border:1px solid var(--line2); color:var(--txt);
+    border-radius:9px; padding:10px 11px; font-size:13.5px; outline:none; transition:border-color .15s;
+  }
+  input:focus,textarea:focus,select:focus{ border-color:var(--accent); }
+  textarea{ resize:vertical; line-height:1.5; }
+  select{ appearance:none; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' fill='none' stroke='%238b97a8' stroke-width='1.6'/></svg>");
+    background-repeat:no-repeat; background-position:right 11px center; padding-right:30px; cursor:pointer; }
+
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    border:none; border-radius:9px; padding:10px 14px; font-size:13.5px; font-weight:700;
+    background:var(--panel2); color:var(--txt); border:1px solid var(--line2); transition:.15s; }
+  .btn:hover{ border-color:#3a4354; }
+  .btn.primary{ background:linear-gradient(180deg,var(--accent),var(--accent2)); border-color:transparent; color:#fff; }
+  .btn.primary:hover{ filter:brightness(1.08); }
+  .btn.danger{ background:#3a1d22; border-color:#5a2a30; color:var(--danger); }
+  .btn.wide{ width:100%; }
+  .btn.lg{ padding:13px; font-size:14px; }
+  .btn:disabled{ opacity:.5; cursor:not-allowed; }
+
+  .row{ display:flex; gap:8px; }
+  .row > *{ flex:1; }
+
+  /* API key row */
+  .keyhead{ display:flex; align-items:center; justify-content:space-between; }
+  .keyhead .toggle{ font-size:11.5px; color:var(--muted); background:none; border:none;
+    display:flex; align-items:center; gap:4px; padding:2px 4px; }
+  .keyhead .toggle:hover{ color:var(--txt); }
+
+  /* 업로드 박스 */
+  .drop{
+    border:1.5px dashed var(--line2); border-radius:11px; padding:14px; text-align:center;
+    color:var(--muted); font-size:12.5px; cursor:pointer; transition:.15s; background:var(--field);
+    min-height:78px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+  }
+  .drop:hover{ border-color:var(--accent); color:var(--txt); }
+  .drop.filled{ padding:8px; }
+  .drop img{ max-width:100%; max-height:120px; border-radius:7px; object-fit:contain; }
+  .drop .big{ font-size:20px; opacity:.7; }
+
+  .divider{ height:1px; background:var(--line); margin:18px 0; }
+
+  /* ── 가운데 캔버스 ───────────── */
+  .format-switch{
+    display:inline-flex; background:var(--panel2); border:1px solid var(--line2);
+    border-radius:12px; padding:4px; gap:4px; margin-bottom:16px;
+  }
+  .format-switch button{
+    display:flex; align-items:center; gap:8px; border:none; background:transparent; color:var(--muted);
+    padding:9px 16px; border-radius:9px; font-size:13px; font-weight:700; transition:.15s;
+  }
+  .format-switch button .sub{ font-weight:500; font-size:11px; opacity:.8; }
+  .format-switch button.active{ background:linear-gradient(180deg,var(--accent),var(--accent2)); color:#fff; }
+
+  .canvas-wrap{ position:relative; flex:1; display:flex; align-items:center; justify-content:center;
+    width:100%; min-height:0; }
+  .canvas-shell{ position:relative; height:100%; max-height:100%; display:flex; }
+  #cardCanvas{
+    height:100%; max-height:100%; width:auto; border-radius:16px; display:block;
+    box-shadow:0 20px 60px rgba(0,0,0,.55); background:#1a1f2b;
+  }
+  .canvas-toolbar{
+    position:absolute; top:12px; right:12px; display:flex; gap:6px; z-index:5;
+  }
+  .canvas-toolbar button{
+    background:rgba(10,13,20,.72); border:1px solid rgba(255,255,255,.12); color:#dfe6f0;
+    font-size:12px; font-weight:600; padding:6px 12px; border-radius:8px; backdrop-filter:blur(6px);
+  }
+  .canvas-toolbar button.active{ background:var(--accent); border-color:transparent; color:#fff; }
+  .canvas-toolbar .sq{ padding:6px 9px; }
+  .empty-note{ position:absolute; color:var(--muted2); font-size:13px; text-align:center; pointer-events:none;
+    top:50%; left:50%; transform:translate(-50%,-50%); width:70%; line-height:1.6; }
+
+  /* 카드 페이지네이션 */
+  .dots{ display:flex; gap:8px; align-items:center; justify-content:center; margin-top:16px; }
+  .dots .dot{ width:9px; height:9px; border-radius:50%; background:#394152; border:none; padding:0; transition:.15s; }
+  .dots .dot.active{ background:var(--accent); width:22px; border-radius:5px; }
+  .dots .add{ width:26px; height:26px; border-radius:50%; background:var(--panel2); border:1px solid var(--line2);
+    color:var(--muted); font-size:16px; line-height:1; display:flex; align-items:center; justify-content:center; }
+  .dots .add:hover{ color:var(--txt); border-color:var(--accent); }
+
+  /* ── 오른쪽 카드 편집 ────────── */
+  .card-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .card-head .title{ font-size:15px; font-weight:800; }
+  .card-head .nav{ display:flex; gap:6px; }
+  .card-head .nav button{ width:26px; height:26px; border-radius:7px; background:var(--panel2);
+    border:1px solid var(--line2); color:var(--muted); font-size:13px; }
+  .card-head .nav button:hover{ color:var(--txt); }
+
+  .preset-box{ background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:14px; }
+  .preset-box .ph{ display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; color:var(--gold); margin-bottom:9px; }
+  .preset-box .r{ display:flex; gap:7px; margin-bottom:8px; }
+  .preset-box .r:last-child{ margin-bottom:0; }
+  .preset-box select, .preset-box input{ flex:1; }
+  .preset-box .btn{ flex:0 0 auto; padding:9px 13px; }
+  .applyall{ display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); }
+  .applyall input{ width:15px; height:15px; accent-color:var(--accent); }
+
+  /* 탭 */
+  .tabs{ display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:14px; }
+  .tabs button{ background:none; border:none; color:var(--muted); font-size:12.5px; font-weight:700;
+    padding:9px 10px; border-bottom:2px solid transparent; margin-bottom:-1px; transition:.15s; }
+  .tabs button.active{ color:var(--txt); border-bottom-color:var(--accent); }
+  .tabpane{ display:none; }
+  .tabpane.active{ display:block; }
+
+  /* 슬라이더 */
+  .slider-row{ display:flex; align-items:center; gap:12px; }
+  input[type=range]{ -webkit-appearance:none; appearance:none; flex:1; height:5px; border-radius:5px;
+    background:var(--line2); outline:none; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:17px; height:17px; border-radius:50%;
+    background:var(--accent); cursor:pointer; box-shadow:0 0 0 4px rgba(124,92,255,.18); }
+  input[type=range]::-moz-range-thumb{ width:17px; height:17px; border:none; border-radius:50%; background:var(--accent); cursor:pointer; }
+  .slider-row .val{ min-width:34px; text-align:right; font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; }
+
+  /* 컬러 입력 */
+  .color-row{ display:flex; gap:9px; align-items:center; }
+  .color-row input[type=color]{ width:52px; height:38px; padding:3px; border-radius:9px; border:1px solid var(--line2);
+    background:var(--field); cursor:pointer; }
+  .color-row input[type=text]{ flex:1; font-variant-numeric:tabular-nums; }
+
+  .seg{ display:flex; gap:6px; }
+  .seg button{ flex:1; background:var(--field); border:1px solid var(--line2); color:var(--muted);
+    padding:9px; border-radius:8px; font-size:12.5px; font-weight:600; }
+  .seg button.active{ background:var(--accent-soft); border-color:var(--accent); color:#cbbcff; }
+
+  .switch-row{ display:flex; align-items:center; justify-content:space-between; margin:14px 0 6px; }
+  .switch-row .lbl{ margin:0; }
+  .sw{ position:relative; width:42px; height:24px; }
+  .sw input{ opacity:0; width:0; height:0; }
+  .sw .track{ position:absolute; inset:0; background:var(--line2); border-radius:20px; transition:.2s; cursor:pointer; }
+  .sw .track:before{ content:""; position:absolute; width:18px; height:18px; left:3px; top:3px;
+    background:#fff; border-radius:50%; transition:.2s; }
+  .sw input:checked + .track{ background:var(--accent); }
+  .sw input:checked + .track:before{ transform:translateX(18px); }
+
+  .toast{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:#1c2230; border:1px solid var(--line2); color:var(--txt); padding:11px 18px; border-radius:10px;
+    font-size:13px; opacity:0; pointer-events:none; transition:.25s; z-index:100; box-shadow:0 10px 30px rgba(0,0,0,.5); }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast.err{ border-color:#5a2a30; }
+
+  .spinner{ width:14px; height:14px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff;
+    border-radius:50%; display:inline-block; animation:spin .7s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .tiny{ font-size:11.5px; color:var(--muted2); line-height:1.5; margin-top:8px; }
+  .tiny a{ color:var(--accent); text-decoration:none; }
+
+  @media (max-width:1100px){
+    body{ overflow:auto; }
+    .layout{ grid-template-columns:1fr; height:auto; }
+    .col{ overflow:visible; height:auto; }
+    .col.stage{ order:-1; min-height:70vh; }
+    #cardCanvas{ max-height:60vh; }
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span> 인스타 카드뉴스 메이커 <small>Insta Card News Maker</small></div>
+    <div class="meta">Anthropic API · 게시물/릴스 · 다국어</div>
+  </div>
+
+  <div class="layout">
+    <!-- ══════════ 왼쪽: 입력/분석/다운로드 ══════════ -->
+    <div class="col left">
+      <h3 class="sec">API</h3>
+      <div class="keyhead">
+        <span class="lbl" style="margin:0">Key</span>
+        <button class="toggle" id="keyToggle">🔒 <span>표시</span></button>
+      </div>
+      <input type="password" id="apiKey" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+
+      <label class="lbl">모델</label>
+      <select id="model">
+        <option value="claude-opus-4-8">Opus 4.8 (최신)</option>
+        <option value="claude-sonnet-5">Sonnet 5</option>
+        <option value="claude-haiku-4-5-20251001">Haiku 4.5</option>
+        <option value="claude-fable-5">Fable 5</option>
+      </select>
+
+      <label class="lbl">지침 <span class="hint">(분석 &amp; 번역 공통, 선택)</span></label>
+      <textarea id="instruction" rows="3" placeholder="예) 20대들의 언어로 자세하게 이해하기 쉽게 해줘"></textarea>
+
+      <div class="divider"></div>
+
+      <h3 class="sec">인스타그램 원본</h3>
+      <label class="lbl">게시물 이미지</label>
+      <div class="drop" id="dropImage">
+        <span class="big">🖼️</span>
+        <span>이미지를 끌어다 놓거나 클릭</span>
+      </div>
+      <input type="file" id="fileImage" accept="image/*" hidden>
+
+      <label class="lbl">본문 캡처 <span class="hint">(이미지 또는 아래에 직접 입력)</span></label>
+      <div class="drop" id="dropBody">
+        <span class="big">📝</span>
+        <span>본문 캡처 이미지 (선택)</span>
+      </div>
+      <input type="file" id="fileBody" accept="image/*" hidden>
+      <textarea id="bodyText" rows="4" placeholder="인스타 본문 텍스트를 붙여넣어도 됩니다." style="margin-top:8px"></textarea>
+
+      <button class="btn primary wide lg" id="analyzeBtn" style="margin-top:14px">분석하고 카드 생성</button>
+
+      <div class="divider"></div>
+
+      <h3 class="sec">번역 &amp; 다운로드</h3>
+      <label class="lbl">언어</label>
+      <select id="language">
+        <option value="한국어">한국어</option>
+        <option value="일본어">일본어 (日本語)</option>
+        <option value="영어">영어 (English)</option>
+        <option value="중국어(간체)">중국어 간체 (简体)</option>
+        <option value="중국어(번체)">중국어 번체 (繁體)</option>
+        <option value="스페인어">스페인어 (Español)</option>
+        <option value="베트남어">베트남어 (Tiếng Việt)</option>
+        <option value="태국어">태국어 (ไทย)</option>
+        <option value="인도네시아어">인도네시아어</option>
+      </select>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="translateBtn">번역</button>
+        <button class="btn primary" id="downloadBtn">다운로드</button>
+      </div>
+      <p class="tiny">API 키는 브라우저에만 저장되며 서버로 전송되지 않습니다. 번역/다운로드 시 선택한 언어로 카드 문구가 변환됩니다.</p>
+    </div>
+
+    <!-- ══════════ 가운데: 미리보기 캔버스 ══════════ -->
+    <div class="col stage">
+      <div class="format-switch" id="formatSwitch">
+        <button data-format="post" class="active">🖼️ 게시물 <span class="sub">1080×1350</span></button>
+        <button data-format="reels">🎬 릴스 <span class="sub">1080×1920</span></button>
+      </div>
+
+      <div class="canvas-wrap">
+        <div class="canvas-shell">
+          <div class="canvas-toolbar">
+            <button id="modeImage" class="active">이미지</button>
+            <button id="modeVideo">동영상</button>
+            <button id="fitBtn" class="sq" title="채우기/맞춤">▣</button>
+          </div>
+          <canvas id="cardCanvas" width="1080" height="1350"></canvas>
+          <div class="empty-note" id="emptyNote">게시물 이미지를 올리고<br>“분석하고 카드 생성”을 눌러보세요.</div>
+        </div>
+      </div>
+
+      <div class="dots" id="dots"></div>
+    </div>
+
+    <!-- ══════════ 오른쪽: 카드 스타일 편집 ══════════ -->
+    <div class="col right">
+      <div class="card-head">
+        <span class="title" id="cardLabel">카드 1</span>
+        <div class="nav">
+          <button id="prevCard">‹</button>
+          <button id="nextCard">›</button>
+          <button id="delCard" title="이 카드 삭제">🗑</button>
+        </div>
+      </div>
+
+      <!-- 프리셋 -->
+      <div class="preset-box">
+        <div class="ph">⭐ 프리셋</div>
+        <div class="r">
+          <select id="presetSelect"><option value="">— 프리셋 선택 —</option></select>
+          <button class="btn" id="presetLoad">불러오기</button>
+        </div>
+        <div class="r">
+          <input type="text" id="presetName" placeholder="프리셋 이름">
+          <button class="btn" id="presetSave">저장</button>
+        </div>
+        <div class="r" style="align-items:center; justify-content:space-between">
+          <label class="applyall"><input type="checkbox" id="applyAll"> 모든 카드에 적용</label>
+          <button class="btn danger" id="presetDelete">삭제</button>
+        </div>
+      </div>
+
+      <!-- 탭 -->
+      <div class="tabs">
+        <button data-tab="logo">로고</button>
+        <button data-tab="title" class="active">제목 스타일</button>
+        <button data-tab="overlay">오버레이</button>
+        <button data-tab="gradient">그라데이션</button>
+      </div>
+
+      <!-- 로고 탭 -->
+      <div class="tabpane" data-pane="logo">
+        <label class="lbl">로고 이미지</label>
+        <div class="drop" id="dropLogo"><span class="big">🏷️</span><span>로고 업로드</span></div>
+        <input type="file" id="fileLogo" accept="image/*" hidden>
+        <label class="lbl">크기 px</label>
+        <div class="slider-row"><input type="range" id="logoSize" min="40" max="320" value="120"><span class="val" id="logoSizeV">120</span></div>
+        <label class="lbl">위치</label>
+        <div class="seg" id="logoPos">
+          <button data-v="tl">↖</button><button data-v="tc">↑</button><button data-v="tr" class="active">↗</button>
+          <button data-v="bl">↙</button><button data-v="bc">↓</button><button data-v="br">↘</button>
+        </div>
+        <label class="lbl">투명도</label>
+        <div class="slider-row"><input type="range" id="logoOpacity" min="0" max="100" value="100"><span class="val" id="logoOpacityV">100</span></div>
+        <button class="btn wide danger" id="logoClear" style="margin-top:14px">로고 제거</button>
+      </div>
+
+      <!-- 제목 스타일 탭 -->
+      <div class="tabpane active" data-pane="title">
+        <label class="lbl">제목</label>
+        <textarea id="titleText" rows="3" placeholder="카드 제목"></textarea>
+        <label class="lbl">본문 <span class="hint">(참고용)</span></label>
+        <textarea id="bodyRef" rows="4" placeholder="카드 본문 / 요약"></textarea>
+
+        <label class="lbl">크기 px</label>
+        <div class="slider-row"><input type="range" id="titleSize" min="28" max="140" value="80"><span class="val" id="titleSizeV">80</span></div>
+
+        <label class="lbl">색상</label>
+        <div class="color-row"><input type="color" id="titleColor" value="#ffffff"><input type="text" id="titleColorH" value="#ffffff"></div>
+
+        <label class="lbl">강조 색상 <span class="hint">제목에서 《중괄호》로 감싼 부분</span></label>
+        <div class="color-row"><input type="color" id="hlColor" value="#ffcc00"><input type="text" id="hlColorH" value="#ffcc00"></div>
+
+        <label class="lbl">위치 (세로)</label>
+        <div class="seg" id="titlePos">
+          <button data-v="top">상단</button><button data-v="center">중앙</button><button data-v="bottom" class="active">하단</button>
+        </div>
+        <label class="lbl">정렬</label>
+        <div class="seg" id="titleAlign">
+          <button data-v="left">왼쪽</button><button data-v="center" class="active">가운데</button><button data-v="right">오른쪽</button>
+        </div>
+      </div>
+
+      <!-- 오버레이 탭 -->
+      <div class="tabpane" data-pane="overlay">
+        <label class="lbl">오버레이 색상</label>
+        <div class="color-row"><input type="color" id="ovColor" value="#0a0e17"><input type="text" id="ovColorH" value="#0a0e17"></div>
+        <label class="lbl">불투명도</label>
+        <div class="slider-row"><input type="range" id="ovOpacity" min="0" max="100" value="28"><span class="val" id="ovOpacityV">28</span></div>
+        <p class="tiny">이미지 전체에 반투명 색을 덮어 글자 가독성을 높입니다.</p>
+      </div>
+
+      <!-- 그라데이션 탭 -->
+      <div class="tabpane" data-pane="gradient">
+        <div class="switch-row">
+          <span class="lbl">그라데이션 사용</span>
+          <label class="sw"><input type="checkbox" id="gradOn" checked><span class="track"></span></label>
+        </div>
+        <label class="lbl">방향</label>
+        <div class="seg" id="gradDir">
+          <button data-v="bottom" class="active">아래</button><button data-v="top">위</button><button data-v="full">양쪽</button>
+        </div>
+        <label class="lbl">색상</label>
+        <div class="color-row"><input type="color" id="gradColor" value="#000000"><input type="text" id="gradColorH" value="#000000"></div>
+        <label class="lbl">세기</label>
+        <div class="slider-row"><input type="range" id="gradStrength" min="0" max="100" value="72"><span class="val" id="gradStrengthV">72</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ═══════════════════════════════════════════════════════════
+   인스타 카드뉴스 메이커 — 클라이언트 전용 (Anthropic Claude API)
+   ═══════════════════════════════════════════════════════════ */
+const $ = (id) => document.getElementById(id);
+const LS = window.localStorage;
+
+const FORMATS = { post: {w:1080,h:1350}, reels: {w:1080,h:1920} };
+
+/* ── 기본 카드 스타일 ── */
+function defaultStyle(){
+  return {
+    titleSize:80, titleColor:"#ffffff", hlColor:"#ffcc00",
+    titlePos:"bottom", titleAlign:"center",
+    logo:null, logoSize:120, logoPos:"tr", logoOpacity:100,
+    overlayColor:"#0a0e17", overlayOpacity:28,
+    gradOn:true, gradDir:"bottom", gradColor:"#000000", gradStrength:72,
+  };
+}
+function newCard(){
+  return { image:null, title:"", body:"", style:defaultStyle() };
+}
+
+/* ── 전역 상태 ── */
+const state = {
+  format:"post",
+  mode:"image",
+  fit:"cover",
+  cards:[ newCard() ],
+  idx:0,
+  bodyImage:null,     // 본문 캡처 이미지 (base64 dataURL)
+};
+const cur = () => state.cards[state.idx];
+
+/* 이미지 캐시 (dataURL -> HTMLImageElement) */
+const imgCache = new Map();
+function loadImg(src){
+  return new Promise((res)=>{
+    if(!src){ res(null); return; }
+    if(imgCache.has(src)){ res(imgCache.get(src)); return; }
+    const im = new Image();
+    im.onload = ()=>{ imgCache.set(src, im); res(im); };
+    im.onerror = ()=>res(null);
+    im.src = src;
+  });
+}
+
+/* ── 토스트 ── */
+let toastT;
+function toast(msg, isErr){
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "toast show" + (isErr ? " err" : "");
+  clearTimeout(toastT);
+  toastT = setTimeout(()=> t.className = "toast", 2800);
+}
+
+/* ═══════════ 캔버스 렌더링 ═══════════ */
+const canvas = $("cardCanvas");
+const ctx = canvas.getContext("2d");
+
+function coverRect(iw, ih, w, h){
+  const s = Math.max(w/iw, h/ih);
+  const dw = iw*s, dh = ih*s;
+  return { x:(w-dw)/2, y:(h-dh)/2, w:dw, h:dh };
+}
+function containRect(iw, ih, w, h){
+  const s = Math.min(w/iw, h/ih);
+  const dw = iw*s, dh = ih*s;
+  return { x:(w-dw)/2, y:(h-dh)/2, w:dw, h:dh };
+}
+
+/* 《강조》 파싱 → [{text, hl}] runs */
+function parseTitle(txt){
+  const runs = [];
+  const re = /《([^》]*)》/g;
+  let last = 0, m;
+  while((m = re.exec(txt)) !== null){
+    if(m.index > last) runs.push({ text: txt.slice(last, m.index), hl:false });
+    runs.push({ text: m[1], hl:true });
+    last = m.index + m[0].length;
+  }
+  if(last < txt.length) runs.push({ text: txt.slice(last), hl:false });
+  return runs;
+}
+
+/* 런들을 글자 토큰으로 변환 (CJK 글자단위 / 라틴 단어단위 줄바꿈) */
+function tokenize(runs){
+  const toks = []; // {ch, hl, brk}  brk=이 토큰 앞에서 줄바꿈 가능
+  for(const r of runs){
+    const parts = r.text.split(/(\s+)/);
+    for(const p of parts){
+      if(p === "") continue;
+      if(/^\s+$/.test(p)){ toks.push({ ch:" ", hl:r.hl, space:true }); continue; }
+      // 라틴 단어 vs CJK
+      let word = "";
+      for(const c of p){
+        if(/[　-鿿가-힣＀-￯]/.test(c)){
+          if(word){ toks.push({ ch:word, hl:r.hl }); word=""; }
+          toks.push({ ch:c, hl:r.hl, cjk:true });
+        } else { word += c; }
+      }
+      if(word) toks.push({ ch:word, hl:r.hl });
+    }
+  }
+  return toks;
+}
+
+/* 토큰을 폭에 맞춰 줄로 분할 */
+function layoutLines(toks, maxW){
+  const lines = [];
+  let line = [], lw = 0;
+  const measure = (t) => ctx.measureText(t.ch).width;
+  for(const t of toks){
+    const w = measure(t);
+    if(t.space){
+      if(lw === 0) continue; // 줄 맨앞 공백 무시
+      line.push(t); lw += w; continue;
+    }
+    if(lw + w > maxW && line.length){
+      // 뒤쪽 공백 제거
+      while(line.length && line[line.length-1].space){ lw -= measure(line.pop()); }
+      lines.push(line); line = [t]; lw = w;
+    } else {
+      line.push(t); lw += w;
+    }
+  }
+  if(line.length){
+    while(line.length && line[line.length-1].space){ line.pop(); }
+    lines.push(line);
+  }
+  return lines;
+}
+
+function lineWidth(line){
+  let w = 0; for(const t of line) w += ctx.measureText(t.ch).width; return w;
+}
+
+async function render(){
+  const fmt = FORMATS[state.format];
+  canvas.width = fmt.w; canvas.height = fmt.h;
+  const W = fmt.w, H = fmt.h;
+  const c = cur(), st = c.style;
+
+  // 배경
+  ctx.clearRect(0,0,W,H);
+  const bgGrad = ctx.createLinearGradient(0,0,0,H);
+  bgGrad.addColorStop(0,"#2a3346"); bgGrad.addColorStop(1,"#151a24");
+  ctx.fillStyle = bgGrad; ctx.fillRect(0,0,W,H);
+
+  // 이미지
+  const im = await loadImg(c.image);
+  if(im){
+    const r = state.fit === "cover" ? coverRect(im.width,im.height,W,H) : containRect(im.width,im.height,W,H);
+    if(state.fit === "contain"){ ctx.fillStyle="#0d1017"; ctx.fillRect(0,0,W,H); }
+    ctx.drawImage(im, r.x, r.y, r.w, r.h);
+  }
+
+  // 오버레이
+  if(st.overlayOpacity > 0){
+    ctx.fillStyle = hexA(st.overlayColor, st.overlayOpacity/100);
+    ctx.fillRect(0,0,W,H);
+  }
+
+  // 그라데이션
+  if(st.gradOn && st.gradStrength > 0){
+    const a = st.gradStrength/100;
+    let g;
+    if(st.gradDir === "top"){
+      g = ctx.createLinearGradient(0,0,0,H*0.6);
+      g.addColorStop(0, hexA(st.gradColor,a)); g.addColorStop(1, hexA(st.gradColor,0));
+    } else if(st.gradDir === "full"){
+      g = ctx.createLinearGradient(0,0,0,H);
+      g.addColorStop(0, hexA(st.gradColor,a)); g.addColorStop(0.5, hexA(st.gradColor,0)); g.addColorStop(1, hexA(st.gradColor,a));
+    } else { // bottom
+      g = ctx.createLinearGradient(0,H*0.35,0,H);
+      g.addColorStop(0, hexA(st.gradColor,0)); g.addColorStop(1, hexA(st.gradColor,a));
+    }
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  }
+
+  // 로고
+  if(st.logo){
+    const lg = await loadImg(st.logo);
+    if(lg){
+      const size = st.logoSize;
+      const ar = lg.width/lg.height;
+      let lw = size, lh = size/ar;
+      if(ar < 1){ lh = size; lw = size*ar; }
+      const pad = 48;
+      let x, y;
+      const p = st.logoPos;
+      x = p.includes("l") ? pad : p.includes("r") ? W-lw-pad : (W-lw)/2;
+      y = p[0]==="t" ? pad : p[0]==="b" ? H-lh-pad : (H-lh)/2;
+      ctx.globalAlpha = st.logoOpacity/100;
+      ctx.drawImage(lg, x, y, lw, lh);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // 제목 텍스트
+  drawTitle(W, H, c, st);
+}
+
+function drawTitle(W, H, c, st){
+  if(!c.title) return;
+  const pad = 84;
+  const maxW = W - pad*2;
+  const fontSize = st.titleSize * (W/1080); // 캔버스 스케일 보정 (기준 1080)
+  ctx.font = `800 ${fontSize}px "Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif`;
+  ctx.textBaseline = "alphabetic";
+
+  const runs = parseTitle(c.title);
+  const toks = tokenize(runs);
+  const lines = layoutLines(toks, maxW);
+  const lineH = fontSize * 1.28;
+  const blockH = lines.length * lineH;
+
+  let startY;
+  if(st.titlePos === "top") startY = pad + fontSize;
+  else if(st.titlePos === "center") startY = (H - blockH)/2 + fontSize;
+  else startY = H - pad - blockH + fontSize; // bottom
+
+  ctx.shadowColor = "rgba(0,0,0,.55)";
+  ctx.shadowBlur = fontSize*0.18;
+  ctx.shadowOffsetY = fontSize*0.04;
+
+  for(let i=0;i<lines.length;i++){
+    const line = lines[i];
+    const lw = lineWidth(line);
+    let x;
+    if(st.titleAlign === "left") x = pad;
+    else if(st.titleAlign === "right") x = W - pad - lw;
+    else x = (W - lw)/2;
+    const y = startY + i*lineH;
+    for(const t of line){
+      ctx.fillStyle = t.hl ? st.hlColor : st.titleColor;
+      ctx.fillText(t.ch, x, y);
+      x += ctx.measureText(t.ch).width;
+    }
+  }
+  ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+}
+
+function hexA(hex, a){
+  const h = hex.replace("#","");
+  const n = h.length===3 ? h.split("").map(x=>x+x).join("") : h;
+  const r = parseInt(n.slice(0,2),16), g = parseInt(n.slice(2,4),16), b = parseInt(n.slice(4,6),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/* ═══════════ UI ↔ 상태 동기화 ═══════════ */
+function syncUIFromCard(){
+  const c = cur(), st = c.style;
+  $("cardLabel").textContent = `카드 ${state.idx+1}`;
+  $("titleText").value = c.title;
+  $("bodyRef").value = c.body;
+  $("titleSize").value = st.titleSize; $("titleSizeV").textContent = st.titleSize;
+  $("titleColor").value = st.titleColor; $("titleColorH").value = st.titleColor;
+  $("hlColor").value = st.hlColor; $("hlColorH").value = st.hlColor;
+  setSeg("titlePos", st.titlePos); setSeg("titleAlign", st.titleAlign);
+  $("logoSize").value = st.logoSize; $("logoSizeV").textContent = st.logoSize;
+  setSeg("logoPos", st.logoPos);
+  $("logoOpacity").value = st.logoOpacity; $("logoOpacityV").textContent = st.logoOpacity;
+  $("ovColor").value = st.overlayColor; $("ovColorH").value = st.overlayColor;
+  $("ovOpacity").value = st.overlayOpacity; $("ovOpacityV").textContent = st.overlayOpacity;
+  $("gradOn").checked = st.gradOn;
+  setSeg("gradDir", st.gradDir);
+  $("gradColor").value = st.gradColor; $("gradColorH").value = st.gradColor;
+  $("gradStrength").value = st.gradStrength; $("gradStrengthV").textContent = st.gradStrength;
+  $("emptyNote").style.display = (c.image || c.title) ? "none" : "block";
+  renderDots();
+  render();
+}
+function setSeg(id, val){
+  document.querySelectorAll(`#${id} button`).forEach(b=>{
+    b.classList.toggle("active", b.dataset.v === val);
+  });
+}
+
+function renderDots(){
+  const box = $("dots"); box.innerHTML = "";
+  state.cards.forEach((_,i)=>{
+    const d = document.createElement("button");
+    d.className = "dot" + (i===state.idx ? " active" : "");
+    d.onclick = ()=>{ state.idx = i; syncUIFromCard(); };
+    box.appendChild(d);
+  });
+  const add = document.createElement("button");
+  add.className = "add"; add.textContent = "+"; add.title = "카드 추가";
+  add.onclick = ()=>{ state.cards.push(newCard()); state.idx = state.cards.length-1; syncUIFromCard(); };
+  box.appendChild(add);
+}
+
+/* ═══════════ 파일 업로드 헬퍼 ═══════════ */
+function readFileAsDataURL(file){
+  return new Promise((res,rej)=>{
+    const fr = new FileReader();
+    fr.onload = ()=>res(fr.result);
+    fr.onerror = rej;
+    fr.readAsDataURL(file);
+  });
+}
+function wireDrop(dropId, inputId, onFile){
+  const drop = $(dropId), input = $(inputId);
+  drop.onclick = ()=> input.click();
+  input.onchange = async ()=>{ if(input.files[0]) onFile(await readFileAsDataURL(input.files[0])); };
+  drop.ondragover = (e)=>{ e.preventDefault(); drop.style.borderColor = "var(--accent)"; };
+  drop.ondragleave = ()=>{ drop.style.borderColor = ""; };
+  drop.ondrop = async (e)=>{
+    e.preventDefault(); drop.style.borderColor = "";
+    const f = e.dataTransfer.files[0];
+    if(f && f.type.startsWith("image/")) onFile(await readFileAsDataURL(f));
+  };
+}
+function showThumb(dropId, src, label){
+  const drop = $(dropId);
+  drop.classList.add("filled");
+  drop.innerHTML = `<img src="${src}" alt="${label}">`;
+}
+
+/* ═══════════ Anthropic API 호출 ═══════════ */
+async function callClaude(system, userContent, maxTokens){
+  const key = $("apiKey").value.trim();
+  if(!key){ throw new Error("API 키를 입력해 주세요."); }
+  const model = $("model").value;
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method:"POST",
+    headers:{
+      "content-type":"application/json",
+      "x-api-key":key,
+      "anthropic-version":"2023-06-01",
+      "anthropic-dangerous-direct-browser-access":"true",
+    },
+    body: JSON.stringify({
+      model, max_tokens: maxTokens || 1500,
+      system,
+      messages:[ { role:"user", content:userContent } ],
+    }),
+  });
+  if(!resp.ok){
+    let msg = `API 오류 (${resp.status})`;
+    try{ const j = await resp.json(); if(j.error?.message) msg += ": " + j.error.message; }catch(e){}
+    throw new Error(msg);
+  }
+  const data = await resp.json();
+  return (data.content || []).filter(b=>b.type==="text").map(b=>b.text).join("");
+}
+
+/* dataURL → {media_type, data} */
+function dataUrlToImageBlock(dataUrl){
+  const m = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if(!m) return null;
+  return { type:"image", source:{ type:"base64", media_type:m[1], data:m[2] } };
+}
+
+function extractJSON(text){
+  // ```json ... ``` 또는 첫 { ... } 블록 추출
+  let t = text.trim();
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if(fence) t = fence[1].trim();
+  const s = t.indexOf("{"), e = t.lastIndexOf("}");
+  if(s>=0 && e>s) t = t.slice(s, e+1);
+  return JSON.parse(t);
+}
+
+/* ── 분석하고 카드 생성 ── */
+async function analyze(){
+  const c = cur();
+  if(!c.image){ toast("먼저 게시물 이미지를 업로드하세요.", true); return; }
+  const instr = $("instruction").value.trim();
+  const lang = $("language").value;
+  const bodyTxt = $("bodyText").value.trim();
+
+  setBusy("analyzeBtn", true, "분석 중…");
+  try{
+    const system =
+`너는 인스타그램 카드뉴스 카피라이터다. 주어진 게시물 이미지와 본문을 분석해서 카드뉴스용 제목과 본문을 만든다.
+- 출력 언어: ${lang}
+- 제목은 시선을 끄는 한두 줄(최대 22자 내외 x 2줄)로, 가장 핵심적인 단어 1~2개는 《 》 로 감싸서 강조한다.
+- 본문은 2~4문장으로 핵심을 요약한다.
+${instr ? "- 반드시 다음 지침을 따른다: " + instr : ""}
+반드시 아래 JSON 형식으로만 답한다. 다른 말은 하지 마라.
+{"title":"...", "body":"..."}`;
+
+    const userContent = [];
+    userContent.push(dataUrlToImageBlock(c.image));
+    if(state.bodyImage) userContent.push(dataUrlToImageBlock(state.bodyImage));
+    let prompt = "이 인스타그램 게시물을 분석해 카드뉴스 제목과 본문을 만들어줘.";
+    if(bodyTxt) prompt += "\n\n[본문 텍스트]\n" + bodyTxt;
+    userContent.push({ type:"text", text: prompt });
+
+    const out = await callClaude(system, userContent.filter(Boolean), 1200);
+    const j = extractJSON(out);
+    c.title = (j.title || "").trim();
+    c.body = (j.body || "").trim();
+    syncUIFromCard();
+    toast("카드가 생성되었습니다.");
+  }catch(err){
+    toast(err.message || "분석에 실패했습니다.", true);
+  }finally{
+    setBusy("analyzeBtn", false, "분석하고 카드 생성");
+  }
+}
+
+/* ── 번역 (선택 언어로 제목/본문 재작성) ── */
+async function translate(){
+  const c = cur();
+  if(!c.title && !c.body){ toast("먼저 카드를 생성하세요.", true); return; }
+  const lang = $("language").value;
+  const instr = $("instruction").value.trim();
+
+  setBusy("translateBtn", true);
+  try{
+    const system =
+`너는 전문 번역가다. 카드뉴스의 제목과 본문을 ${lang}(으)로 자연스럽게 번역/현지화한다.
+- 제목의 《 》 강조 표시는 그대로 유지한다(강조할 핵심 단어를 《 》로 감싼다).
+${instr ? "- 다음 지침을 반영한다: " + instr : ""}
+반드시 아래 JSON 형식으로만 답한다.
+{"title":"...", "body":"..."}`;
+    const prompt = `[제목]\n${c.title}\n\n[본문]\n${c.body}`;
+    const out = await callClaude(system, [{type:"text", text:prompt}], 1000);
+    const j = extractJSON(out);
+    c.title = (j.title || c.title).trim();
+    c.body = (j.body || c.body).trim();
+    syncUIFromCard();
+    toast(`${lang}(으)로 번역했습니다.`);
+  }catch(err){
+    toast(err.message || "번역에 실패했습니다.", true);
+  }finally{
+    setBusy("translateBtn", false, "번역");
+  }
+}
+
+function setBusy(btnId, busy, txt){
+  const b = $(btnId);
+  b.disabled = busy;
+  if(busy) b.innerHTML = `<span class="spinner"></span> ${txt || ""}`;
+  else b.textContent = txt || b.dataset.orig || "";
+}
+
+/* ── 다운로드 (PNG) ── */
+async function download(){
+  await render();
+  const fmt = state.format === "post" ? "게시물" : "릴스";
+  const url = canvas.toDataURL("image/png");
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `cardnews_${fmt}_${state.idx+1}.png`;
+  a.click();
+  toast("이미지를 다운로드했습니다.");
+}
+
+/* ═══════════ 프리셋 (localStorage) ═══════════ */
+const PRESET_KEY = "insta_card_presets";
+function getPresets(){ try{ return JSON.parse(LS.getItem(PRESET_KEY)) || {}; }catch(e){ return {}; } }
+function refreshPresetSelect(){
+  const sel = $("presetSelect");
+  const ps = getPresets();
+  sel.innerHTML = '<option value="">— 프리셋 선택 —</option>';
+  Object.keys(ps).forEach(name=>{
+    const o = document.createElement("option"); o.value = name; o.textContent = name; sel.appendChild(o);
+  });
+}
+function savePreset(){
+  const name = $("presetName").value.trim();
+  if(!name){ toast("프리셋 이름을 입력하세요.", true); return; }
+  const ps = getPresets();
+  ps[name] = JSON.parse(JSON.stringify(cur().style));
+  ps[name].logo = null; // 로고 이미지는 프리셋에 저장하지 않음
+  LS.setItem(PRESET_KEY, JSON.stringify(ps));
+  refreshPresetSelect();
+  $("presetSelect").value = name; $("presetName").value = "";
+  toast(`프리셋 “${name}” 저장됨.`);
+}
+function loadPreset(){
+  const name = $("presetSelect").value;
+  if(!name){ toast("불러올 프리셋을 선택하세요.", true); return; }
+  const ps = getPresets();
+  if(!ps[name]) return;
+  const applyAll = $("applyAll").checked;
+  const apply = (card)=>{
+    const logo = card.style.logo, ls = card.style.logoSize, lp = card.style.logoPos, lo = card.style.logoOpacity;
+    card.style = Object.assign(defaultStyle(), JSON.parse(JSON.stringify(ps[name])));
+    card.style.logo = logo; card.style.logoSize = ls; card.style.logoPos = lp; card.style.logoOpacity = lo;
+  };
+  if(applyAll) state.cards.forEach(apply); else apply(cur());
+  syncUIFromCard();
+  toast(`프리셋 “${name}” 적용됨.`);
+}
+function deletePreset(){
+  const name = $("presetSelect").value;
+  if(!name){ toast("삭제할 프리셋을 선택하세요.", true); return; }
+  const ps = getPresets(); delete ps[name];
+  LS.setItem(PRESET_KEY, JSON.stringify(ps));
+  refreshPresetSelect();
+  toast(`프리셋 “${name}” 삭제됨.`);
+}
+
+/* ═══════════ 이벤트 바인딩 ═══════════ */
+function bindStyle(id, key, {isNum=false, valId=null, opt=null}={}){
+  const el = $(id);
+  el.addEventListener("input", ()=>{
+    let v = el.type==="checkbox" ? el.checked : el.value;
+    if(isNum) v = +v;
+    cur().style[key] = v;
+    if(valId) $(valId).textContent = v;
+    if(opt && opt.mirror) $(opt.mirror).value = v;
+    render();
+  });
+}
+
+function initEvents(){
+  // API 키 토글
+  $("keyToggle").onclick = ()=>{
+    const k = $("apiKey");
+    const show = k.type === "password";
+    k.type = show ? "text" : "password";
+    $("keyToggle").querySelector("span").textContent = show ? "숨김" : "표시";
+    $("keyToggle").firstChild.textContent = show ? "🔓 " : "🔒 ";
+  };
+  // 키/모델/지침 저장
+  $("apiKey").value = LS.getItem("ic_apikey") || "";
+  $("apiKey").addEventListener("input", ()=> LS.setItem("ic_apikey", $("apiKey").value));
+  $("model").value = LS.getItem("ic_model") || "claude-opus-4-8";
+  $("model").addEventListener("change", ()=> LS.setItem("ic_model", $("model").value));
+  $("instruction").value = LS.getItem("ic_instr") || "";
+  $("instruction").addEventListener("input", ()=> LS.setItem("ic_instr", $("instruction").value));
+  $("language").value = LS.getItem("ic_lang") || "한국어";
+  $("language").addEventListener("change", ()=> LS.setItem("ic_lang", $("language").value));
+
+  // 업로드
+  wireDrop("dropImage","fileImage",(src)=>{ cur().image = src; showThumb("dropImage",src,"게시물"); $("emptyNote").style.display="none"; render(); });
+  wireDrop("dropBody","fileBody",(src)=>{ state.bodyImage = src; showThumb("dropBody",src,"본문"); });
+  wireDrop("dropLogo","fileLogo",(src)=>{ cur().style.logo = src; showThumb("dropLogo",src,"로고"); render(); });
+
+  // 본문 텍스트 저장(임시)
+  $("bodyText").value = LS.getItem("ic_bodytext") || "";
+  $("bodyText").addEventListener("input", ()=> LS.setItem("ic_bodytext", $("bodyText").value));
+
+  // 액션 버튼
+  $("analyzeBtn").dataset.orig = "분석하고 카드 생성";
+  $("translateBtn").dataset.orig = "번역";
+  $("analyzeBtn").onclick = analyze;
+  $("translateBtn").onclick = translate;
+  $("downloadBtn").onclick = download;
+
+  // 포맷 스위치
+  document.querySelectorAll("#formatSwitch button").forEach(b=>{
+    b.onclick = ()=>{
+      document.querySelectorAll("#formatSwitch button").forEach(x=>x.classList.remove("active"));
+      b.classList.add("active");
+      state.format = b.dataset.format;
+      render();
+    };
+  });
+  // 이미지/동영상 토글 (UI 상태만)
+  $("modeImage").onclick = ()=>{ state.mode="image"; $("modeImage").classList.add("active"); $("modeVideo").classList.remove("active"); };
+  $("modeVideo").onclick = ()=>{ state.mode="video"; $("modeVideo").classList.add("active"); $("modeImage").classList.remove("active"); toast("동영상 내보내기는 준비 중입니다. 현재는 이미지로 저장됩니다."); };
+  $("fitBtn").onclick = ()=>{ state.fit = state.fit==="cover" ? "contain":"cover"; toast(state.fit==="cover"?"채우기":"맞춤"); render(); };
+
+  // 카드 네비
+  $("prevCard").onclick = ()=>{ if(state.idx>0){ state.idx--; syncUIFromCard(); } };
+  $("nextCard").onclick = ()=>{ if(state.idx<state.cards.length-1){ state.idx++; syncUIFromCard(); } else { state.cards.push(newCard()); state.idx++; syncUIFromCard(); } };
+  $("delCard").onclick = ()=>{
+    if(state.cards.length===1){ state.cards[0]=newCard(); state.idx=0; }
+    else { state.cards.splice(state.idx,1); if(state.idx>=state.cards.length) state.idx=state.cards.length-1; }
+    syncUIFromCard();
+  };
+
+  // 탭
+  document.querySelectorAll(".tabs button").forEach(b=>{
+    b.onclick = ()=>{
+      document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("active"));
+      document.querySelectorAll(".tabpane").forEach(x=>x.classList.remove("active"));
+      b.classList.add("active");
+      document.querySelector(`.tabpane[data-pane="${b.dataset.tab}"]`).classList.add("active");
+    };
+  });
+
+  // 제목/본문 텍스트
+  $("titleText").addEventListener("input", ()=>{ cur().title = $("titleText").value; $("emptyNote").style.display = (cur().image||cur().title)?"none":"block"; render(); });
+  $("bodyRef").addEventListener("input", ()=>{ cur().body = $("bodyRef").value; });
+
+  // 스타일 슬라이더/색상
+  bindStyle("titleSize","titleSize",{isNum:true, valId:"titleSizeV"});
+  bindStyle("logoSize","logoSize",{isNum:true, valId:"logoSizeV"});
+  bindStyle("logoOpacity","logoOpacity",{isNum:true, valId:"logoOpacityV"});
+  bindStyle("ovOpacity","overlayOpacity",{isNum:true, valId:"ovOpacityV"});
+  bindStyle("gradStrength","gradStrength",{isNum:true, valId:"gradStrengthV"});
+  bindStyle("gradOn","gradOn",{});
+
+  // 컬러 (color <-> hex text 동기화)
+  pairColor("titleColor","titleColorH","titleColor");
+  pairColor("hlColor","hlColorH","hlColor");
+  pairColor("ovColor","ovColorH","overlayColor");
+  pairColor("gradColor","gradColorH","gradColor");
+
+  // 세그먼트(위치/정렬/방향)
+  wireSeg("titlePos","titlePos");
+  wireSeg("titleAlign","titleAlign");
+  wireSeg("logoPos","logoPos");
+  wireSeg("gradDir","gradDir");
+
+  $("logoClear").onclick = ()=>{ cur().style.logo=null; const d=$("dropLogo"); d.classList.remove("filled"); d.innerHTML='<span class="big">🏷️</span><span>로고 업로드</span>'; render(); };
+
+  // 프리셋
+  $("presetSave").onclick = savePreset;
+  $("presetLoad").onclick = loadPreset;
+  $("presetDelete").onclick = deletePreset;
+  refreshPresetSelect();
+}
+
+function pairColor(colorId, hexId, key){
+  const col = $(colorId), hx = $(hexId);
+  col.addEventListener("input", ()=>{ hx.value = col.value; cur().style[key] = col.value; render(); });
+  hx.addEventListener("input", ()=>{
+    let v = hx.value.trim(); if(!v.startsWith("#")) v = "#"+v;
+    if(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v)){ col.value = v; cur().style[key] = v; render(); }
+  });
+}
+function wireSeg(id, key){
+  document.querySelectorAll(`#${id} button`).forEach(b=>{
+    b.onclick = ()=>{ setSeg(id, b.dataset.v); cur().style[key] = b.dataset.v; render(); };
+  });
+}
+
+/* ═══════════ 시작 ═══════════ */
+initEvents();
+syncUIFromCard();
+</script>
+</body>
+</html>
