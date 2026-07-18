@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>카드뉴스 현지화 도구</title>
+
+  <!-- 캔버스 헤드라인용 한국어 폰트들 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Gothic+A1:wght@700;900&family=Noto+Sans+KR:wght@700;900&family=Nanum+Gothic:wght@700;800&family=Gowun+Batang:wght@700&display=swap">
+
+  <style>
+    :root { --bg:#f4f6fb; --card:#fff; --line:#e2e6f0; --ink:#242a3d; --muted:#8a90a6; --accent:#5b7cfa; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:'Pretendard',system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--ink); }
+    header { padding:22px 16px 8px; text-align:center; }
+    header h1 { margin:0; font-size:1.5rem; }
+    header p { margin:4px 0 0; color:var(--muted); font-size:.9rem; }
+    main { max-width:760px; margin:0 auto; padding:16px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; margin-bottom:18px; }
+    .card h2 { margin:0 0 14px; font-size:1.1rem; }
+    .field { display:flex; flex-direction:column; gap:6px; margin-bottom:16px; }
+    .field > label { font-weight:600; font-size:.92rem; }
+    .hint { font-size:.8rem; color:var(--muted); }
+    textarea, input[type=text], input[type=password], select { width:100%; padding:10px 12px; border:1px solid #d5d9e6; border-radius:10px; font:inherit; background:#fff; color:var(--ink); }
+    textarea { min-height:90px; resize:vertical; }
+    .drop { border:2px dashed #c4cadd; border-radius:12px; padding:18px; text-align:center; color:var(--muted); cursor:pointer; background:#fafbff; transition:.15s; }
+    .drop.drag { border-color:var(--accent); background:#eef2ff; color:var(--accent); }
+    .thumb { max-width:100%; max-height:220px; border-radius:10px; margin-top:8px; display:block; }
+    .tabs { display:flex; gap:8px; margin-bottom:8px; }
+    .tab { padding:6px 14px; border:1px solid #d5d9e6; border-radius:999px; background:#fff; cursor:pointer; font-size:.9rem; }
+    .tab.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+    .row { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; }
+    .row .field { margin-bottom:0; }
+    .seg { display:inline-flex; border:1px solid #d5d9e6; border-radius:10px; overflow:hidden; }
+    .seg label { cursor:pointer; }
+    .seg input { display:none; }
+    .seg span { display:inline-block; padding:9px 14px; font-size:.9rem; }
+    .seg input:checked + span { background:var(--accent); color:#fff; }
+    .btn { border:none; border-radius:10px; padding:13px 20px; font:inherit; font-weight:600; cursor:pointer; }
+    .btn-primary { background:var(--accent); color:#fff; }
+    .btn-primary:disabled { opacity:.55; cursor:default; }
+    .btn-ghost { background:#fff; border:1px solid #d5d9e6; }
+    .btn-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+    canvas { max-width:100%; border-radius:12px; box-shadow:0 6px 24px rgba(20,30,80,.15); display:block; }
+    .status { font-size:.9rem; padding:9px 12px; border-radius:8px; margin:10px 0; display:none; }
+    .status.show { display:block; }
+    .status.err { background:#fdecec; color:#c0392b; }
+    .status.ok { background:#eafaf0; color:#1e824c; }
+    .status.busy { background:#eef2ff; color:#3a5bd0; }
+    details.settings { margin-bottom:16px; border:1px solid var(--line); border-radius:12px; padding:8px 14px; background:#fbfcff; }
+    details.settings summary { cursor:pointer; font-weight:600; font-size:.9rem; color:#5a6280; }
+    .keybadge { font-size:.78rem; padding:2px 8px; border-radius:999px; margin-left:6px; }
+    .keybadge.on { background:#eafaf0; color:#1e824c; }
+    .keybadge.off { background:#fdecec; color:#c0392b; }
+    input[type=range] { width:180px; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg:#12151f; --card:#1a1f2c; --line:#2b3244; --ink:#e8ebf5; --muted:#8a90a6; }
+      textarea, input[type=text], input[type=password], select { background:#1c2130; color:#e8ebf5; border-color:#333a4d; }
+      .drop { background:#181d29; border-color:#3a4055; }
+      .tab, .btn-ghost { background:#1c2130; color:#e8ebf5; border-color:#333a4d; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌐 카드뉴스 현지화 도구</h1>
+    <p>영어권 인스타 카드뉴스 → 한국어 카드뉴스</p>
+  </header>
+
+  <main>
+    <details class="settings">
+      <summary>⚙️ 설정 (Claude API 키) <span class="keybadge off" id="keyBadge">확인 중…</span></summary>
+      <div class="row" style="margin-top:12px;">
+        <div class="field" style="flex:1 1 260px;">
+          <label for="apiKey">Claude API 키</label>
+          <input type="password" id="apiKey" placeholder="sk-ant-... (이 컴퓨터에만 저장됨)" autocomplete="off">
+        </div>
+        <div class="field" style="flex:0 0 180px;">
+          <label for="modelInput">모델</label>
+          <input type="text" id="modelInput" placeholder="claude-sonnet-5">
+        </div>
+        <button class="btn btn-primary" id="saveKeyBtn" type="button" style="height:44px;">저장</button>
+      </div>
+      <span class="hint">키는 로컬 <code>config.json</code>에만 저장되며 외부로 전송되지 않습니다.</span>
+    </details>
+
+    <!-- ① 입력 -->
+    <section class="card">
+      <h2>① 입력</h2>
+      <div class="field">
+        <label>카드뉴스 이미지 (영문)</label>
+        <div class="drop" id="cardDrop">이미지를 끌어다 놓거나 클릭 · 붙여넣기(Ctrl+V) 가능</div>
+        <input type="file" id="cardFile" accept="image/*" hidden>
+        <img class="thumb" id="cardThumb" alt="" hidden>
+      </div>
+      <div class="field">
+        <label for="captionInput">게시물 캡션 (영문)</label>
+        <textarea id="captionInput" placeholder="원문 캡션을 붙여넣으세요"></textarea>
+      </div>
+      <div class="field">
+        <label>원본 이미지 (텍스트 없는 원본 사진)</label>
+        <div class="tabs">
+          <button type="button" class="tab on" data-omode="url">URL 입력</button>
+          <button type="button" class="tab" data-omode="file">파일 업로드</button>
+        </div>
+        <div id="origUrlBox">
+          <input type="text" id="origUrl" placeholder="https://... 역방향 이미지 검색으로 찾은 원본 주소">
+          <span class="hint">외부 이미지는 로컬 서버 프록시를 통해 불러옵니다.</span>
+        </div>
+        <div id="origFileBox" hidden>
+          <div class="drop" id="origDrop">원본 이미지를 끌어다 놓거나 클릭</div>
+          <input type="file" id="origFile" accept="image/*" hidden>
+        </div>
+        <img class="thumb" id="origThumb" alt="" hidden>
+      </div>
+      <div class="status" id="status"></div>
+      <button class="btn btn-primary" id="analyzeBtn" type="button">① 분석 · 번역하기</button>
+    </section>
+
+    <!-- ② 편집 -->
+    <section class="card" id="editCard" hidden>
+      <h2>② 번역 확인 · 스타일</h2>
+      <div class="field">
+        <label for="headlineKo">헤드라인 (한국어) · 줄바꿈으로 줄 분리</label>
+        <textarea id="headlineKo" style="min-height:70px;"></textarea>
+        <span class="hint" id="headlineEnHint"></span>
+      </div>
+
+      <div class="row">
+        <div class="field" style="flex:1 1 240px;">
+          <label for="fontSelect">폰트</label>
+          <select id="fontSelect"></select>
+        </div>
+        <div class="field" style="flex:0 0 auto;">
+          <label for="fontFile">커스텀 폰트 (.ttf/.otf/.woff2)</label>
+          <input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2" style="padding:7px;">
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:6px;">
+        <div class="field" style="flex:0 0 auto;">
+          <label>글자 크기 <span id="sizeVal" class="hint"></span></label>
+          <input type="range" id="sizeRange" min="60" max="130" value="100">
+        </div>
+        <div class="field" style="flex:0 0 auto;">
+          <label>글자색</label>
+          <div class="seg" id="colorSeg">
+            <label><input type="radio" name="hcolor" value="#ffffff" checked><span>흰색</span></label>
+            <label><input type="radio" name="hcolor" value="#ffd21e"><span>노랑</span></label>
+          </div>
+        </div>
+        <div class="field" style="flex:0 0 auto;">
+          <label>비율</label>
+          <div class="seg" id="ratioSeg">
+            <label><input type="radio" name="ratio" value="4:5" checked><span>4:5</span></label>
+            <label><input type="radio" name="ratio" value="1:1"><span>1:1</span></label>
+          </div>
+        </div>
+        <div class="field" style="flex:1 1 160px;">
+          <label for="brandInput">브랜드 라벨</label>
+          <input type="text" id="brandInput" placeholder="예: MY MEDIA (비우면 생략)">
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="renderBtn" type="button" style="margin-top:8px;">② 이미지 생성 / 갱신</button>
+    </section>
+
+    <!-- ③ 결과 -->
+    <section class="card" id="resultCard" hidden>
+      <h2>③ 결과</h2>
+      <div class="field">
+        <label>완성된 카드 이미지</label>
+        <canvas id="canvas" width="1080" height="1350"></canvas>
+        <div class="btn-row"><button class="btn btn-primary" id="downloadBtn" type="button">🖼️ PNG 다운로드</button></div>
+      </div>
+      <div class="field">
+        <label for="captionKo">번역된 캡션 (한국어)</label>
+        <textarea id="captionKo" style="min-height:150px;"></textarea>
+        <div class="btn-row"><button class="btn btn-ghost" id="copyCaptionBtn" type="button">📋 캡션 복사</button></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
