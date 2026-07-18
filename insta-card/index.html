@@ -302,7 +302,7 @@
             <button id="fitBtn" class="sq" title="채우기/맞춤">▣</button>
           </div>
           <canvas id="cardCanvas" width="1080" height="1350"></canvas>
-          <div class="empty-note" id="emptyNote">게시물 이미지를 올리고<br>“분석하고 카드 생성”을 눌러보세요.</div>
+          <div class="empty-note" id="emptyNote">게시물 이미지를 올리고<br>“분석하고 카드 생성”을 눌러보세요.<br><br>🧪 API 키 없이 <b>바로 눌러보면</b><br>샘플 데이터로 데모가 실행됩니다.</div>
         </div>
       </div>
 
@@ -426,6 +426,49 @@ const $ = (id) => document.getElementById(id);
 const LS = window.localStorage;
 
 const FORMATS = { post: {w:1080,h:1350}, reels: {w:1080,h:1920} };
+
+/* ── 데모 데이터 (API 키 없이 흐름 체험용) ── */
+const DEMO = {
+  "한국어":       { title:"구글이 캘리포니아·플로리다에\n《모기 3,200만 마리》 풀겠다고?",
+                   body:"구글이 모기 매개 질병을 줄이겠다며 세균에 감염된 수컷 모기 수천만 마리를 자연에 방사하는 프로젝트를 진행 중이에요. 알을 부화시키지 못하게 만들어 개체 수를 줄이는 방식인데, 만약 우리 동네에서 이런 프로젝트를 한다면 여러분은 찬성할까요?" },
+  "일본어":       { title:"Googleがカリフォルニア・フロリダに\n《蚊3,200万匹》を放つって…マジ？",
+                   body:"Googleは蚊が媒介する病気を減らすため、細菌に感染したオスの蚊を数千万匹自然に放つプロジェクトを進めています。卵が孵化しないようにして個体数を減らす仕組み。もし自分の地元でこういうプロジェクトをやるってなったら、みんなは賛成する？" },
+  "영어":         { title:"Google to release《32 million mosquitoes》\nin California & Florida?",
+                   body:"Google is running a project that releases tens of millions of bacteria-infected male mosquitoes into the wild to cut down mosquito-borne disease. The eggs never hatch, shrinking the population. Would you say yes if they ran this in your neighborhood?" },
+  "중국어(간체)":  { title:"谷歌要在加州和佛州\n放出《3,200万只蚊子》？",
+                   body:"谷歌正在推进一个项目，向野外释放数千万只感染细菌的雄蚊，以减少蚊媒疾病。这些蚊子的卵无法孵化，从而减少蚊子数量。如果在你的社区做这样的项目，你会赞成吗？" },
+  "중국어(번체)":  { title:"谷歌要在加州和佛州\n放出《3,200萬隻蚊子》？",
+                   body:"谷歌正在推進一個專案，向野外釋放數千萬隻感染細菌的雄蚊，以減少蚊媒疾病。這些蚊子的卵無法孵化，藉此減少蚊子數量。如果在你的社區做這樣的專案，你會贊成嗎？" },
+  "스페인어":     { title:"¿Google va a soltar《32 millones\nde mosquitos》 en California y Florida?",
+                   body:"Google lleva a cabo un proyecto que libera decenas de millones de mosquitos macho infectados con bacterias para reducir las enfermedades transmitidas por mosquitos. Los huevos no eclosionan y la población disminuye. ¿Dirías que sí si lo hicieran en tu barrio?" },
+  "베트남어":     { title:"Google thả《32 triệu con muỗi》\nở California và Florida?",
+                   body:"Google đang thực hiện dự án thả hàng chục triệu con muỗi đực nhiễm khuẩn ra tự nhiên để giảm bệnh do muỗi truyền. Trứng không nở được, nhờ đó giảm số lượng muỗi. Nếu làm dự án này ở khu bạn ở, bạn có đồng ý không?" },
+  "태국어":       { title:"Google จะปล่อย《ยุง 32 ล้านตัว》\nในแคลิฟอร์เนียและฟลอริดา?",
+                   body:"Google กำลังทำโครงการปล่อยยุงตัวผู้ที่ติดเชื้อแบคทีเรียหลายสิบล้านตัวสู่ธรรมชาติเพื่อลดโรคที่มียุงเป็นพาหะ ไข่จะไม่ฟักทำให้จำนวนยุงลดลง ถ้าทำโครงการนี้ในละแวกบ้านคุณ คุณจะเห็นด้วยไหม?" },
+  "인도네시아어": { title:"Google melepas《32 juta nyamuk》\ndi California & Florida?",
+                   body:"Google menjalankan proyek yang melepas puluhan juta nyamuk jantan terinfeksi bakteri ke alam untuk menekan penyakit tular nyamuk. Telurnya tak menetas sehingga populasi menurun. Kalau proyek ini dijalankan di lingkunganmu, apakah kamu setuju?" },
+};
+function demoData(lang){ return DEMO[lang] || DEMO["영어"]; }
+
+/* 샘플 배경 이미지 (SVG data URL) — 데모용 */
+const DEMO_IMAGE = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(
+`<svg xmlns='http://www.w3.org/2000/svg' width='1080' height='1350'>
+  <defs>
+    <linearGradient id='g' x1='0' y1='0' x2='0.6' y2='1'>
+      <stop offset='0' stop-color='#1b3a2b'/><stop offset='0.55' stop-color='#0f2018'/><stop offset='1' stop-color='#05110b'/>
+    </linearGradient>
+    <radialGradient id='r' cx='0.7' cy='0.3' r='0.7'>
+      <stop offset='0' stop-color='#3aa06a' stop-opacity='0.55'/><stop offset='1' stop-color='#3aa06a' stop-opacity='0'/>
+    </radialGradient>
+  </defs>
+  <rect width='1080' height='1350' fill='url(#g)'/>
+  <rect width='1080' height='1350' fill='url(#r)'/>
+  <g fill='none' stroke='#7fe0a8' stroke-opacity='0.25' stroke-width='4'>
+    <circle cx='760' cy='360' r='120'/><circle cx='760' cy='360' r='190'/><circle cx='760' cy='360' r='260'/>
+  </g>
+  <text x='760' y='378' font-size='150' text-anchor='middle'>🦟</text>
+  <text x='540' y='250' font-size='40' fill='#bfeecf' fill-opacity='0.5' text-anchor='middle' font-family='sans-serif'>SAMPLE PHOTO · 데모용 배경</text>
+</svg>`)));
 
 /* ── 기본 카드 스타일 ── */
 function defaultStyle(){
@@ -784,12 +827,32 @@ function extractJSON(text){
   return JSON.parse(t);
 }
 
+/* 잠깐 지연 (데모용) */
+const sleep = (ms)=> new Promise(r=>setTimeout(r,ms));
+
 /* ── 분석하고 카드 생성 ── */
 async function analyze(){
   const c = cur();
+  const hasKey = !!$("apiKey").value.trim();
+  const lang = $("language").value;
+
+  // 데모 모드: API 키가 없으면 샘플 데이터로 흐름 체험
+  if(!hasKey){
+    setBusy("analyzeBtn", true, "데모 분석 중…");
+    try{
+      await sleep(700);
+      if(!c.image){ c.image = DEMO_IMAGE; showThumb("dropImage", DEMO_IMAGE, "샘플"); }
+      const d = demoData(lang);
+      c.title = d.title; c.body = d.body;
+      $("emptyNote").style.display = "none";
+      syncUIFromCard();
+      toast("🧪 데모 모드: 샘플 카드가 생성되었습니다. (실제 분석은 API 키 필요)");
+    } finally { setBusy("analyzeBtn", false, "분석하고 카드 생성"); }
+    return;
+  }
+
   if(!c.image){ toast("먼저 게시물 이미지를 업로드하세요.", true); return; }
   const instr = $("instruction").value.trim();
-  const lang = $("language").value;
   const bodyTxt = $("bodyText").value.trim();
 
   setBusy("analyzeBtn", true, "분석 중…");
@@ -828,6 +891,21 @@ async function translate(){
   const c = cur();
   if(!c.title && !c.body){ toast("먼저 카드를 생성하세요.", true); return; }
   const lang = $("language").value;
+  const hasKey = !!$("apiKey").value.trim();
+
+  // 데모 모드: 샘플 문구를 선택 언어로 교체
+  if(!hasKey){
+    setBusy("translateBtn", true);
+    try{
+      await sleep(600);
+      const d = demoData(lang);
+      c.title = d.title; c.body = d.body;
+      syncUIFromCard();
+      toast(`🧪 데모 모드: ${lang}(으)로 문구를 바꿨습니다.`);
+    } finally { setBusy("translateBtn", false, "번역"); }
+    return;
+  }
+
   const instr = $("instruction").value.trim();
 
   setBusy("translateBtn", true);
