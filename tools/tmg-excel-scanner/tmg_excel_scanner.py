@@ -260,29 +260,57 @@ class App:
         # 순위표
         rank = ttk.LabelFrame(self.tab_sales, text="순번별 정상주문 매출 (매출 큰 순)")
         rank.pack(fill="both", expand=True, padx=8, pady=(6, 4))
-        cols = ("rank", "number", "host", "count", "sales")
-        self.tree = ttk.Treeview(rank, columns=cols, show="headings", height=10)
+
+        rank_bar = ttk.Frame(rank)
+        rank_bar.pack(fill="x", padx=4, pady=(4, 2))
+        self.open_sel_btn = ttk.Button(rank_bar, text="▶ 선택한 순번 엑셀 열기",
+                                       command=self.open_selected_excel, state="disabled")
+        self.open_sel_btn.pack(side="left")
+        ttk.Label(rank_bar, foreground="#666",
+                  text="  (행을 클릭 후 버튼 · 또는 순위표에서 더블클릭하면 해당 순번 엑셀이 바로 열립니다)"
+                  ).pack(side="left")
+
+        tree_wrap = ttk.Frame(rank)
+        tree_wrap.pack(fill="both", expand=True)
+        cols = ("rank", "number", "host", "count", "sales", "open")
+        self.tree = ttk.Treeview(tree_wrap, columns=cols, show="headings", height=9)
         for c, t, w, anc in [
             ("rank", "순위", 50, "center"), ("number", "순번", 90, "center"),
-            ("host", "주소(host)", 260, "w"), ("count", "정상건수", 90, "e"),
-            ("sales", "매출(원)", 160, "e"),
+            ("host", "주소(host)", 240, "w"), ("count", "정상건수", 80, "e"),
+            ("sales", "매출(원)", 150, "e"), ("open", "엑셀", 90, "center"),
         ]:
             self.tree.heading(c, text=t)
             self.tree.column(c, width=w, anchor=anc)
-        tvbar = ttk.Scrollbar(rank, orient="vertical", command=self.tree.yview)
+        tvbar = ttk.Scrollbar(tree_wrap, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=tvbar.set)
         self.tree.pack(side="left", fill="both", expand=True)
         tvbar.pack(side="right", fill="y")
+        # 더블클릭 또는 '엑셀' 칸 클릭 시 열기
         self.tree.bind("<Double-1>", self._open_selected)
+        self.tree.bind("<Button-1>", self._tree_click)
 
-        # 1천만원 이상 카테고리
+        # 1천만원 이상 카테고리 (순번마다 엑셀 열기 버튼 포함)
         catf = ttk.LabelFrame(self.tab_sales, text="1천만원 이상 순번 · 상품 카테고리별 정리")
         catf.pack(fill="both", expand=True, padx=8, pady=(4, 8))
-        self.cat_text = tk.Text(catf, height=10, wrap="none")
-        cvbar = ttk.Scrollbar(catf, orient="vertical", command=self.cat_text.yview)
-        self.cat_text.configure(yscrollcommand=cvbar.set, state="disabled")
-        self.cat_text.pack(side="left", fill="both", expand=True)
-        cvbar.pack(side="right", fill="y")
+        self.cat_summary = tk.StringVar(value="")
+        ttk.Label(catf, textvariable=self.cat_summary, foreground="#333").pack(
+            anchor="w", padx=8, pady=(4, 0))
+        cat_canvas = tk.Canvas(catf, highlightthickness=0)
+        cat_bar = ttk.Scrollbar(catf, orient="vertical", command=cat_canvas.yview)
+        self.cat_frame = ttk.Frame(cat_canvas)
+        self.cat_frame.bind("<Configure>",
+                            lambda e: cat_canvas.configure(scrollregion=cat_canvas.bbox("all")))
+        self._cat_win = cat_canvas.create_window((0, 0), window=self.cat_frame, anchor="nw")
+        cat_canvas.bind("<Configure>", lambda e: cat_canvas.itemconfigure(self._cat_win, width=e.width))
+        cat_canvas.configure(yscrollcommand=cat_bar.set)
+        cat_canvas.pack(side="left", fill="both", expand=True)
+        cat_bar.pack(side="right", fill="y")
+
+        def _cat_wheel(event):
+            d = -1 * (event.delta // 120) if event.delta else (1 if event.num == 5 else -1)
+            cat_canvas.yview_scroll(d, "units")
+        for seq in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
+            cat_canvas.bind(seq, _cat_wheel)
 
     # -------------------------------------------------------------- scan
     def start_scan(self):
@@ -460,42 +488,85 @@ class App:
         for rank, a in enumerate(analysis, 1):
             self.tree.insert("", "end", iid=str(a["number"]), values=(
                 rank, "tmg{}".format(a["number"]), a["host"],
-                "{:,}".format(a["normal_count"]), core.won(a["sales"]),
+                "{:,}".format(a["normal_count"]), core.won(a["sales"]), "▶ 열기",
             ))
+        self.open_sel_btn.configure(state="normal" if analysis else "disabled")
+
+        # 카테고리 카드 영역 초기화
+        for ch in list(self.cat_frame.children.values()):
+            ch.destroy()
 
         big_list = [a for a in analysis if a["sales"] >= big]
-        lines = []
         total_all = sum(a["sales"] for a in analysis)
-        lines.append("전체 순번 {}개 · 정상주문 총매출 {}".format(len(analysis), core.won(total_all)))
-        lines.append("1천만원({}) 이상 순번: {}개".format(core.won(big), len(big_list)))
-        lines.append("=" * 60)
-        for a in big_list:
-            lines.append("")
-            lines.append("[tmg{}]  총매출 {}  (정상 {}건 / 제외 {}건)  {}".format(
-                a["number"], core.won(a["sales"]), a["normal_count"], a["excluded_count"], a["host"]))
-            cats = sorted(a["by_category"].items(), key=lambda x: -x[1]["sales"])
-            for cat, v in cats:
-                share = (v["sales"] / a["sales"] * 100) if a["sales"] else 0
-                lines.append("    - {:<16} {:>16}  {:>5}건  ({:4.1f}%)".format(
-                    cat, core.won(v["sales"]), v["count"], share))
-        if not big_list:
-            lines.append("\n(1천만원 이상 매출을 낸 순번이 없습니다.)")
-        if no_amount:
-            lines.append("\n※ 결제금액합계 열을 찾지 못해 제외된 순번: " +
-                         ", ".join("tmg{}".format(n) for n in no_amount))
+        self.cat_summary.set("전체 순번 {}개 · 정상주문 총매출 {}  |  1천만원({}) 이상: {}개".format(
+            len(analysis), core.won(total_all), core.won(big), len(big_list)))
 
-        self.cat_text.configure(state="normal")
-        self.cat_text.delete("1.0", "end")
-        self.cat_text.insert("1.0", "\n".join(lines))
-        self.cat_text.configure(state="disabled")
+        for a in big_list:
+            self._add_cat_card(a)
+
+        if not big_list:
+            ttk.Label(self.cat_frame, foreground="#888",
+                      text="(1천만원 이상 매출을 낸 순번이 없습니다.)").pack(anchor="w", padx=8, pady=6)
+        if no_amount:
+            ttk.Label(self.cat_frame, foreground="#a00",
+                      text="※ 결제금액합계 열을 찾지 못해 제외된 순번: " +
+                           ", ".join("tmg{}".format(n) for n in no_amount)
+                      ).pack(anchor="w", padx=8, pady=(6, 2))
 
         self.export_btn.configure(state="normal")
         self.report_btn.configure(state="normal")
         self.sales_status.set("분석 완료 · 순번 {}개 · 1천만원↑ {}개".format(len(analysis), len(big_list)))
 
+    def _add_cat_card(self, a):
+        """1천만원 이상 순번 1개의 카드(헤더 + [엑셀 열기] 버튼 + 카테고리 표)."""
+        card = ttk.Frame(self.cat_frame, relief="groove", borderwidth=1)
+        card.pack(fill="x", padx=6, pady=4)
+        head = ttk.Frame(card)
+        head.pack(fill="x", padx=6, pady=(4, 2))
+        ttk.Label(head, text="tmg{}".format(a["number"]),
+                  font=("", 11, "bold")).pack(side="left")
+        ttk.Label(head, text="  총매출 {}  (정상 {}건 / 제외 {}건) · {}".format(
+            core.won(a["sales"]), a["normal_count"], a["excluded_count"], a["host"]),
+            foreground="#333").pack(side="left")
+        url = a["url"]
+        ttk.Button(head, text="엑셀 열기",
+                   command=lambda u=url: webbrowser.open(u)).pack(side="right", padx=2)
+        ttk.Button(head, text="주소 복사",
+                   command=lambda u=url: self._copy(u)).pack(side="right", padx=2)
+
+        table = ttk.Frame(card)
+        table.pack(fill="x", padx=16, pady=(0, 6))
+        for col, txt, w, anc in [(0, "상품카테고리", 20, "w"), (1, "매출", 16, "e"),
+                                 (2, "건수", 8, "e"), (3, "비중", 8, "e")]:
+            ttk.Label(table, text=txt, width=w, anchor=anc,
+                      font=("", 9, "bold"), foreground="#555").grid(row=0, column=col, sticky="we")
+        for i, (cat, v) in enumerate(sorted(a["by_category"].items(),
+                                            key=lambda x: -x[1]["sales"]), start=1):
+            share = (v["sales"] / a["sales"] * 100) if a["sales"] else 0
+            ttk.Label(table, text=cat, width=20, anchor="w").grid(row=i, column=0, sticky="we")
+            ttk.Label(table, text=core.won(v["sales"]), width=16, anchor="e").grid(row=i, column=1, sticky="we")
+            ttk.Label(table, text="{:,}건".format(v["count"]), width=8, anchor="e").grid(row=i, column=2, sticky="we")
+            ttk.Label(table, text="{:.1f}%".format(share), width=8, anchor="e").grid(row=i, column=3, sticky="we")
+
+    def open_selected_excel(self):
+        self._open_selected(None)
+
+    def _tree_click(self, event):
+        """'엑셀' 칸(#6)을 클릭하면 바로 열기."""
+        if self.tree.identify("region", event.x, event.y) != "cell":
+            return
+        if self.tree.identify_column(event.x) != "#6":
+            return
+        iid = self.tree.identify_row(event.y)
+        if iid:
+            for a in self.analysis:
+                if str(a["number"]) == iid:
+                    webbrowser.open(a["url"]); break
+
     def _open_selected(self, event):
         sel = self.tree.selection()
         if not sel:
+            self.sales_status.set("먼저 순위표에서 순번(행)을 선택하세요.")
             return
         for a in self.analysis:
             if str(a["number"]) == sel[0]:
