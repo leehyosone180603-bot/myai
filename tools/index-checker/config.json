@@ -1,0 +1,6 @@
+{
+  "sitemap": "https://calcbox.kr/sitemap.xml",
+  "domain": "calcbox.kr",
+  "engines": ["google", "naver", "daum"],
+  "maxUrls": 0
+}
