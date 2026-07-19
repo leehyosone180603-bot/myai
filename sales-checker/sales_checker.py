@@ -34,9 +34,9 @@ from urllib.request import Request, urlopen
 
 # 확인할 쇼핑몰 (번호 = tmg<번호>.cafe24.com). 이름은 보기 좋게 바꿔도 됩니다.
 STORES = [
-    {"code": "377",  "name": "377"},
-    {"code": "2552", "name": "2552"},
-    {"code": "2179", "name": "2179"},
+    {"code": "377",  "name": "어현준"},
+    {"code": "2552", "name": "이동욱"},
+    {"code": "2179", "name": "황민호"},
 ]
 
 # 제외할 더망고 주문상태
@@ -48,6 +48,7 @@ COL_CANDIDATES = {
     "amount": ["총 결제금액합계(원)", "총결제금액합계", "결제금액합계", "결제금액", "실결제금액"],
     "order_date": ["마켓주문일자", "주문일자", "주문일시", "결제일"],
     "market": ["마켓명", "마켓", "판매처"],
+    "category": ["카테고리", "상품카테고리", "카테고리명", "상품분류", "분류", "상품분류명", "진열카테고리"],
 }
 
 KST = timezone(timedelta(hours=9))
@@ -286,14 +287,18 @@ def _parse_ymd(s):
 
 
 def analyze_grid(grid, target_ym):
+    today_str = datetime.now(KST).strftime("%Y-%m-%d")
     result = {
         "last_collect_date": "",
         "target_ym": target_ym,
         "month_total": 0,
+        "today": today_str,
+        "today_total": 0,
         "row_count": 0,
         "excluded_count": 0,
         "by_date": [],
         "by_market": [],
+        "by_category": [],
         "warnings": [],
     }
     if not grid:
@@ -313,7 +318,7 @@ def analyze_grid(grid, target_ym):
         result["warnings"].append("'총 결제금액합계(원)' 컬럼을 찾지 못했습니다.")
         return result
 
-    by_date, by_market, by_month = {}, {}, {}
+    by_date, by_market, by_month, by_category = {}, {}, {}, {}
     total_rows = excluded = 0
 
     for r in range(hidx + 1, len(grid)):
@@ -336,6 +341,8 @@ def analyze_grid(grid, target_ym):
         odate = row[ci["order_date"]] if 0 <= ci["order_date"] < len(row) else ""
         market = row[ci["market"]] if 0 <= ci["market"] < len(row) else ""
         market = str(market).strip() or "(마켓명 없음)"
+        category = row[ci["category"]] if 0 <= ci["category"] < len(row) else ""
+        category = str(category).strip() or "(카테고리 없음)"
         ymd, ym = _parse_ymd(odate)
 
         if ym:
@@ -343,10 +350,15 @@ def analyze_grid(grid, target_ym):
         if ymd:
             by_date[ymd] = by_date.get(ymd, 0) + amt
         by_market[market] = by_market.get(market, 0) + amt
+        if ci["category"] >= 0:
+            c = by_category.setdefault(category, {"total": 0, "count": 0})
+            c["total"] += amt
+            c["count"] += 1
 
     result["row_count"] = total_rows
     result["excluded_count"] = excluded
     result["month_total"] = by_month.get(target_ym, 0)
+    result["today_total"] = by_date.get(today_str, 0)
     result["all_months"] = [{"ym": k, "total": v} for k, v in sorted(by_month.items())]
     result["by_date"] = [
         {"date": k, "total": v} for k, v in sorted(by_date.items())
@@ -354,6 +366,12 @@ def analyze_grid(grid, target_ym):
     result["by_market"] = [
         {"market": k, "total": v} for k, v in sorted(by_market.items(), key=lambda x: -x[1])
     ]
+    result["by_category"] = [
+        {"category": k, "total": v["total"], "count": v["count"]}
+        for k, v in sorted(by_category.items(), key=lambda x: -x[1]["total"])
+    ]
+    if ci["category"] < 0:
+        result["warnings"].append("엑셀에서 '카테고리' 컬럼을 찾지 못했습니다.")
     return result
 
 
@@ -443,8 +461,11 @@ PAGE_HTML = r"""<!doctype html>
   .grand{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:18px}
   .grand .box{flex:1;min-width:220px;background:var(--card);
     border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+  .grand .box.today{background:linear-gradient(160deg,#1d3352,#182034);border-color:var(--accent)}
+  .grand .box.today .val{color:#7ea9ff}
   .grand .label{color:var(--sub);font-size:13px}
   .grand .val{font-size:26px;font-weight:800;margin-top:6px;letter-spacing:-.5px}
+  .grand .sub{color:var(--sub);font-size:12px;margin-top:6px}
   .stores{display:grid;grid-template-columns:1fr;gap:18px}
   @media(min-width:900px){.stores{grid-template-columns:1fr 1fr 1fr}}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;
@@ -510,6 +531,7 @@ function storeCard(s){
   }
   const byDate = (s.by_date||[]).map(r=>`<tr><td>${r.date}</td><td class="num">${won(r.total)}</td></tr>`).join("") || `<tr><td colspan="2">데이터 없음</td></tr>`;
   const byMk = (s.by_market||[]).map(r=>`<tr><td>${r.market}</td><td class="num">${won(r.total)}</td></tr>`).join("") || `<tr><td colspan="2">데이터 없음</td></tr>`;
+  const byCat = (s.by_category||[]).map(r=>`<tr><td>${r.category}</td><td class="num">${(r.count||0).toLocaleString("ko-KR")}건</td><td class="num">${won(r.total)}</td></tr>`).join("") || `<tr><td colspan="3">카테고리 정보 없음</td></tr>`;
   const warn = (s.warnings&&s.warnings.length)?`<div class="warn">※ ${s.warnings.join(" / ")}</div>`:"";
   return `<div class="card">
     <h2>${s.name} <span class="pill">쇼핑몰 ${s.code}</span> <span class="pill">${s.source||""}</span></h2>
@@ -520,7 +542,8 @@ function storeCard(s){
       <div>
         <div class="sec-title">${s.target_ym} 총 매출 (반품/교환/취소 제외)</div>
         <div class="big">${won(s.month_total||0)}</div>
-        <div class="kv" style="margin-top:6px"><span class="k">집계 건수</span><span>${(s.row_count-s.excluded_count).toLocaleString("ko-KR")}건 (제외 ${s.excluded_count}건)</span></div>
+        <div class="kv" style="margin-top:6px"><span class="k">오늘(${s.today||""}) 매출</span><span>${won(s.today_total||0)}</span></div>
+        <div class="kv" style="margin-top:4px"><span class="k">집계 건수</span><span>${(s.row_count-s.excluded_count).toLocaleString("ko-KR")}건 (제외 ${s.excluded_count}건)</span></div>
       </div>
       <div>
         <div class="sec-title">마켓주문일자별 매출</div>
@@ -529,6 +552,10 @@ function storeCard(s){
       <div>
         <div class="sec-title">마켓명별 매출</div>
         <div class="scroll"><table><thead><tr><th>마켓명</th><th class="num">매출</th></tr></thead><tbody>${byMk}</tbody></table></div>
+      </div>
+      <div>
+        <div class="sec-title">상품 카테고리별 매출</div>
+        <div class="scroll"><table><thead><tr><th>카테고리</th><th class="num">건수</th><th class="num">매출</th></tr></thead><tbody>${byCat}</tbody></table></div>
       </div>
       ${warn}
     </div>
@@ -553,10 +580,17 @@ async function run(){
 }
 function render(data){
   document.getElementById("stamp").textContent = "생성 "+data.generated_at;
-  const grand = data.stores.filter(s=>s.ok).reduce((a,s)=>a+(s.month_total||0),0);
+  const oks = data.stores.filter(s=>s.ok);
+  const grandMonth = oks.reduce((a,s)=>a+(s.month_total||0),0);
+  const grandToday = oks.reduce((a,s)=>a+(s.today_total||0),0);
+  const today = (oks[0] && oks[0].today) || "";
   document.getElementById("grand").innerHTML =
-    `<div class="box"><div class="label">${data.ym} 3개 쇼핑몰 합계 매출</div><div class="val">${won(grand)}</div></div>`
-    + data.stores.map(s=>`<div class="box"><div class="label">${s.name} (${s.code})</div><div class="val">${s.ok?won(s.month_total||0):"-"}</div></div>`).join("");
+    `<div class="box today"><div class="label">오늘 (${today}) 3개 쇼핑몰 합계 매출</div>`
+    + `<div class="val">${won(grandToday)}</div>`
+    + `<div class="sub">${data.ym} 이달 합계 ${won(grandMonth)}</div></div>`
+    + data.stores.map(s=>`<div class="box"><div class="label">${s.name} (${s.code})</div>`
+        + `<div class="val">${s.ok?won(s.today_total||0):"-"}</div>`
+        + `<div class="sub">${s.ok?("이달 "+won(s.month_total||0)):"불러오기 실패"}</div></div>`).join("");
   document.getElementById("content").innerHTML =
     '<div class="stores">'+data.stores.map(storeCard).join("")+'</div>';
 }
