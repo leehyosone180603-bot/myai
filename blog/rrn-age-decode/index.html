@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <!-- Google tag (gtag.js) - GA4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JMGXSV1PJ2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-JMGXSV1PJ2');
+  </script>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>주민등록번호로 나이·출생연도·성별 알아내는 법 (뒷자리 첫 숫자 해석) | 한국인계산기</title>
+  <meta name="description" content="주민등록번호 뒷자리 첫 숫자로 출생 세기와 성별을, 앞 6자리로 생년월일을 확인하는 원리를 표와 예시로 정리했습니다. 내 번호로 나이를 확인하는 용도의 원리 설명입니다.">
+  <meta name="keywords" content="주민등록번호, 출생연도, 성별코드, 만 나이">
+  <meta name="robots" content="noindex, follow">
+  <meta name="author" content="한국인계산기">
+  <meta property="og:title" content="주민등록번호로 나이·출생연도·성별 알아내는 법 (뒷자리 첫 숫자 해석)">
+  <meta property="og:description" content="주민등록번호 뒷자리 첫 숫자로 출생 세기와 성별을, 앞 6자리로 생년월일을 확인하는 원리를 표와 예시로 정리했습니다. 내 번호로 나이를 확인하는 용도의 원리 설명입니다.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://calcbox.kr/blog/rrn-age-decode/">
+  <meta property="og:image" content="https://calcbox.kr/blog/rrn-age-decode/hero.svg">
+  <meta property="og:site_name" content="한국인계산기">
+  <link rel="canonical" href="https://calcbox.kr/blog/rrn-age-decode/">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "주민등록번호로 나이·출생연도·성별 알아내는 법 (뒷자리 첫 숫자 해석)",
+    "description": "주민등록번호 뒷자리 첫 숫자로 출생 세기와 성별을, 앞 6자리로 생년월일을 확인하는 원리를 표와 예시로 정리했습니다. 내 번호로 나이를 확인하는 용도의 원리 설명입니다.",
+    "image": "https://calcbox.kr/blog/rrn-age-decode/hero.svg",
+    "inLanguage": "ko",
+    "author": { "@type": "Organization", "name": "한국인계산기" },
+    "publisher": { "@type": "Organization", "name": "한국인계산기", "url": "https://calcbox.kr/" },
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://calcbox.kr/blog/rrn-age-decode/" }
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "주민등록번호 뒷자리 첫 숫자만으로 무엇을 알 수 있나요?",
+        "acceptedAnswer": { "@type": "Answer", "text": "출생 세기와 성별을 알 수 있습니다. 1·2는 1900년대(남·여), 3·4는 2000년대(남·여), 9·0은 1800년대(남·여) 내국인이며, 5·6·7·8은 외국인입니다. 홀수는 남성, 짝수는 여성입니다." }
+      },
+      {
+        "@type": "Question",
+        "name": "앞 두 자리 연도만으로는 왜 출생연도를 못 알아내나요?",
+        "acceptedAnswer": { "@type": "Answer", "text": "앞 6자리 중 연도는 뒤 두 자리(YY)만 담겨 있어 1990년인지 2090년인지 구분되지 않습니다. 뒷자리 첫 숫자가 세기를 알려 주므로, 코드 1·2는 19YY, 3·4는 20YY, 9·0은 18YY로 채워 완성합니다." }
+      },
+      {
+        "@type": "Question",
+        "name": "900101-1은 몇 년 몇 월 며칠생인가요?",
+        "acceptedAnswer": { "@type": "Answer", "text": "앞 6자리 90·01·01에 코드 1(1900년대 남성)을 적용해 1990년 1월 1일생 남성입니다. 여기에 현재 연도에서 1990을 빼면 만 나이를 구할 수 있습니다." }
+      },
+      {
+        "@type": "Question",
+        "name": "복원한 출생연도로 만 나이는 어떻게 계산하나요?",
+        "acceptedAnswer": { "@type": "Answer", "text": "만 나이는 현재 연도에서 출생 연도를 뺀 값입니다. 올해 생일이 지났으면 그 값 그대로, 아직 안 지났으면 1을 뺍니다. 오늘 날짜 기준으로 계산해야 정확합니다." }
+      },
+      {
+        "@type": "Question",
+        "name": "다른 사람의 주민등록번호를 이 방법으로 조회해도 되나요?",
+        "acceptedAnswer": { "@type": "Answer", "text": "안 됩니다. 주민등록번호 뒷자리는 매우 민감한 개인정보이며, 이 글은 본인 번호의 구조를 이해하고 나이를 확인하는 원리 설명입니다. 타인의 신원 조회·확인 용도로 사용하면 안 되고, 뒷자리는 누구에게도 노출·공유하지 말아야 합니다." }
+      }
+    ]
+  }
+  </script>
+
+  <!-- Google AdSense 게시자 ID: ca-pub-7143828779500885 -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885"
+     crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" href="../../style.css?v=8">
+</head>
+<body>
+  <nav class="back-nav"><a href="/">← 한국인계산기 홈</a> · <a href="/blog/">블로그 목록</a></nav>
+
+  <main class="container">
+    <article class="card post">
+      <h1>주민등록번호로 나이·출생연도·성별 알아내는 법 (뒷자리 첫 숫자 해석)</h1>
+      <p class="post-meta"><span class="cat-badge">🗓️ 나이·출생연도</span> · 한국인계산기</p>
+
+      <p class="lead">"주민등록번호만 보면 나이와 성별을 어떻게 알 수 있을까?" 주민등록번호에는 생년월일과 성별·출생 세기 정보가 규칙에 따라 담겨 있습니다. 이 글은 <strong>내 번호로 나이·출생연도를 확인</strong>하기 위한 원리 설명으로, 뒷자리 첫 숫자 하나만 읽으면 출생 세기와 성별을 알 수 있는 방법을 표와 예시로 정리했습니다.</p>
+
+      <figure class="post-shot">
+        <img src="hero.svg" alt="주민등록번호 나이 출생연도 성별 확인 정리" width="1200" height="480" loading="lazy">
+      </figure>
+
+      <div class="toc">
+        <strong>목차</strong>
+        <a href="#s1">1. 결론부터 — 성별·출생 세기 코드 표</a><br>
+        <a href="#s2">2. 출생연도 복원 공식</a><br>
+        <a href="#s3">3. 예시로 따라 해 보기</a><br>
+        <a href="#s4">4. 복원한 출생연도로 만 나이 계산하기</a><br>
+        <a href="#s5">5. 반드시 지켜야 할 개인정보 보호 수칙</a><br>
+        <a href="#faq">6. 자주 묻는 질문</a>
+      </div>
+
+      <div class="ad-container" aria-label="광고">
+        <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7143828779500885"
+             data-ad-slot="0000000000" data-ad-format="auto" data-full-width-responsive="true"></ins>
+      </div>
+
+      <h2 id="s1">결론부터 — 성별·출생 세기 코드 표</h2>
+      <div class="callout">🔒 <strong>먼저 꼭 기억하세요.</strong> 주민등록번호 뒷자리는 매우 민감한 개인정보입니다. 타인에게 노출·공유하지 마세요. 이 글은 <strong>내 번호로 나이를 확인하는 원리</strong>를 설명하는 것이며, 타인의 신원을 조회하거나 확인하는 용도가 아닙니다.</div>
+      <p>주민등록번호는 <strong>13자리</strong>로 이루어집니다. 구조는 아주 단순합니다. <strong>앞 6자리는 생년월일(YYMMDD)</strong>이고, <strong>뒷자리 7개 중 맨 앞 첫 숫자 하나</strong>가 성별과 출생 세기를 동시에 알려 줍니다. 이 첫 숫자만 읽으면 1900년대생인지 2000년대생인지, 남성인지 여성인지가 바로 갈립니다.</p>
+      <table class="calc-table">
+        <thead>
+          <tr><th>뒷자리 첫 숫자</th><td>출생 세기</td><td>성별</td></tr>
+        </thead>
+        <tbody>
+          <tr><th>1</th><td>1900년대</td><td>남성</td></tr>
+          <tr><th>2</th><td>1900년대</td><td>여성</td></tr>
+          <tr><th>3</th><td>2000년대</td><td>남성</td></tr>
+          <tr><th>4</th><td>2000년대</td><td>여성</td></tr>
+          <tr><th>9</th><td>1800년대</td><td>남성</td></tr>
+          <tr><th>0</th><td>1800년대</td><td>여성</td></tr>
+          <tr><th>5</th><td>1900년대 (외국인)</td><td>남성</td></tr>
+          <tr><th>6</th><td>1900년대 (외국인)</td><td>여성</td></tr>
+          <tr><th>7</th><td>2000년대 (외국인)</td><td>남성</td></tr>
+          <tr><th>8</th><td>2000년대 (외국인)</td><td>여성</td></tr>
+        </tbody>
+      </table>
+      <p>정리하면 <strong>1·2는 1900년대</strong>, <strong>3·4는 2000년대</strong>, <strong>9·0은 1800년대</strong> 내국인이고, <strong>5·6·7·8은 외국인</strong>(순서대로 1900년대 남성·1900년대 여성·2000년대 남성·2000년대 여성)입니다. 홀수는 남성, 짝수는 여성이라는 규칙도 함께 기억해 두면 편합니다.</p>
+
+
+      <h2 id="s2">출생연도 복원 공식</h2>
+      <p>앞 6자리 YYMMDD 중 앞 두 자리(YY)는 연도의 <strong>뒤 두 자리</strong>일 뿐이라 그것만으로는 1990년인지 2090년인지 알 수 없습니다. 여기서 <strong>뒷자리 첫 숫자</strong>가 세기를 알려 주는 역할을 합니다.</p>
+      <ul>
+        <li>코드 <strong>1·2</strong> → <strong>19YY년</strong> (1900년대)</li>
+        <li>코드 <strong>3·4</strong> → <strong>20YY년</strong> (2000년대)</li>
+        <li>코드 <strong>9·0</strong> → <strong>18YY년</strong> (1800년대)</li>
+      </ul>
+      <p>즉 앞 6자리로 <strong>월·일</strong>을 그대로 읽고, 뒷자리 첫 숫자로 <strong>세기</strong>를 채워 넣으면 완전한 생년월일이 복원됩니다. 예를 들어 <strong>900101-1XXXXXX</strong>는 코드가 1이므로 19를 붙여 <strong>1990년 1월 1일생 남성</strong>이 됩니다.</p>
+
+
+      <h2 id="s3">예시로 따라 해 보기</h2>
+      <p>실제 번호를 예로 들어 두 단계로 읽어 보겠습니다. (뒷자리는 X로 가립니다.)</p>
+      <table class="calc-table">
+        <thead>
+          <tr><th>앞 6자리 + 첫 코드</th><td>읽는 방법</td><td>복원 결과</td></tr>
+        </thead>
+        <tbody>
+          <tr><th>900101-1XXXXXX</th><td>90·01·01 + 코드 1(1900년대 남성)</td><td>1990년 1월 1일생 남성</td></tr>
+          <tr><th>050320-4XXXXXX</th><td>05·03·20 + 코드 4(2000년대 여성)</td><td>2005년 3월 20일생 여성</td></tr>
+        </tbody>
+      </table>
+      <p>첫 번째는 코드 1이라 19를 붙여 1990년, 두 번째는 코드 4라 20을 붙여 2005년으로 읽습니다. 이렇게 <strong>앞 6자리(월·일) + 뒷자리 첫 숫자(세기·성별)</strong>만 조합하면 생년월일과 성별이 한 번에 나옵니다.</p>
+
+
+      <h2 id="s4">복원한 출생연도로 만 나이 계산하기</h2>
+      <p>출생연도를 알아냈다면 만 나이는 다음과 같이 계산합니다.</p>
+      <ul>
+        <li><strong>만 나이 = 현재 연도 − 출생 연도</strong></li>
+        <li>올해 생일이 <strong>지났으면</strong> 그 값 그대로</li>
+        <li>올해 생일이 <strong>아직 안 지났으면</strong> 거기서 1을 뺌</li>
+      </ul>
+      <p>예를 들어 1990년 1월 1일생을 2026년에 계산하면, 1월 1일 생일이 지난 뒤에는 2026 − 1990 = <strong>만 36세</strong>이고, 생일 전이라면 한 살 적은 만 35세입니다. 만 나이는 이렇게 생일이 지났는지에 따라 한 살이 달라지므로 오늘 날짜를 기준으로 계산해야 정확합니다.</p>
+      <div class="callout">💡 생년월일만 입력하면 오늘 기준 만 나이가 바로 나오는 <a href="/age/"><strong>만 나이 계산기</strong></a>를 쓰면 손으로 계산할 필요가 없습니다. 몇 년생인지 궁금하면 <a href="/birth-year/">몇년생 계산기</a>도 함께 활용해 보세요.</div>
+
+
+      <h2 id="s5">반드시 지켜야 할 개인정보 보호 수칙</h2>
+      <div class="callout">⚠️ <strong>주민등록번호 뒷자리는 절대 공유하지 마세요.</strong> 앞 6자리와 뒷자리 첫 숫자까지는 생년월일·성별 정보에 가깝지만, 뒷자리 전체는 금융·본인확인에 쓰이는 매우 민감한 개인정보입니다. 문자·메신저·SNS에 남기거나 타인에게 알려주면 명의도용 등 심각한 피해로 이어질 수 있습니다.</div>
+      <p>이 글에서 설명한 규칙은 <strong>주민등록번호에 담긴 정보의 구조를 이해</strong>하고 <strong>본인의 번호로 나이·출생연도를 확인</strong>하기 위한 것입니다. 다른 사람의 번호를 해석하거나 신원을 조회·확인하는 용도로 사용해서는 안 됩니다.</p>
+      <p>실제로 나이나 출생연도만 확인하고 싶다면 굳이 주민등록번호 전체를 다룰 필요가 없습니다. 생년월일만 알면 충분하니, 민감한 뒷자리는 노출하지 말고 <a href="/age/">만 나이 계산기</a>처럼 생년월일만 입력하는 도구를 쓰는 것이 안전합니다. 만 나이와 세는 나이가 헷갈린다면 <a href="/blog/age-types-korean/">만 나이·세는 나이 차이</a> 글도 함께 참고하세요.</p>
+
+
+      <h2 id="faq">자주 묻는 질문 (FAQ)</h2>
+      <h3>Q. 주민등록번호 뒷자리 첫 숫자만으로 무엇을 알 수 있나요?</h3>
+      <p>출생 세기와 성별을 알 수 있습니다. 1·2는 1900년대(남·여), 3·4는 2000년대(남·여), 9·0은 1800년대(남·여) 내국인이며, 5·6·7·8은 외국인입니다. 홀수는 남성, 짝수는 여성입니다.</p>
+      <h3>Q. 앞 두 자리 연도만으로는 왜 출생연도를 못 알아내나요?</h3>
+      <p>앞 6자리 중 연도는 뒤 두 자리(YY)만 담겨 있어 1990년인지 2090년인지 구분되지 않습니다. 뒷자리 첫 숫자가 세기를 알려 주므로, 코드 1·2는 19YY, 3·4는 20YY, 9·0은 18YY로 채워 완성합니다.</p>
+      <h3>Q. 900101-1은 몇 년 몇 월 며칠생인가요?</h3>
+      <p>앞 6자리 90·01·01에 코드 1(1900년대 남성)을 적용해 1990년 1월 1일생 남성입니다. 여기에 현재 연도에서 1990을 빼면 만 나이를 구할 수 있습니다.</p>
+      <h3>Q. 복원한 출생연도로 만 나이는 어떻게 계산하나요?</h3>
+      <p>만 나이는 현재 연도에서 출생 연도를 뺀 값입니다. 올해 생일이 지났으면 그 값 그대로, 아직 안 지났으면 1을 뺍니다. 오늘 날짜 기준으로 계산해야 정확합니다.</p>
+      <h3>Q. 다른 사람의 주민등록번호를 이 방법으로 조회해도 되나요?</h3>
+      <p>안 됩니다. 주민등록번호 뒷자리는 매우 민감한 개인정보이며, 이 글은 본인 번호의 구조를 이해하고 나이를 확인하는 원리 설명입니다. 타인의 신원 조회·확인 용도로 사용하면 안 되고, 뒷자리는 누구에게도 노출·공유하지 말아야 합니다.</p>
+
+      <div class="callout">
+        ✅ <strong>함께 보면 좋은 글·도구</strong> — <a href="/age/">만 나이 계산기</a> · <a href="/birth-year/">몇년생 계산기</a> · <a href="/blog/age-types-korean/">만 나이·세는 나이 차이</a>
+      </div>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <nav class="footer-links"><a href="/about/">소개·문의</a> · <a href="/privacy/">개인정보처리방침</a> · <a href="/terms/">이용약관</a></nav>
+    <p>© <span id="year"></span> 한국인계산기 (calcbox.kr) · 본 글은 일반적인 정보 제공을 목적으로 하며 최신 정보는 공식 출처를 확인하세요.</p>
+  </footer>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+  </script>
+</body>
+</html>

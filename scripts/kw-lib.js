@@ -149,6 +149,14 @@ function generic(o) {
   return base(o, "generic", sec);
 }
 
+// 나이 클러스터 전용 (고품질 스포크). generic과 동일 구조, 카테고리만 "age".
+function age(o) {
+  var sec = o.sections.map(function (s, i) {
+    return { id: s.id || ("s" + (i + 1)), h2: s.h2, html: s.html };
+  });
+  return base(o, "age", sec);
+}
+
 // 공통 마무리: 필수 필드 검증 + 반환
 function base(o, category, sections) {
   if (!o.slug || !o.kw || !o.title || !o.desc || !o.lead || !o.faq) {
@@ -170,4 +178,4 @@ function base(o, category, sections) {
   };
 }
 
-module.exports = { P: P, UL: UL, OL: OL, TD: TD, STEPS: STEPS, CALLOUT: CALLOUT, TABLE: TABLE, benefit: benefit, trait: trait, ranking: ranking, schedule: schedule, procedure: procedure, order: order, recipe: recipe, howto: howto, compare: compare, proscons: proscons, generic: generic };
+module.exports = { P: P, UL: UL, OL: OL, TD: TD, STEPS: STEPS, CALLOUT: CALLOUT, TABLE: TABLE, benefit: benefit, trait: trait, ranking: ranking, schedule: schedule, procedure: procedure, order: order, recipe: recipe, howto: howto, compare: compare, proscons: proscons, generic: generic, age: age };

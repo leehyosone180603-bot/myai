@@ -33,7 +33,8 @@ const THEME = {
   howto:     { c1: "#0369a1", c2: "#0c4a6e", icon: "🛠️", label: "방법·가이드" },
   compare:   { c1: "#0d9488", c2: "#134e4a", icon: "⚖️", label: "비교" },
   proscons:  { c1: "#4f46e5", c2: "#312e81", icon: "🔍", label: "장단점" },
-  generic:   { c1: "#475569", c2: "#1e293b", icon: "📖", label: "정보" }
+  generic:   { c1: "#475569", c2: "#1e293b", icon: "📖", label: "정보" },
+  age:       { c1: "#2563eb", c2: "#1e3a8a", icon: "🗓️", label: "나이·출생연도" }
 };
 
 function esc(s) {
