@@ -11,5 +11,6 @@ module.exports = [].concat(
   require("./data/howto.js"),
   require("./data/compare.js"),
   require("./data/proscons.js"),
-  require("./data/generic.js")
+  require("./data/generic.js"),
+  require("./data/age-cluster.js")
 );
