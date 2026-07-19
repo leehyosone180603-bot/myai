@@ -7,6 +7,7 @@
 
   var S = window.Saju, L = window.SajuLunar, DK = window.SajuDokkaebi;
   var $ = function (id) { return document.getElementById(id); };
+  function track(n, p) { if (window.gtag) { try { gtag("event", n, p || {}); } catch (e) {} } }
 
   var state = { gender: "m", love: "solo", cal: "solar" };
 
@@ -153,6 +154,7 @@
 
     $("result").classList.remove("hidden");
     $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+    track("saju_result_view", { has_time: hourKnown, gender: state.gender });
   }
 
   function buildShareUrl(y, m, d, isLeap, hourKnown, hv, mm, name) {
@@ -222,8 +224,9 @@
   $("selY").addEventListener("change", updateDays);
   $("selM").addEventListener("change", updateDays);
   $("selH").addEventListener("change", onHourChange);
-  $("goBtn").addEventListener("click", run);
-  $("kakaoBtn").addEventListener("click", kakaoShare);
+  $("goBtn").addEventListener("click", function () { track("saju_calc_click"); run(); });
+  if ($("payBtn")) $("payBtn").addEventListener("click", function () { track("cta_click", { location: "saju", dest: "coupang" }); });
+  $("kakaoBtn").addEventListener("click", function () { track("share_click", { location: "saju", channel: "kakao" }); kakaoShare(); });
   $("copyBtn").addEventListener("click", function () { copyText($("shareUrl").value); this.textContent = "복사됨"; var b = this; setTimeout(function () { b.textContent = "복사"; }, 1500); });
   loadFromUrl();
 })();

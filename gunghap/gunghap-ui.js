@@ -112,6 +112,7 @@
     $("shareUrl").value = shareUrl(A, B);
     $("resultArea").classList.remove("hidden");
     $("resultArea").scrollIntoView({ behavior: "smooth", block: "start" });
+    if (window.gtag) { try { gtag("event", "gunghap_result_view", { score: r.score }); } catch (e) {} }
   }
 
   function copyText(t, btn) {
@@ -146,7 +147,7 @@
     $("selM" + sfx).addEventListener("change", function () { updateDays(sfx); });
     $("selH" + sfx).addEventListener("change", function () { onHour(sfx); });
   });
-  $("calcBtn").addEventListener("click", calc);
+  $("calcBtn").addEventListener("click", function () { if (window.gtag) { try { gtag("event", "gunghap_calc_click"); } catch (e) {} } calc(); });
   $("copyBtn").addEventListener("click", function () { copyText($("shareUrl").value, this); });
   loadUrl();
 })();
