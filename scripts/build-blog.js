@@ -81,6 +81,14 @@ function buildBlogIndex(posts) {
 '<html lang="ko">\n' +
 '<head>\n' +
 '  <meta charset="UTF-8">\n' +
+'  <!-- Google tag (gtag.js) - GA4 -->\n' +
+'  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JMGXSV1PJ2"></script>\n' +
+'  <script>\n' +
+'    window.dataLayer = window.dataLayer || [];\n' +
+'    function gtag(){dataLayer.push(arguments);}\n' +
+'    gtag(\'js\', new Date());\n' +
+'    gtag(\'config\', \'G-JMGXSV1PJ2\');\n' +
+'  </script>\n' +
 '  <link rel="icon" type="image/svg+xml" href="/favicon.svg">\n' +
 '  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
 '  <title>블로그 - 계산기 사용법과 생활 정보 | 한국인계산기</title>\n' +
