@@ -584,13 +584,17 @@ function render(data){
   const grandMonth = oks.reduce((a,s)=>a+(s.month_total||0),0);
   const grandToday = oks.reduce((a,s)=>a+(s.today_total||0),0);
   const today = (oks[0] && oks[0].today) || "";
+  const collectDates = oks.map(s=>s.last_collect_date).filter(Boolean);
+  const lastCollect = collectDates.length ? collectDates.sort().slice(-1)[0] : "-";
   document.getElementById("grand").innerHTML =
     `<div class="box today"><div class="label">오늘 (${today}) 3개 쇼핑몰 합계 매출</div>`
     + `<div class="val">${won(grandToday)}</div>`
-    + `<div class="sub">${data.ym} 이달 합계 ${won(grandMonth)}</div></div>`
+    + `<div class="sub">${data.ym} 이달 합계 ${won(grandMonth)}</div>`
+    + `<div class="sub">마지막주문수집일자 ${lastCollect}</div></div>`
     + data.stores.map(s=>`<div class="box"><div class="label">${s.name} (${s.code})</div>`
         + `<div class="val">${s.ok?won(s.today_total||0):"-"}</div>`
-        + `<div class="sub">${s.ok?("이달 "+won(s.month_total||0)):"불러오기 실패"}</div></div>`).join("");
+        + `<div class="sub">${s.ok?("이달 "+won(s.month_total||0)):"불러오기 실패"}</div>`
+        + `<div class="sub">${s.ok?("수집 "+(s.last_collect_date||"-")):""}</div></div>`).join("");
   document.getElementById("content").innerHTML =
     '<div class="stores">'+data.stores.map(storeCard).join("")+'</div>';
 }
