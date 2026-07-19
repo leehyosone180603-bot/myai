@@ -1,0 +1,45 @@
+name: Build TMG Excel Scanner (.exe)
+
+# GitHub의 Windows 서버에서 진짜 .exe 파일을 자동으로 빌드합니다.
+# 실행 방법:
+#   1) GitHub 저장소 > Actions 탭 > "Build TMG Excel Scanner (.exe)" 선택
+#   2) [Run workflow] 버튼 클릭 (브랜치: claude/tmg-sales-data-filter-tzva5q)
+#   3) 초록불이 뜨면 실행 결과 화면 아래 "Artifacts" 에서
+#      TMG매출엑셀스캐너-exe 를 내려받아 압축 풀면 .exe 가 들어 있습니다.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - claude/tmg-sales-data-filter-tzva5q
+    paths:
+      - "tools/tmg-excel-scanner/**"
+      - ".github/workflows/build-tmg-exe.yml"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PyInstaller
+        run: python -m pip install --upgrade pip pyinstaller
+
+      - name: Build .exe
+        working-directory: tools/tmg-excel-scanner
+        run: >
+          pyinstaller --noconfirm --onefile --windowed
+          --name "TMG매출엑셀스캐너" tmg_excel_scanner.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TMG매출엑셀스캐너-exe
+          path: tools/tmg-excel-scanner/dist/TMG매출엑셀스캐너.exe
+          if-no-files-found: error
