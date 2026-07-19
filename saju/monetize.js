@@ -1,6 +1,6 @@
 /*
  * 도깨비 사주/궁합 수익화 인터랙션
- *  1) '이어서 도깨비의 풀이 보기' 클릭 → 쿠팡(새 탭) + 3초 뒤(또는 탭 복귀 즉시) 가려진 풀이 자동 공개
+ *  1) '이어서 도깨비의 풀이 보기' 클릭 → 쿠팡(새 탭) + 3초 뒤(또는 탭 복귀 즉시) 전체 상세풀이(/saju/detail/) 페이지로 이동
  *  2) '무료 궁합/궁합 보기' 링크 클릭 → 쿠팡(새 탭) + 3초 뒤(또는 탭 복귀 즉시) 궁합 사이트로 이동
  * (상단 내비게이션 링크는 제외)
  *
@@ -46,19 +46,27 @@
     document.addEventListener("visibilitychange", onVis);
   }
 
-  // 1) 이어서 풀이 보기 → 쿠팡 새 탭(앵커 기본 동작) + 가려진 풀이 공개
+  // 1) 이어서 풀이 보기 → 쿠팡 새 탭(앵커 기본 동작) + 전체 상세풀이 페이지로 이동
+  //    (기존 유료 결제 후 보이던 /saju/detail/ 페이지. 생년월일 파라미터는 #shareUrl에 있음)
   var payBtn = document.getElementById("payBtn");
   if (payBtn) {
     payBtn.addEventListener("click", function () {
       if (payBtn.dataset.done) return;   // 중복 방지
       payBtn.dataset.done = "1";
-      toast("⏳ 3초 뒤 자동으로 결과가 보여집니다...");
+      toast("⏳ 3초 뒤 자동으로 전체 풀이가 열립니다...");
       runAfterDelayOrReturn(function () {
-        var blurred = document.querySelectorAll(".blur");
-        for (var i = 0; i < blurred.length; i++) blurred[i].classList.remove("blur");
-        hideToast();
-        var card = payBtn.closest ? payBtn.closest(".card") : null;
-        if (card) card.style.display = "none";
+        var share = document.getElementById("shareUrl");
+        var q = (share && share.value.indexOf("?") >= 0) ? share.value.split("?")[1] : "";
+        if (q) {
+          window.location.href = "/saju/detail/?" + q;
+        } else {
+          // 파라미터가 없는 예외 상황이면 기존처럼 블러만 해제
+          var blurred = document.querySelectorAll(".blur");
+          for (var i = 0; i < blurred.length; i++) blurred[i].classList.remove("blur");
+          hideToast();
+          var card = payBtn.closest ? payBtn.closest(".card") : null;
+          if (card) card.style.display = "none";
+        }
       });
     });
   }
