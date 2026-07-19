@@ -19,11 +19,15 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM 필요한 라이브러리 설치 (최초 1회만 시간이 걸립니다)
+REM 필요한 라이브러리 설치 (최초 1회만 시간이 걸립니다. 실패해도 계속 진행)
 python -c "import openpyxl, xlrd" >nul 2>&1
 if errorlevel 1 (
     echo 필요한 구성요소를 설치하는 중입니다... 잠시만 기다려 주세요.
     python -m pip install --quiet --disable-pip-version-check openpyxl xlrd
+    if errorlevel 1 (
+        echo [안내] 구성요소 설치에 실패했지만 그대로 진행합니다.
+        echo   ^(엑셀이 HTML 표 형식이면 설치 없이도 정상 동작합니다.^)
+    )
 )
 
 echo 브라우저가 자동으로 열립니다. 이 창은 닫지 마세요.
