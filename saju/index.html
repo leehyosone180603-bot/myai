@@ -162,6 +162,9 @@
     .lk-f { display: block; height: 9px; border-radius: 999px; }
     .lk-v { width: 30px; text-align: right; font-weight: 700; font-size: .86rem; }
     .lc-cap { font-size: .78rem; color: var(--muted); margin: 12px 0 2px; text-align: left; }
+    .shin-wrap { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    .shin-chip { background: #100f16; border: 1px solid var(--gold-d); color: var(--gold); border-radius: 999px; padding: 7px 13px; font-size: .88rem; font-weight: 700; }
+    .shin-chip.good { border-color: var(--teal); color: var(--teal); }
     .snack-big { font-size: 1.5rem; font-weight: 900; color: var(--gold); letter-spacing: .04em; margin: 4px 0 6px; }
     .snack-d { color: #cfc8ba; font-size: .86rem; line-height: 1.6; margin: 0; text-align: left; }
   </style>
@@ -251,6 +254,7 @@
           <div class="dash-box"><div class="dash-t">오행 밸런스</div><div id="ohengRadar"></div><p class="dash-note" id="ohengNote"></p></div>
           <div class="dash-box"><div class="dash-t">오늘의 행운 지수</div><div id="luckIndex"></div></div>
         </div>
+        <div class="dash-box"><div class="dash-t">내 신살 · 타고난 특별한 기운</div><div id="shinsalBox"></div></div>
         <div class="dash-box"><div class="dash-t">인생 운의 흐름</div><div id="lifeCurve"></div><p class="dash-note" id="curveNote"></p></div>
         <div class="dash-grid">
           <div class="dash-box snack"><div class="dash-t">🧬 사주로 보는 MBTI</div><div id="sajuMbti"></div></div>
@@ -309,8 +313,8 @@
   <script src="saju-lunar.js?v=1"></script>
   <script src="saju-detail.js?v=2"></script>
   <script src="saju-dokkaebi.js?v=6"></script>
-  <script src="saju-dashboard.js?v=2"></script>
-  <script src="saju-ui.js?v=10"></script>
+  <script src="saju-dashboard.js?v=3"></script>
+  <script src="saju-ui.js?v=12"></script>
   <script src="monetize.js?v=3"></script>
   <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
 </body>

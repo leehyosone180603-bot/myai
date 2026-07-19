@@ -101,6 +101,7 @@
     $("shareUrl").value = shareUrl(P, topic, askY, askMon);
     $("resultArea").classList.remove("hidden");
     $("resultArea").scrollIntoView({ behavior: "smooth", block: "start" });
+    if (window.gtag) { try { gtag("event", "ask_answer_view", { topic: topic, verdict: ans.verdict }); } catch (e) {} }
   }
 
   function copyText(t, btn) {

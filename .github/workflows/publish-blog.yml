@@ -7,12 +7,14 @@ name: 블로그 예약 발행 (하루 4회)
 #   21:00 KST = 12:00 UTC
 # 참고: GitHub 예약(schedule) 워크플로는 기본 브랜치(main)에서만 실행됩니다.
 on:
-  schedule:
-    - cron: "0 0 * * *"
-    - cron: "0 4 * * *"
-    - cron: "0 8 * * *"
-    - cron: "0 12 * * *"
-  workflow_dispatch:   # 수동 실행(테스트)용
+  # ⏸️ 자동 발행 일시 중지 (사용자 요청, 2026-07).
+  #    재개하려면 아래 schedule 블록의 주석(#)을 해제하세요.
+  # schedule:
+  #   - cron: "0 0 * * *"
+  #   - cron: "0 4 * * *"
+  #   - cron: "0 8 * * *"
+  #   - cron: "0 12 * * *"
+  workflow_dispatch:   # 수동 실행만 가능 (자동 발행 중지 상태)
 
 permissions:
   contents: write
