@@ -42,6 +42,12 @@ STORES = [
 # 제외할 더망고 주문상태
 EXCLUDE_STATUS = {"반품/교환/취소 진행중", "반품/교환/취소완료"}
 
+# 카테고리별 매출 집계 기간(일). 최근 N일(오늘 포함) 데이터만 집계.
+CATEGORY_DAYS = 3
+
+# '롯데ON' 마켓 판별용 키워드(공백/대소문자 무시)
+LOTTEON_KEYS = ["롯데on", "롯데온", "lotteon"]
+
 # 엑셀 컬럼 매칭 후보 (부분 일치, 앞에 있을수록 우선)
 COL_CANDIDATES = {
     "status": ["더망고주문상태", "주문상태"],
@@ -286,17 +292,53 @@ def _parse_ymd(s):
     return "%04d-%02d-%02d" % (y, mo, d), "%04d-%02d" % (y, mo)
 
 
+def _parse_dt(s):
+    """마켓주문일자 셀 -> (datetime, 표시문자열). 파싱 실패 시 (None, '')."""
+    t = str(s or "")
+    m = re.search(
+        r"(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})(?:[ T]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?",
+        t,
+    )
+    if not m:
+        return None, ""
+    y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
+    hh = int(m.group(4)) if m.group(4) else 0
+    mi = int(m.group(5)) if m.group(5) else 0
+    ss = int(m.group(6)) if m.group(6) else 0
+    try:
+        dt = datetime(y, mo, d, hh, mi, ss, tzinfo=KST)
+    except ValueError:
+        return None, ""
+    if m.group(4):
+        disp = "%04d-%02d-%02d %02d:%02d:%02d" % (y, mo, d, hh, mi, ss)
+    else:
+        disp = "%04d-%02d-%02d" % (y, mo, d)
+    return dt, disp
+
+
+def _is_lotteon(market):
+    n = _norm(market).lower()
+    return any(k in n for k in LOTTEON_KEYS)
+
+
 def analyze_grid(grid, target_ym):
-    today_str = datetime.now(KST).strftime("%Y-%m-%d")
+    now = datetime.now(KST)
+    today_str = now.strftime("%Y-%m-%d")
+    cat_from = (now - timedelta(days=CATEGORY_DAYS - 1)).strftime("%Y-%m-%d")
     result = {
         "last_collect_date": "",
+        "last_order_date": "",
         "target_ym": target_ym,
         "month_total": 0,
         "today": today_str,
         "today_total": 0,
+        "cat_days": CATEGORY_DAYS,
+        "cat_from": cat_from,
+        "cat_to": today_str,
         "row_count": 0,
         "excluded_count": 0,
         "by_date": [],
+        "lotteon_by_date": [],
         "by_market": [],
         "by_category": [],
         "warnings": [],
@@ -319,7 +361,11 @@ def analyze_grid(grid, target_ym):
         return result
 
     by_date, by_market, by_month, by_category = {}, {}, {}, {}
+    lotteon_by_date = {}
     total_rows = excluded = 0
+    best_dt, best_disp = None, ""       # 미래 제외, 현재에 가장 근접한 최신 주문일시
+    max_dt, max_disp = None, ""         # 전체 최신(폴백)
+    cat_from_date = (now - timedelta(days=CATEGORY_DAYS - 1)).date()
 
     for r in range(hidx + 1, len(grid)):
         row = grid[r]
@@ -344,13 +390,24 @@ def analyze_grid(grid, target_ym):
         category = row[ci["category"]] if 0 <= ci["category"] < len(row) else ""
         category = str(category).strip() or "(카테고리 없음)"
         ymd, ym = _parse_ymd(odate)
+        odt, odisp = _parse_dt(odate)
+
+        # 마지막 마켓주문일자 계산(마켓주문일자 열 기준)
+        if odt is not None:
+            if max_dt is None or odt > max_dt:
+                max_dt, max_disp = odt, odisp
+            if odt <= now and (best_dt is None or odt > best_dt):
+                best_dt, best_disp = odt, odisp
 
         if ym:
             by_month[ym] = by_month.get(ym, 0) + amt
         if ymd:
             by_date[ymd] = by_date.get(ymd, 0) + amt
+            if _is_lotteon(market):
+                lotteon_by_date[ymd] = lotteon_by_date.get(ymd, 0) + amt
         by_market[market] = by_market.get(market, 0) + amt
-        if ci["category"] >= 0:
+        # 카테고리별 매출은 최근 CATEGORY_DAYS일(오늘 포함) 데이터만 집계
+        if ci["category"] >= 0 and odt is not None and odt.date() >= cat_from_date:
             c = by_category.setdefault(category, {"total": 0, "count": 0})
             c["total"] += amt
             c["count"] += 1
@@ -359,9 +416,13 @@ def analyze_grid(grid, target_ym):
     result["excluded_count"] = excluded
     result["month_total"] = by_month.get(target_ym, 0)
     result["today_total"] = by_date.get(today_str, 0)
+    result["last_order_date"] = best_disp or max_disp
     result["all_months"] = [{"ym": k, "total": v} for k, v in sorted(by_month.items())]
     result["by_date"] = [
         {"date": k, "total": v} for k, v in sorted(by_date.items())
+    ]
+    result["lotteon_by_date"] = [
+        {"date": k, "total": v} for k, v in sorted(lotteon_by_date.items())
     ]
     result["by_market"] = [
         {"market": k, "total": v} for k, v in sorted(by_market.items(), key=lambda x: -x[1])
@@ -530,20 +591,25 @@ function storeCard(s){
       <div class="foot">요청 주소: ${s.url}</div></div></div>`;
   }
   const byDate = (s.by_date||[]).map(r=>`<tr><td>${r.date}</td><td class="num">${won(r.total)}</td></tr>`).join("") || `<tr><td colspan="2">데이터 없음</td></tr>`;
+  const lotte = (s.lotteon_by_date||[]).map(r=>`<tr><td>${r.date}</td><td class="num">${won(r.total)}</td></tr>`).join("") || `<tr><td colspan="2">롯데ON 매출 없음</td></tr>`;
   const byMk = (s.by_market||[]).map(r=>`<tr><td>${r.market}</td><td class="num">${won(r.total)}</td></tr>`).join("") || `<tr><td colspan="2">데이터 없음</td></tr>`;
-  const byCat = (s.by_category||[]).map(r=>`<tr><td>${r.category}</td><td class="num">${(r.count||0).toLocaleString("ko-KR")}건</td><td class="num">${won(r.total)}</td></tr>`).join("") || `<tr><td colspan="3">카테고리 정보 없음</td></tr>`;
+  const byCat = (s.by_category||[]).map(r=>`<tr><td>${r.category}</td><td class="num">${(r.count||0).toLocaleString("ko-KR")}건</td><td class="num">${won(r.total)}</td></tr>`).join("") || `<tr><td colspan="3">최근 ${s.cat_days||3}일 카테고리 데이터 없음</td></tr>`;
   const warn = (s.warnings&&s.warnings.length)?`<div class="warn">※ ${s.warnings.join(" / ")}</div>`:"";
   return `<div class="card">
     <h2>${s.name} <span class="pill">쇼핑몰 ${s.code}</span> <span class="pill">${s.source||""}</span></h2>
     <div class="body">
       <div>
-        <div class="kv"><span class="k">마지막주문수집일자</span><span>${s.last_collect_date||"-"}</span></div>
+        <div class="kv"><span class="k">마지막마켓주문일자</span><span>${s.last_order_date||"-"}</span></div>
       </div>
       <div>
         <div class="sec-title">${s.target_ym} 총 매출 (반품/교환/취소 제외)</div>
         <div class="big">${won(s.month_total||0)}</div>
         <div class="kv" style="margin-top:6px"><span class="k">오늘(${s.today||""}) 매출</span><span>${won(s.today_total||0)}</span></div>
         <div class="kv" style="margin-top:4px"><span class="k">집계 건수</span><span>${(s.row_count-s.excluded_count).toLocaleString("ko-KR")}건 (제외 ${s.excluded_count}건)</span></div>
+      </div>
+      <div>
+        <div class="sec-title">롯데ON 일자별 매출</div>
+        <div class="scroll"><table><thead><tr><th>일자</th><th class="num">매출</th></tr></thead><tbody>${lotte}</tbody></table></div>
       </div>
       <div>
         <div class="sec-title">마켓주문일자별 매출</div>
@@ -554,7 +620,7 @@ function storeCard(s){
         <div class="scroll"><table><thead><tr><th>마켓명</th><th class="num">매출</th></tr></thead><tbody>${byMk}</tbody></table></div>
       </div>
       <div>
-        <div class="sec-title">상품 카테고리별 매출</div>
+        <div class="sec-title">상품 카테고리별 매출 <span style="font-weight:400;text-transform:none">(최근 ${s.cat_days||3}일: ${s.cat_from||""} ~ ${s.cat_to||""})</span></div>
         <div class="scroll"><table><thead><tr><th>카테고리</th><th class="num">건수</th><th class="num">매출</th></tr></thead><tbody>${byCat}</tbody></table></div>
       </div>
       ${warn}
@@ -584,17 +650,17 @@ function render(data){
   const grandMonth = oks.reduce((a,s)=>a+(s.month_total||0),0);
   const grandToday = oks.reduce((a,s)=>a+(s.today_total||0),0);
   const today = (oks[0] && oks[0].today) || "";
-  const collectDates = oks.map(s=>s.last_collect_date).filter(Boolean);
-  const lastCollect = collectDates.length ? collectDates.sort().slice(-1)[0] : "-";
+  const orderDates = oks.map(s=>s.last_order_date).filter(Boolean);
+  const lastOrder = orderDates.length ? orderDates.sort().slice(-1)[0] : "-";
   document.getElementById("grand").innerHTML =
     `<div class="box today"><div class="label">오늘 (${today}) 3개 쇼핑몰 합계 매출</div>`
     + `<div class="val">${won(grandToday)}</div>`
     + `<div class="sub">${data.ym} 이달 합계 ${won(grandMonth)}</div>`
-    + `<div class="sub">마지막주문수집일자 ${lastCollect}</div></div>`
+    + `<div class="sub">마지막마켓주문일자 ${lastOrder}</div></div>`
     + data.stores.map(s=>`<div class="box"><div class="label">${s.name} (${s.code})</div>`
         + `<div class="val">${s.ok?won(s.today_total||0):"-"}</div>`
         + `<div class="sub">${s.ok?("이달 "+won(s.month_total||0)):"불러오기 실패"}</div>`
-        + `<div class="sub">${s.ok?("수집 "+(s.last_collect_date||"-")):""}</div></div>`).join("");
+        + `<div class="sub">${s.ok?("마지막주문 "+(s.last_order_date||"-")):""}</div></div>`).join("");
   document.getElementById("content").innerHTML =
     '<div class="stores">'+data.stores.map(storeCard).join("")+'</div>';
 }
