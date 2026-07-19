@@ -127,6 +127,7 @@
       $("curveNote").innerHTML = dash.curveNote;
       $("sajuMbti").innerHTML = dash.sajuMbti;
       $("pastLife").innerHTML = dash.pastLife;
+      $("shinsalBox").innerHTML = dash.shinsal;
     }
     var fs = $("freeSections"); fs.innerHTML = "";
     reading.sections.forEach(function (sec, i) {

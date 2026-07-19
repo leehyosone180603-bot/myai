@@ -221,6 +221,21 @@
       '<path d="' + path + '" fill="none" stroke="#d8b25c" stroke-width="2"/>' + dots + labels + "</g></svg>";
   }
 
+  /* ── 내 신살 (타고난 특별한 기운) ── 쉬운 말 라벨 */
+  var SHIN_PLAIN = {
+    "도화살": "💗 매력·인기 (도화살)", "역마살": "✈️ 이동·변화 (역마살)", "화개살": "🎨 예술·감성 (화개살)",
+    "천을귀인": "🍀 귀인·복 (천을귀인)", "문창귀인": "📚 총명·시험 (문창귀인)", "양인살": "⚔️ 강한 승부욕 (양인살)",
+    "백호대살": "🔥 강렬·카리스마 (백호살)", "괴강살": "👑 우두머리 기질 (괴강살)"
+  };
+  function shinsalBox(res) {
+    var arr = D.computeShinsal(res);
+    if (!arr.length) return '<p class="dash-note" style="text-align:center;margin:4px 0 0;">뚜렷한 신살은 없는 편 — 무난하고 균형 잡힌 사주예요.</p>';
+    var chips = arr.map(function (s) {
+      return '<span class="shin-chip' + (s.good ? " good" : "") + '">' + (SHIN_PLAIN[s.key] || s.key) + "</span>";
+    }).join("");
+    return '<div class="shin-wrap">' + chips + '</div><p class="dash-note" style="margin:10px 0 0;">사주에 든 나만의 특별한 기운이에요. (예: 도화살 = 사람을 끄는 매력)</p>';
+  }
+
   function render(res, thisYear, birthYear) {
     var ob = ohengBalance(res), lk = luckIndex(res), lc = lifeCurve(res, thisYear, birthYear),
       mb = sajuMbti(res), pl = pastLife(res);
@@ -234,9 +249,10 @@
         '<p class="lc-cap">세운(1년 단위)</p>' + lineChart(lc.saeun, { labelEvery: 2 }),
       curveNote: lc.note,
       sajuMbti: '<div class="snack-big">' + mb.type + "</div><p class=\"snack-d\">" + mb.desc + "</p>",
-      pastLife: '<div class="snack-big">' + pl.job + "</div><p class=\"snack-d\">" + pl.desc + "</p>"
+      pastLife: '<div class="snack-big">' + pl.job + "</div><p class=\"snack-d\">" + pl.desc + "</p>",
+      shinsal: shinsalBox(res)
     };
   }
 
-  root.SajuDash = { render: render, ohengBalance: ohengBalance, luckIndex: luckIndex, lifeCurve: lifeCurve, sajuMbti: sajuMbti, pastLife: pastLife };
+  root.SajuDash = { render: render, ohengBalance: ohengBalance, luckIndex: luckIndex, lifeCurve: lifeCurve, sajuMbti: sajuMbti, pastLife: pastLife, shinsalBox: shinsalBox };
 })(typeof window !== "undefined" ? window : this);
