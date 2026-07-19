@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ctrl+C 복사 설정</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        width: 280px;
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+          "Segoe UI", Roboto, sans-serif;
+        background: #ffffff;
+        color: #1f2937;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #1f2430;
+          color: #e5e7eb;
+        }
+      }
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 16px 8px;
+      }
+      .header img {
+        width: 32px;
+        height: 32px;
+      }
+      .header h1 {
+        font-size: 15px;
+        margin: 0;
+        font-weight: 600;
+      }
+      .body {
+        padding: 4px 16px 16px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 0;
+      }
+      .row .label {
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .desc {
+        font-size: 12px;
+        line-height: 1.6;
+        color: #6b7280;
+      }
+      @media (prefers-color-scheme: dark) {
+        .desc {
+          color: #9ca3af;
+        }
+      }
+      kbd {
+        display: inline-block;
+        padding: 1px 6px;
+        font-size: 11px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 5px;
+        color: #111827;
+      }
+      @media (prefers-color-scheme: dark) {
+        kbd {
+          background: #374151;
+          border-color: #4b5563;
+          color: #f3f4f6;
+        }
+      }
+      /* 토글 스위치 */
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 46px;
+        height: 26px;
+      }
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background: #cbd5e1;
+        transition: 0.2s;
+        border-radius: 26px;
+      }
+      .slider::before {
+        content: "";
+        position: absolute;
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background: #ffffff;
+        transition: 0.2s;
+        border-radius: 50%;
+      }
+      input:checked + .slider {
+        background: #2563eb;
+      }
+      input:checked + .slider::before {
+        transform: translateX(20px);
+      }
+      hr {
+        border: none;
+        border-top: 1px solid #e5e7eb;
+        margin: 8px 0;
+      }
+      @media (prefers-color-scheme: dark) {
+        hr {
+          border-top-color: #374151;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <img src="icons/icon48.png" alt="아이콘" />
+      <h1>Ctrl+C 복사</h1>
+    </div>
+    <div class="body">
+      <div class="row">
+        <span class="label">사용</span>
+        <label class="switch">
+          <input type="checkbox" id="toggle" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <hr />
+      <p class="desc">
+        <kbd>Ctrl</kbd> + <kbd>C</kbd> 로 선택한 텍스트를 복사합니다.<br />
+        붙여넣기는 <kbd>Command</kbd> + <kbd>V</kbd> 를 그대로 사용하세요.<br />
+        Mac 기본 <kbd>Command</kbd> + <kbd>C</kbd> 복사도 계속 동작합니다.
+      </p>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>

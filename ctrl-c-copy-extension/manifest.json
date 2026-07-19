@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Ctrl+C 복사 (Mac용)",
+  "version": "1.0.0",
+  "description": "Mac에서 Ctrl+C 로 복사할 수 있게 해 줍니다. 붙여넣기는 Command+V 그대로 사용합니다.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Ctrl+C 복사 설정",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "permissions": ["storage"]
+}
