@@ -148,10 +148,6 @@
       ol.appendChild(li);
     });
 
-    // 가격
-    $("priceOrig").textContent = "정가 " + DK.CONFIG.PRICE_ORIGINAL + "원";
-    $("priceNow").textContent = DK.CONFIG.PRICE_NOW + "원";
-
     // 공유 링크
     $("shareUrl").value = buildShareUrl(y, m, d, isLeap, hourKnown, hv, mm, name);
 
@@ -227,7 +223,6 @@
   $("selM").addEventListener("change", updateDays);
   $("selH").addEventListener("change", onHourChange);
   $("goBtn").addEventListener("click", run);
-  $("payBtn").addEventListener("click", goPay);
   $("kakaoBtn").addEventListener("click", kakaoShare);
   $("copyBtn").addEventListener("click", function () { copyText($("shareUrl").value); this.textContent = "복사됨"; var b = this; setTimeout(function () { b.textContent = "복사"; }, 1500); });
   loadFromUrl();

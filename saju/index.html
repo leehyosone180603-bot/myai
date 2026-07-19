@@ -108,7 +108,8 @@
     .price-box { text-align: center; padding: 8px 0; }
     .price-box .orig { color: var(--muted); text-decoration: line-through; font-size: .95rem; }
     .price-box .now { color: var(--gold); font-size: 2.2rem; font-weight: 900; margin: 4px 0; }
-    .btn-pay { width: 100%; padding: 17px; font-size: 1.12rem; font-weight: 800; color: #fff;
+    .btn-pay { display: block; width: 100%; padding: 17px; font-size: 1.12rem; font-weight: 800; color: #fff;
+      text-align: center; text-decoration: none; box-sizing: border-box;
       background: linear-gradient(180deg, #d9463a, #a92c22); border: none; border-radius: 12px; cursor: pointer; }
     .btn-kakao { width: 100%; padding: 15px; font-size: 1.02rem; font-weight: 800; color: #3a1d1d;
       background: #FEE500; border: none; border-radius: 12px; cursor: pointer; display: flex; gap: 8px; align-items: center; justify-content: center; }
@@ -127,6 +128,7 @@
 
     footer { text-align: center; color: var(--muted); font-size: .82rem; padding: 20px 18px 40px; }
     footer a { color: var(--muted); }
+    .coupang-note { color: #6f6a5f; font-size: .76rem; line-height: 1.6; margin: 0 0 12px; padding: 0 6px; }
     .biz-links { margin: 0 0 10px; }
     .biz-links a { color: var(--gold-d); text-decoration: none; }
     .biz-links a:hover { text-decoration: underline; }
@@ -264,19 +266,13 @@
       </div>
 
       <div class="card">
-        <div class="price-box">
-          <p class="mini">도깨비의 전체 풀이 · 지금만</p>
-          <div class="orig" id="priceOrig"></div>
-          <div class="now" id="priceNow"></div>
-        </div>
-        <button class="btn-pay" id="payBtn" type="button">이어서 도깨비의 풀이 보기</button>
-        <p class="mini" style="text-align:center; margin:10px 0 0;">결제 후 아래로 결과 링크를 받을 수 있어요.</p>
+        <a class="btn-pay" id="payBtn" href="https://link.coupang.com/a/fvBcvFadNY" target="_blank" rel="nofollow sponsored noopener">이어서 도깨비의 풀이 보기</a>
       </div>
 
       <!-- 카카오톡 결과 링크 -->
       <div class="card">
-        <h3 style="margin:0 0 6px; font-size:1.05rem;">💬 카카오톡으로 내 결과 받기</h3>
-        <p class="mini" style="margin:0 0 12px;">결제하면 이 카카오톡으로 상세 풀이 결과 링크를 보내드려요. 내 무료 결과를 지금 친구에게 보내줄 수도 있어요.</p>
+        <h3 style="margin:0 0 6px; font-size:1.05rem;">💬 내 결과 공유하기</h3>
+        <p class="mini" style="margin:0 0 12px;">내 무료 사주 결과를 카카오톡으로 친구에게 바로 보내줄 수 있어요.</p>
         <button class="btn-kakao" id="kakaoBtn" type="button">🟡 카카오톡으로 결과 링크 보내기</button>
         <div style="display:flex; gap:8px; margin-top:10px;">
           <input type="text" id="shareUrl" readonly
@@ -293,6 +289,7 @@
   </main>
 
   <footer>
+    <p class="coupang-note">* 이 게시물은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>
     <p class="biz-links">
       <a href="/saju/terms/">이용약관</a> · <a href="/saju/privacy/">개인정보처리방침</a>
     </p>
@@ -305,7 +302,7 @@
   <script src="saju-detail.js?v=2"></script>
   <script src="saju-dokkaebi.js?v=6"></script>
   <script src="saju-dashboard.js?v=2"></script>
-  <script src="saju-ui.js?v=9"></script>
+  <script src="saju-ui.js?v=10"></script>
   <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
 </body>
 </html>
