@@ -1,0 +1,11 @@
+# 빌드 산출물
+build/
+dist/
+__pycache__/
+*.spec
+# 다운로드/수동으로 넣은 매출 엑셀 (개인정보 포함 가능 → 커밋 금지)
+data/*.xls
+data/*.xlsx
+data/*.csv
+data/*.htm
+data/*.html
