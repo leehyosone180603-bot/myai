@@ -8,5 +8,6 @@ module.exports = [].concat(
   require("./age/senior-benefits-age.js"),
   require("./age/milestone-ages.js"),
   require("./age/rrn-age-decode.js"),
-  require("./age/age-table-2026.js")
+  require("./age/age-table-2026.js"),
+  require("./age/zodiac-year-age.js")
 );
