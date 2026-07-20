@@ -226,7 +226,23 @@
   $("selM").addEventListener("change", updateDays);
   $("selH").addEventListener("change", onHourChange);
   $("goBtn").addEventListener("click", function () { track("saju_calc_click"); run(); });
-  if ($("payBtn")) $("payBtn").addEventListener("click", function () { track("cta_click", { location: "saju", dest: "coupang" }); });
+  if ($("payBtn")) $("payBtn").addEventListener("click", function () { track("cta_click", { location: "saju", dest: "detail" }); });
+  // Fake Door: 유료(9,900원) 수요 검증
+  if ($("fakePayBtn")) $("fakePayBtn").addEventListener("click", function () {
+    track("fake_pay_click", { price: 9900, sku: "premium_report" });
+    $("notifyModal").classList.remove("hidden");
+  });
+  if ($("notifyBtn")) $("notifyBtn").addEventListener("click", function () {
+    track("fake_pay_notify", { price: 9900 });
+    $("notifyTitle").textContent = "🙏 신청 완료!";
+    $("notifyBody").innerHTML = "오픈하면 가장 먼저 알려드릴게요. 관심 가져주셔서 고맙습니다!";
+    this.style.display = "none";
+    $("notifyClose").textContent = "닫기";
+  });
+  if ($("notifyClose")) $("notifyClose").addEventListener("click", function () {
+    track("fake_pay_dismiss");
+    $("notifyModal").classList.add("hidden");
+  });
   $("kakaoBtn").addEventListener("click", function () { track("share_click", { location: "saju", channel: "kakao" }); kakaoShare(); });
   $("copyBtn").addEventListener("click", function () { copyText($("shareUrl").value); this.textContent = "복사됨"; var b = this; setTimeout(function () { b.textContent = "복사"; }, 1500); });
   loadFromUrl();

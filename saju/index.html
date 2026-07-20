@@ -277,8 +277,25 @@
         <ol class="paid-list" id="paidList"></ol>
       </div>
 
+      <!-- 프리미엄 정밀 리포트 (유료 수요 검증용 Fake Door) -->
+      <div class="card" id="premiumCard" style="border-color:var(--gold-d);">
+        <div class="price-box">
+          <p class="mini" style="color:var(--gold); font-weight:800; letter-spacing:.02em;">🔮 프리미엄 정밀 사주 리포트</p>
+          <div class="orig" id="premOrig">정가 29,900원</div>
+          <div class="now" id="premNow">9,900원</div>
+        </div>
+        <ul style="list-style:none; padding:0; margin:6px 0 16px; color:#d8d2c6; font-size:.92rem;">
+          <li style="padding:6px 0; border-bottom:1px dashed var(--line);">✔ 20페이지 평생 소장용 PDF 리포트</li>
+          <li style="padding:6px 0; border-bottom:1px dashed var(--line);">✔ 10년 대운·올해 월별 운세 정밀 분석</li>
+          <li style="padding:6px 0; border-bottom:1px dashed var(--line);">✔ 재물·연애·직업 심층 + 나만의 개운 처방</li>
+          <li style="padding:6px 0;">✔ 태어난 시간 보정·신살 상세 풀이</li>
+        </ul>
+        <button class="btn-pay" id="fakePayBtn" type="button">🔒 프리미엄 리포트 결제하고 보기 · 9,900원</button>
+        <p class="mini" style="text-align:center; margin:10px 0 0;">결제 즉시 PDF로 받아보실 수 있어요.</p>
+      </div>
+
       <div class="card">
-        <a class="btn-pay" id="payBtn" href="/saju/detail/">이어서 도깨비의 풀이 보기</a>
+        <a class="btn-pay" id="payBtn" href="/saju/detail/" style="background:linear-gradient(180deg,#3a3550,#2a2740);">이어서 무료 풀이 더 보기</a>
       </div>
 
       <!-- 카카오톡 결과 링크 -->
@@ -300,6 +317,16 @@
     </section>
   </main>
 
+  <!-- 프리미엄 리포트 오픈 알림 모달 (Fake Door 수요 검증) -->
+  <div class="modal-bg hidden" id="notifyModal">
+    <div class="modal">
+      <h2 id="notifyTitle">🔔 프리미엄 리포트, 곧 오픈해요!</h2>
+      <p id="notifyBody">현재 <b style="color:var(--gold);">프리미엄 정밀 사주 리포트</b>를 준비 중입니다.<br>정식 오픈하면 가장 먼저 알려드릴까요?</p>
+      <button id="notifyBtn" type="button">네, 오픈 알림 받을게요 🔔</button>
+      <button id="notifyClose" type="button" style="background:transparent; color:var(--muted); border:1px solid var(--line); margin-top:8px;">그냥 둘러볼게요</button>
+    </div>
+  </div>
+
   <footer>
     <p class="biz-links">
       <a href="/saju/terms/">이용약관</a> · <a href="/saju/privacy/">개인정보처리방침</a>
@@ -313,7 +340,7 @@
   <script src="saju-detail.js?v=2"></script>
   <script src="saju-dokkaebi.js?v=6"></script>
   <script src="saju-dashboard.js?v=3"></script>
-  <script src="saju-ui.js?v=12"></script>
+  <script src="saju-ui.js?v=13"></script>
   <script src="monetize.js?v=4"></script>
   <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
 </body>
