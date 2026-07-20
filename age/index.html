@@ -98,6 +98,14 @@
       </table>
     </section>
 
+    <!-- 도깨비 사주 크로스 유입 (결과 직후 노출) -->
+    <section class="card" id="sajuCta" hidden style="border:1px solid #b8923d; background:linear-gradient(180deg,#1c1622,#17131c); text-align:center;">
+      <p style="color:#d8b25c; font-weight:800; font-size:1.06rem; margin:2px 0 6px;">🔮 생년월일 나온 김에, 내 사주도 볼까요?</p>
+      <p style="color:#b8b2a6; font-size:.9rem; margin:0 0 14px; line-height:1.6;">도깨비가 당신의 <strong style="color:#e6c469;">재물·연애·올해 운</strong>까지 무료로 풀어줍니다. 생년월일만 넣으면 끝.</p>
+      <a href="/saju/?from=age" id="sajuCtaBtn" style="display:inline-block; width:100%; box-sizing:border-box; padding:16px; font-size:1.1rem; font-weight:800; color:#fff; background:linear-gradient(180deg,#e0473a,#c4342a); border-radius:12px; text-decoration:none; box-shadow:0 6px 18px rgba(196,52,42,.35);">🔮 무료로 내 사주 보기 →</a>
+      <p style="color:#6f6a5f; font-size:.75rem; margin:10px 0 0;">재미·참고용 · 100% 무료</p>
+    </section>
+
     <section class="card info">
       <h2>이용 안내</h2>
       <ul>
@@ -141,5 +149,18 @@
   </footer>
 
   <script src="age.js?v=1"></script>
+  <script>
+    (function () {
+      var res = document.getElementById("resultsCard"), cta = document.getElementById("sajuCta");
+      if (res && cta) {
+        new MutationObserver(function () { if (!res.hidden) cta.hidden = false; })
+          .observe(res, { attributes: true, attributeFilter: ["hidden"] });
+      }
+      var link = document.getElementById("sajuCtaBtn");
+      if (link) link.addEventListener("click", function () {
+        if (window.gtag) { try { gtag("event", "cross_to_saju_click", { from: "age" }); } catch (e) {} }
+      });
+    })();
+  </script>
 </body>
 </html>
