@@ -1,0 +1,16 @@
+# ── Core pipeline ────────────────────────────────────────────────
+anthropic>=0.40.0        # AI 1차 선별 + 카피/스크립트 작성 (Claude)
+feedparser>=6.0.11       # 해외 뉴스 RSS 파싱
+PyYAML>=6.0.2            # config/ai.yaml 로드
+requests>=2.32.0         # 텔레그램 / 힉스필드 / 인스타그램 Graph API HTTP
+python-dotenv>=1.0.1     # .env 로드
+Pillow>=10.4.0           # 카드뉴스 렌더링 (템플릿 합성)
+
+# ── 선택: 이미지 생성 provider (택1) ──────────────────────────────
+# google-genai>=0.3.0     # 추천: Gemini(Imagen) 이미지 생성 — RECOMMENDATIONS.md 참고
+# (Grok 이미지 생성은 xAI OpenAI-호환 엔드포인트를 requests로 직접 호출 → 별도 패키지 불필요)
+
+# ── 릴스(영상) 파이프라인 ────────────────────────────────────────
+# ffmpeg 는 시스템 바이너리(별도 apt/brew 설치). 파이썬 패키지 아님.
+#   ubuntu: sudo apt-get install -y ffmpeg
+#   macos : brew install ffmpeg

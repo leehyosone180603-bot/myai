@@ -1,0 +1,10 @@
+# 비밀값 / 런타임 산출물
+.env
+out/
+*.pyc
+__pycache__/
+.venv/
+venv/
+assets/music/*.mp3
+# 데모 샘플은 커밋 (docs/samples 는 예외)
+!docs/samples/*.png

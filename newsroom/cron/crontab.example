@@ -1,0 +1,10 @@
+# newsroom 크론 예시 (crontab -e 로 등록)
+# 경로/파이썬은 실제 환경에 맞게 수정하세요. .venv 사용 권장.
+#
+# 매일 07:30 · 12:30 · 18:30 에 수집→선별→텔레그램 검토요청
+30 7,12,18 * * *  cd /path/to/newsroom && /path/to/newsroom/.venv/bin/python run_ai.py >> out/cron.log 2>&1
+#
+# 승인 데몬(run_ai_bot.py)은 크론이 아니라 상시 서비스로 실행하세요:
+#   - Linux(systemd) : newsroom-bot.service 로 등록 (Restart=always)
+#   - macOS(launchd) : ~/Library/LaunchAgents/com.newsroom.bot.plist (KeepAlive=true)
+#   - 간단 실행       : nohup /path/to/.venv/bin/python run_ai_bot.py &

@@ -1,0 +1,92 @@
+# ═══════════════════════════════════════════════════════════════════
+#  newsroom 파이프라인 설정
+#  - 소스(RSS), 1차 필터 기준, 브랜드/카드뉴스 템플릿, 릴스/음성 설정
+#  - 비밀값(API 키)은 여기 넣지 말고 .env 에 두세요.
+# ═══════════════════════════════════════════════════════════════════
+
+# ── STEP 1 · 매일 소식 수집 (해외 이슈 RSS) ─────────────────────────
+sources:
+  # name: 로그/카드 라벨용,  url: RSS 피드,  lang: 원문 언어
+  - name: BBC World
+    url: https://feeds.bbci.co.uk/news/world/rss.xml
+    lang: en
+  - name: Reuters World
+    url: https://www.reutersagency.com/feed/?best-topics=world&post_type=best
+    lang: en
+  - name: The Verge
+    url: https://www.theverge.com/rss/index.xml
+    lang: en
+
+collect:
+  max_per_source: 15        # 소스별 최근 N건
+  lookback_hours: 36        # 최근 N시간 이내 기사만
+  min_summary_chars: 120    # 본문/요약이 너무 짧으면 제외 (엣날기사/스텁 차단)
+  dedup: true               # 제목 유사 중복 제거
+
+# ── STEP 1 · AI 1차 선별 ───────────────────────────────────────────
+filter:
+  model: claude-opus-4-8
+  keep: 3                   # 텔레그램으로 보낼 후보 개수
+  # 선별 기준(프롬프트에 주입). 우리 채널 톤에 맞게 수정하세요.
+  audience: "20~30대 한국 인스타그램 사용자"
+  criteria: |
+    - 카드뉴스/릴스로 만들기 좋은, 시각적이고 흥미로운 해외 소식
+    - 한국 독자가 '오, 이건 몰랐네' 할 만한 신선도(옛날 이슈/속보 단순 업데이트 제외)
+    - 정치/재난 자극·혐오·논란 소지가 큰 주제는 제외
+    - 경제 이슈 카드, 해외 토픽, 화제의 뉴스, 오늘의 소식 카테고리에 적합
+
+# ── STEP 3 · 작가(카피/스크립트) ───────────────────────────────────
+writer:
+  model: claude-opus-4-8
+  card_slides: 4            # 카드뉴스 슬라이드 수 (표지 1 + 본문 N)
+  # mood 는 릴스 배경음악 선택에 사용됨 (music.tracks 의 mood 와 매칭)
+  moods: [calm, upbeat, dramatic, curious]
+
+# ── STEP 3 · 카드뉴스 템플릿 (첨부 5번째 사진 구조를 코드로 재현) ──────
+card:
+  size: [1080, 1350]        # 인스타 4:5 세로 (릴스 커버와 동일 비율)
+  brand: "@your_handle"     # 우하단 워터마크
+  category_labels:          # AI writer 가 고른 카테고리 → 좌상단 칩 라벨/색
+    economy:  { text: "📈 경제 이슈",  color: "#2E7D32" }
+    world:    { text: "🌍 해외 토픽",  color: "#1565C0" }
+    hot:      { text: "🔥 화제의 뉴스", color: "#C62828" }
+    today:    { text: "🗞 오늘의 소식", color: "#455A64" }
+  # 폰트: 한국어 지원 폰트 경로. 없으면 시스템에서 자동 탐색(cardnews.py 참조).
+  #  운영 시 Pretendard / NotoSansKR 등을 assets/fonts 에 넣고 경로 지정 권장.
+  font_bold: ""             # 예: assets/fonts/Pretendard-Bold.otf
+  font_regular: ""          # 예: assets/fonts/Pretendard-Regular.otf
+  title_max_lines: 2
+  overlay_opacity: 0.55     # 하단 가독성 그라데이션 진하기 (0~1)
+
+# ── STEP 3 · 릴스(영상) ────────────────────────────────────────────
+reels:
+  size: [1080, 1920]        # 9:16
+  provider: higgsfield      # 영상 소스 생성 provider
+  clip_seconds: 5           # 힉스필드 클립 길이(초). 스크립트 문장 수만큼 생성
+  fps: 30
+  tts:
+    provider: elevenlabs    # elevenlabs | google  (tts.py 참조)
+    voice: "korean_female"  # provider 별 voice id 로 교체
+  # 저작권 무관 배경음악 (미리 확보). mood 로 자동 선택.
+  bgm_volume: 0.18          # 나레이션 대비 배경음악 볼륨(0~1)
+
+music:
+  dir: assets/music         # 배경음악 파일 폴더
+  tracks:
+    - { file: calm.mp3,     mood: calm }
+    - { file: upbeat.mp3,   mood: upbeat }
+    - { file: dramatic.mp3, mood: dramatic }
+    - { file: curious.mp3,  mood: curious }
+
+# ── STEP 3 · 이미지 생성 ───────────────────────────────────────────
+image:
+  provider: gemini          # gemini | grok  (RECOMMENDATIONS.md 권장: gemini)
+  size: [1080, 1350]        # 카드 배경과 동일 비율
+  style: |
+    editorial photo illustration, clean, high detail, natural lighting,
+    no text, no watermark, no logos, safe-for-work
+
+# ── 출력/상태 ──────────────────────────────────────────────────────
+output:
+  dir: out                  # 생성물(카드/릴스) 저장 폴더
+  state_file: out/state.json  # 승인 대기/발행 상태 저장
