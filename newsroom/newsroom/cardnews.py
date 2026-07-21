@@ -26,16 +26,20 @@ _KO_FONT_CANDIDATES = [
     "**/Pretendard*.otf", "**/Pretendard*.ttf",
     "**/NotoSansKR*.otf", "**/NotoSansKR*.ttf",
     "**/NanumGothic*.ttf", "**/NanumBarunGothic*.ttf",
-    # 컨테이너 기본 CJK 폴백 (한글 글리프 포함)
-    "/usr/share/fonts/**/wqy-zenhei.ttc",
-    "/usr/share/fonts/**/*CJK*.ttc", "/usr/share/fonts/**/*CJK*.otf",
+    # Windows 기본 한글 폰트 (맑은 고딕)
+    "**/malgunbd.ttf", "**/malgun.ttf",
+    # macOS 기본 한글 폰트
     "/System/Library/Fonts/**/AppleSDGothicNeo.ttc",
     "/System/Library/Fonts/**/*.ttc",
+    # Linux/컨테이너 CJK 폴백 (한글 글리프 포함)
+    "/usr/share/fonts/**/wqy-zenhei.ttc",
+    "/usr/share/fonts/**/*CJK*.ttc", "/usr/share/fonts/**/*CJK*.otf",
     # 최후: 라틴 전용 (한글은 안 나오지만 크래시 방지)
     "/usr/share/fonts/**/DejaVuSans*.ttf",
 ]
 _FONT_SEARCH_ROOTS = ["/usr/share/fonts", "/System/Library/Fonts", "/Library/Fonts",
-                      os.path.expanduser("~/.fonts")]
+                      os.path.expanduser("~/.fonts"),
+                      r"C:\Windows\Fonts", os.path.expanduser("~/AppData/Local/Microsoft/Windows/Fonts")]
 
 
 def _find_font(explicit: str, bold: bool) -> str:
