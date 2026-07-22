@@ -254,9 +254,9 @@
   {
     "slug": "birthyear-to-hakbeon",
     "title": "몇년생 몇 학번? 출생연도–학번 환산표 (재수·빠른년생 포함)",
-    "date": "",
+    "date": "2026.07.22",
     "excerpt": "출생연도 + 19 = 입학연도. 현역 기준 학번 환산표와 재수·빠른년생 예외까지 정리했습니다.",
-    "published": false
+    "published": true
   },
   {
     "slug": "pension-start-age",
