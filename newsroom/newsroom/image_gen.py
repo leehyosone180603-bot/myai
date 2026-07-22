@@ -16,8 +16,9 @@ import requests
 from .config import Config
 
 
-def generate(cfg: Config, prompt: str, out_path: Path) -> str | None:
+def generate(cfg: Config, prompt: str, out_path: Path | str) -> str | None:
     """프롬프트로 이미지 1장 생성 → 파일 저장 후 경로 반환. 실패/키없음 시 None."""
+    out_path = Path(out_path)  # 문자열 경로도 허용
     provider = cfg.get("image.provider", "gemini")
     style = cfg.get("image.style", "")
     full_prompt = f"{prompt}. {style}".strip()
@@ -65,19 +66,19 @@ def _grok(cfg: Config, prompt: str, out_path: Path) -> str | None:
     if not key:
         return None
     # xAI 는 OpenAI 호환 images 엔드포인트 제공
-    model = cfg.get("image.grok_model", "grok-2-image")
+    model = cfg.get("image.grok_model", "grok-imagine-image")
     resp = requests.post(
         "https://api.x.ai/v1/images/generations",
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-        json={"model": model, "prompt": prompt, "response_format": "b64_json"},
-        timeout=120,
+        json={"model": model, "prompt": prompt},
+        timeout=180,
     )
     resp.raise_for_status()
     data = resp.json()["data"][0]
-    if "b64_json" in data:
+    if data.get("b64_json"):
         raw = base64.b64decode(data["b64_json"])
-    else:  # url 형태 폴백
-        raw = requests.get(data["url"], timeout=120).content
+    else:  # grok-imagine-image 는 url 로 반환
+        raw = requests.get(data["url"], timeout=180).content
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_bytes(raw)
     return str(out_path)
