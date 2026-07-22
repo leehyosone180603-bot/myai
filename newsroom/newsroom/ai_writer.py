@@ -55,7 +55,7 @@ def write(cfg: Config, cand: Candidate) -> ContentPlan:
 - mood: 릴스 배경음악 무드 (calm | upbeat | dramatic | curious).
 """
 
-    result = structured(model, system, user, _SCHEMA, max_tokens=3000)
+    result = structured(cfg, system, user, _SCHEMA, model=model, max_tokens=3000)
 
     # 슬라이드/프롬프트 개수 정합성 보정
     card_slides = result.get("card_slides", [])[:slides]

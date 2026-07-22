@@ -59,7 +59,7 @@ def select(cfg: Config, articles: list[Article]) -> list[Candidate]:
         + _format_articles(articles)
     )
 
-    result = structured(model, system, user, _SCHEMA, max_tokens=2000)
+    result = structured(cfg, system, user, _SCHEMA, model=model, max_tokens=2000)
     by_id = {a.id: a for a in articles}
 
     picks: list[Candidate] = []

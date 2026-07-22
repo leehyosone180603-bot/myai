@@ -4,6 +4,13 @@
 #  - 비밀값(API 키)은 여기 넣지 말고 .env 에 두세요.
 # ═══════════════════════════════════════════════════════════════════
 
+# ── 선별/작가에 쓸 LLM 백엔드 선택 ─────────────────────────────────
+ai:
+  provider: claude              # claude | gemini
+  claude_model: claude-opus-4-8 # provider=claude 일 때 (저렴: claude-haiku-4-5)
+  gemini_model: gemini-2.5-flash # provider=gemini 일 때 (고품질: gemini-2.5-pro)
+  #  Gemini 는 Google AI Studio API 키(GOOGLE_API_KEY) 필요. 무료 사용량 있음.
+
 # ── STEP 1 · 매일 소식 수집 (해외 이슈 RSS) ─────────────────────────
 sources:
   # name: 로그/카드 라벨용,  url: RSS 피드,  lang: 원문 언어
