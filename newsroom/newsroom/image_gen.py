@@ -65,10 +65,11 @@ def _grok(cfg: Config, prompt: str, out_path: Path) -> str | None:
     if not key:
         return None
     # xAI 는 OpenAI 호환 images 엔드포인트 제공
+    model = cfg.get("image.grok_model", "grok-2-image")
     resp = requests.post(
         "https://api.x.ai/v1/images/generations",
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-        json={"model": "grok-2-image", "prompt": prompt, "response_format": "b64_json"},
+        json={"model": model, "prompt": prompt, "response_format": "b64_json"},
         timeout=120,
     )
     resp.raise_for_status()
