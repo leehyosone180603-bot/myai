@@ -147,64 +147,100 @@ def _wrap(draw, text: str, font, max_width: int, max_lines: int) -> list[str]:
     return lines
 
 
-def _rounded_chip(draw, xy, text, font, bg, radius=18, pad=(22, 12)):
-    x, y = xy
-    tb = draw.textbbox((0, 0), text, font=font)
-    tw, th = tb[2] - tb[0], tb[3] - tb[1]
-    w, h = tw + pad[0] * 2, th + pad[1] * 2
-    draw.rounded_rectangle([x, y, x + w, y + h], radius=radius, fill=bg)
-    draw.text((x + pad[0], y + pad[1] - tb[1]), text, font=font, fill="white")
-    return h
+def _text_size(draw, text, font):
+    b = draw.textbbox((0, 0), text, font=font)
+    return b[2] - b[0], b[3] - b[1], b[1]  # width, height, top-offset
 
 
-def render_card(cfg: Config, *, title: str, category: str, body: str = "",
-                bg_path: str | None, out_path: Path, is_cover: bool = True) -> Path:
-    """카드 1장 렌더링."""
+def _draw_top(draw, x, y_top, text, font, fill, shadow=None):
+    """글자의 '시각적 윗변'이 y_top 에 오도록 그린다. 높이 반환."""
+    _, hgt, top = _text_size(draw, text, font)
+    if shadow:
+        dx, dy, sc = shadow
+        draw.text((x + dx, y_top - top + dy), text, font=font, fill=sc)
+    draw.text((x, y_top - top), text, font=font, fill=fill)
+    return hgt
+
+
+def _counter_pill(draw, right_x, top_y, text, font):
+    """우측 정렬 슬라이드 카운터(1/16) 알약. (폭, 높이) 반환."""
+    tw, th, top = _text_size(draw, text, font)
+    padx, pady = int(th * 0.9), int(th * 0.55)
+    pw, ph = tw + padx * 2, th + pady * 2
+    x0 = right_x - pw
+    draw.rounded_rectangle([x0, top_y, x0 + pw, top_y + ph], radius=ph // 2, fill=(0, 0, 0, 120))
+    draw.text((x0 + padx, top_y + pady - top), text, font=font, fill=(255, 255, 255, 235))
+    return pw, ph
+
+
+def render_card(cfg: Config, *, title: str, category: str = "", body: str = "",
+                bg_path: str | None, out_path: Path, is_cover: bool = True,
+                slide_index: int = 1, slide_total: int = 1) -> Path:
+    """카드 1장 렌더링 (레퍼런스 스타일: 카운터 배지 · 큰 좌하단 제목 · 팔로우/태그라인)."""
     w, h = cfg.get("card.size", [1080, 1350])
-    labels = cfg.get("card.category_labels", {})
-    label = labels.get(category, labels.get("today", {"text": category, "color": "#455A64"}))
-    brand = cfg.get("card.brand", "")
-    opacity = float(cfg.get("card.overlay_opacity", 0.55))
+    handle = cfg.get("card.brand", "")
+    follow = (cfg.get("card.follow_prefix", "팔로우 ") + handle) if handle else ""
+    tagline = cfg.get("card.tagline", "")
+    brand_top = cfg.get("card.brand_top", "")
+    show_counter = bool(cfg.get("card.show_counter", True))
+    opacity = float(cfg.get("card.overlay_opacity", 0.5))
 
-    # 1) 배경
+    # 1) 배경 (풀블리드 cover-fit)
     if bg_path and Path(bg_path).exists():
         bg = _cover_fit(Image.open(bg_path).convert("RGB"), w, h)
     else:
         bg = _placeholder_bg(w, h, seed=title)
     canvas = bg.convert("RGBA")
 
-    # 3) 하단 가독성 그라데이션
+    # 2) 하단 가독성 그라데이션
     canvas.alpha_composite(_bottom_gradient(w, h, opacity))
 
     draw = ImageDraw.Draw(canvas)
-    margin = int(w * 0.055)
+    margin = int(w * 0.06)
 
-    # 2) 좌상단 카테고리 칩
-    chip_font = _font(cfg, int(w * 0.032), bold=True)
-    _rounded_chip(draw, (margin, margin), label["text"], chip_font, bg=label["color"])
+    # 3) 우상단: 카운터 배지 + (선택) 브랜드 문구
+    pill_left = w - margin
+    ph = 0
+    if show_counter and slide_total > 1:
+        pw, ph = _counter_pill(draw, w - margin, margin,
+                               f"{slide_index}/{slide_total}", _font(cfg, int(w * 0.030), bold=True))
+        pill_left = w - margin - pw
+    if brand_top:
+        bf = _font(cfg, int(w * 0.026), bold=False)
+        bw, bh, btop = _text_size(draw, brand_top, bf)
+        by = margin + (ph - bh) // 2 if ph else margin
+        draw.text((pill_left - int(w * 0.02) - bw, by - btop), brand_top,
+                  font=bf, fill=(255, 255, 255, 195))
 
-    # 4) 좌하단 제목 (표지) 또는 본문 (내지)
+    # 4) 하단 블록: (아래→위) 태그라인 · 팔로우
+    y_bottom = h - margin
+    if tagline:
+        tag_h = _draw_top(draw, margin, y_bottom - _text_size(draw, tagline, _font(cfg, int(w * 0.026), True))[1],
+                          tagline, _font(cfg, int(w * 0.026), bold=True), fill=(255, 255, 255, 235),
+                          shadow=(2, 2, (0, 0, 0, 140)))
+        y_bottom -= tag_h + int(h * 0.010)
+    follow_top = None
+    if follow:
+        fh = _text_size(draw, follow, _font(cfg, int(w * 0.028), False))[1]
+        follow_top = y_bottom - fh
+        _draw_top(draw, margin, follow_top, follow, _font(cfg, int(w * 0.028), bold=False),
+                  fill=(255, 255, 255, 235), shadow=(2, 2, (0, 0, 0, 140)))
+    else:
+        follow_top = y_bottom
+
+    # 5) 제목(표지) 또는 본문(내지) — 크고 굵게, 좌하단 블록 위에 배치
     text = title if is_cover else (body or title)
-    max_lines = int(cfg.get("card.title_max_lines", 2)) if is_cover else 4
-    font_size = int(w * (0.072 if is_cover else 0.050))
+    max_lines = int(cfg.get("card.title_max_lines", 3)) if is_cover else 5
+    font_size = int(w * (0.088 if is_cover else 0.056))
     tfont = _font(cfg, font_size, bold=True)
     lines = _wrap(draw, text, tfont, max_width=w - margin * 2, max_lines=max_lines)
-
-    line_h = int(font_size * 1.22)
-    total_h = line_h * len(lines)
-    y = h - margin - total_h - int(h * 0.02)
+    line_h = int(font_size * 1.16)
+    title_bottom = follow_top - int(h * 0.03)
+    y = title_bottom - line_h * len(lines)
     for ln in lines:
-        # 가독성 위해 미세한 그림자
-        draw.text((margin + 2, y + 2), ln, font=tfont, fill=(0, 0, 0, 160))
+        draw.text((margin + 3, y + 3), ln, font=tfont, fill=(0, 0, 0, 170))  # 그림자
         draw.text((margin, y), ln, font=tfont, fill="white")
         y += line_h
-
-    # 4) 우하단 워터마크
-    if brand:
-        wfont = _font(cfg, int(w * 0.026), bold=False)
-        wb = draw.textbbox((0, 0), brand, font=wfont)
-        draw.text((w - margin - (wb[2] - wb[0]), h - margin - (wb[3] - wb[1]) - 4),
-                  brand, font=wfont, fill=(255, 255, 255, 210))
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     canvas.convert("RGB").save(out_path, "PNG", quality=95)
@@ -215,6 +251,7 @@ def render_bundle(cfg: Config, plan: ContentPlan, bg_paths: list[str | None],
                   out_dir: Path, slug: str) -> list[str]:
     """표지 + 본문 슬라이드 전체를 렌더링해 파일 경로 리스트 반환."""
     paths: list[str] = []
+    total = len(plan.card_slides)
     for i, slide_text in enumerate(plan.card_slides):
         bg = bg_paths[i] if i < len(bg_paths) else None
         out = out_dir / f"{slug}_card{i + 1}.png"
@@ -226,6 +263,8 @@ def render_bundle(cfg: Config, plan: ContentPlan, bg_paths: list[str | None],
             bg_path=bg,
             out_path=out,
             is_cover=(i == 0),
+            slide_index=i + 1,
+            slide_total=total,
         )
         paths.append(str(out))
     return paths

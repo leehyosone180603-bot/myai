@@ -52,18 +52,18 @@ writer:
 # ── STEP 3 · 카드뉴스 템플릿 (첨부 5번째 사진 구조를 코드로 재현) ──────
 card:
   size: [1080, 1350]        # 인스타 4:5 세로 (릴스 커버와 동일 비율)
-  brand: "@your_handle"     # 우하단 워터마크
-  category_labels:          # AI writer 가 고른 카테고리 → 좌상단 칩 라벨/색
-    economy:  { text: "📈 경제 이슈",  color: "#2E7D32" }
-    world:    { text: "🌍 해외 토픽",  color: "#1565C0" }
-    hot:      { text: "🔥 화제의 뉴스", color: "#C62828" }
-    today:    { text: "🗞 오늘의 소식", color: "#455A64" }
-  # 폰트: 한국어 지원 폰트 경로. 없으면 시스템에서 자동 탐색(cardnews.py 참조).
+  # ── 레퍼런스 스타일: 카운터 배지 + 큰 좌하단 제목 + 팔로우/태그라인 ──
+  brand: "@your_handle"     # 좌하단 팔로우 핸들
+  follow_prefix: "팔로우 "  # 핸들 앞에 붙는 문구 (없애려면 "")
+  tagline: "Mindset · Resilience · Professional"   # 좌하단 키워드 태그라인
+  brand_top: ""             # 우상단 작은 브랜드 문구 (예: "The Daily Brief")
+  show_counter: true        # 우상단 슬라이드 카운터(1/N) 배지
+  title_max_lines: 3        # 표지 제목 최대 줄 수
+  overlay_opacity: 0.5      # 하단 가독성 그라데이션 진하기 (0~1)
+  # 폰트: 한국어 지원 폰트 경로. 없으면 시스템에서 자동 탐색(Windows 맑은고딕 포함).
   #  운영 시 Pretendard / NotoSansKR 등을 assets/fonts 에 넣고 경로 지정 권장.
   font_bold: ""             # 예: assets/fonts/Pretendard-Bold.otf
   font_regular: ""          # 예: assets/fonts/Pretendard-Regular.otf
-  title_max_lines: 2
-  overlay_opacity: 0.55     # 하단 가독성 그라데이션 진하기 (0~1)
 
 # ── STEP 3 · 릴스(영상) ────────────────────────────────────────────
 reels:
