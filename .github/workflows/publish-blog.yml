@@ -5,8 +5,10 @@ name: 블로그 예약 발행 (하루 1편)
 # 참고: GitHub 예약(schedule) 워크플로는 기본 브랜치(main)에서만 실행됩니다.
 # 일시 중지하려면 아래 schedule 블록을 주석(#) 처리하세요.
 on:
-  schedule:
-    - cron: "0 0 * * *"   # 매일 09:00 KST
+  # AdSense 심사 대비 자동발행 중단: 저품질 대량 자동생성 콘텐츠가 승인을 막아
+  # schedule 블록을 주석 처리함. 재개하려면 아래 두 줄의 주석을 해제하세요.
+  # schedule:
+  #   - cron: "0 0 * * *"   # 매일 09:00 KST
   workflow_dispatch:   # 수동 실행(테스트)용
 
 permissions:
