@@ -44,10 +44,12 @@ def _gemini(cfg: Config, prompt: str, out_path: Path) -> str | None:
         return None
 
     client = genai.Client(api_key=key)
+    model = cfg.get("image.gemini_model", "imagen-4.0-generate-001")
+    ar = cfg.get("image.aspect_ratio", "3:4")
     resp = client.models.generate_images(
-        model="imagen-4.0-generate-001",
+        model=model,
         prompt=prompt,
-        config={"number_of_images": 1, "aspect_ratio": "4:5"},
+        config={"number_of_images": 1, "aspect_ratio": ar},
     )
     if not resp.generated_images:
         return None
