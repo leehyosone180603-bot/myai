@@ -46,7 +46,7 @@ def collect_and_review(cfg: Config, store: Store) -> list[Candidate]:
 
 
 # ── 2) 승인 → 생성 → 발행 ──────────────────────────────────────────
-def generate_and_publish(cfg: Config, cand: Candidate) -> Bundle:
+def generate_and_publish(cfg: Config, cand: Candidate, publish: bool = True) -> Bundle:
     out_dir = cfg.out_dir
     slug = _slug(cand)
     bundle = Bundle(candidate=cand)
@@ -64,6 +64,11 @@ def generate_and_publish(cfg: Config, cand: Candidate) -> Bundle:
     print("STEP 3 · 릴스(TTS + 힉스필드 + 합성)")
     narration = tts.synthesize(cfg, plan.reels_script, out_dir / f"{slug}_narration.mp3")
     bundle.reel_path = reels.build(cfg, plan, narration, out_dir, slug) or ""
+
+    if not publish:
+        print("STEP 4 · 발행 생략 (--no-publish) — 파일만 생성했습니다")
+        print(f"  📁 카드 {len(bundle.card_paths)}장, 릴스: {bundle.reel_path or '없음'}  → {out_dir}")
+        return bundle
 
     print("STEP 4 · 인스타그램 업로드")
     ig = instagram.Instagram(cfg)

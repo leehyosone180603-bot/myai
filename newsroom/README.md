@@ -60,6 +60,10 @@ python demo_cards.py                # docs/samples/*.png 재생성
 # 1) 선별 결과만 콘솔로 확인 (ANTHROPIC_API_KEY 필요)
 python run_ai.py --dry
 
+# 1-b) 발행 직전까지 로컬 테스트: 수집→선별→원고→이미지→카드/릴스 파일 생성 (텔레그램/인스타 없이)
+python run_ai.py --generate            # out/ 에 결과물 생성, 인스타 발행은 안 함
+# python run_ai.py --generate --publish  # 인스타 발행까지 진행
+
 # 2) 매일 실행: 수집 → 선별 → 텔레그램 검토 요청  (크론에 등록)
 python run_ai.py
 
