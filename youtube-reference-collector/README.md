@@ -30,6 +30,9 @@ pip install -r requirements.txt
 의존성은 `google-api-python-client` 와 `python-dotenv` 두 개뿐이며,
 CSV/JSON 저장은 파이썬 표준 라이브러리만 사용합니다(별도 pandas 불필요).
 
+모든 기능(검색 → 통계 수집 → 채널 평균 → 필터/정렬 → 출력)은 **`collect.py` 파일 하나**에
+들어 있습니다. `chmod +x collect.py` 후 `./collect.py "주제어"` 로 바로 실행할 수도 있습니다.
+
 ---
 
 ## API 키 발급 방법
