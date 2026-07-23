@@ -70,6 +70,12 @@ def generate_and_publish(cfg: Config, cand: Candidate, publish: bool = True) -> 
     print("STEP 3 · 이미지 생성")
     mode = cfg.get("card.publish", "single")
     n = 1 if mode == "single" else len(plan.card_slides)   # 단일이면 썸네일 1장만
+    # 원본 사진 URL 확보: RSS 에 없으면 기사 페이지의 대표 이미지(og:image) 사용
+    if not cand.article.image_url and bool(cfg.get("image.use_original", True)):
+        hero = image_gen.fetch_hero_image(cand.article.url)
+        if hero:
+            cand.article.image_url = hero
+            print("  · 원본 사진: 기사 대표 이미지(og:image) 사용")
     bg_paths: list[str | None] = []
     for i in range(n):
         out = out_dir / f"{slug}_bg{i+1}.jpg"

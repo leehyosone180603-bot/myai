@@ -9,11 +9,38 @@ provider 추상화: config image.provider 로 gemini | grok 선택.
 from __future__ import annotations
 
 import base64
+import re
 from pathlib import Path
+from urllib.parse import urljoin
 
 import requests
 
 from .config import Config
+
+
+def fetch_hero_image(url: str) -> str:
+    """기사 페이지에서 대표 이미지 URL(og:image/twitter:image)을 추출. 실패 시 빈 문자열.
+
+    RSS 피드에 이미지가 없을 때, 거의 모든 뉴스 기사에 있는 대표 사진을 안정적으로 가져온다.
+    """
+    if not url:
+        return ""
+    try:
+        r = requests.get(url, timeout=20, headers={"User-Agent": "Mozilla/5.0"})
+        r.raise_for_status()
+        html = r.text
+        patterns = [
+            r'<meta[^>]+property=["\']og:image(?::secure_url|:url)?["\'][^>]+content=["\']([^"\']+)["\']',
+            r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']',
+            r'<meta[^>]+name=["\']twitter:image(?::src)?["\'][^>]+content=["\']([^"\']+)["\']',
+        ]
+        for pat in patterns:
+            m = re.search(pat, html, re.I)
+            if m and m.group(1):
+                return urljoin(url, m.group(1).strip())
+    except Exception:
+        return ""
+    return ""
 
 
 def generate(cfg: Config, prompt: str, out_path: Path | str) -> str | None:
