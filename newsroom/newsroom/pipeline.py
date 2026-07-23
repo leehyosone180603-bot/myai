@@ -23,6 +23,20 @@ def _queue(cfg: Config) -> PublishQueue:
     return PublishQueue(cfg.path(cfg.get("output.queue_file", "out/publish_queue.json")))
 
 
+def _fmt_counts(cfg: Config) -> str:
+    c = _queue(cfg).counts()
+    return f"💰{c.get('money', 0)} · 🌐{c.get('general', 0)}"
+
+
+def _notify(cfg: Config, text: str) -> None:
+    """텔레그램으로 상태 알림 전송(실패해도 무시). 토큰/chat_id 없으면 조용히 통과."""
+    try:
+        from .telegram_bot import TelegramBot
+        TelegramBot(cfg).send_text(text)
+    except Exception as e:
+        print(f"[warn] 텔레그램 알림 실패(무시): {e}")
+
+
 def _original_image_candidates(cand: Candidate):
     """원본 사진 후보 URL 을 순서대로 yield: RSS 이미지 → 기사 og:image.
 
@@ -231,8 +245,9 @@ def stage_for_publish(cfg: Config, cand: Candidate) -> Bundle:
         "reel_url": reel_url,
         "caption": _caption(cfg, cand, bundle.plan),
     })
-    counts = _queue(cfg).counts()
-    print(f"  📥 발행 대기열 적재: [{cand.topic}] {cand.article.title[:36]}  (대기 {counts})")
+    print(f"  📥 발행 대기열 적재: [{cand.topic}] {cand.article.title[:36]}  (대기 {_queue(cfg).counts()})")
+    label = {"money": "💰 돈/경제", "general": "🌐 이슈"}.get(cand.topic, cand.topic)
+    _notify(cfg, f"📥 <b>발행 대기열 적재</b> · {label}\n{cand.article.title}\n\n현재 대기: {_fmt_counts(cfg)}")
     return bundle
 
 
@@ -243,12 +258,16 @@ def publish_next(cfg: Config, topic: str | None = None) -> bool:
     if not item:
         print(f"발행할 대기 항목이 없습니다 (topic={topic or '전체'}).")
         return False
-    print(f"STEP 4 · 예약 발행 [{item.get('topic')}] {item.get('title', '')[:40]}")
+    title = item.get("title", "")
+    label = {"money": "💰 돈/경제", "general": "🌐 이슈"}.get(item.get("topic"), item.get("topic"))
+    print(f"STEP 4 · 예약 발행 [{item.get('topic')}] {title[:40]}")
     try:
         _publish_to_ig(cfg, item.get("card_urls", []), item.get("reel_url"), item.get("caption", ""))
         q.mark(item["id"], "published")
+        _notify(cfg, f"📤 <b>발행 완료</b> · {label}\n{title}\n\n남은 대기: {_fmt_counts(cfg)}")
         return True
     except Exception as e:
         q.mark(item["id"], "failed", {"error": str(e)})
         print(f"  ❌ 발행 실패: {e}")
+        _notify(cfg, f"❌ <b>발행 실패</b> · {label}\n{title}\n{str(e)[:200]}")
         return False
