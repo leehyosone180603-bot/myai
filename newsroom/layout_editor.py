@@ -60,6 +60,8 @@ class Editor:
                                        int(float(card.get("logo_scale", 0.30)) * 100))
         self.logo_bottom = self._slider(left, "로고 아래여백(%) (작을수록 아래로)", 0, 20,
                                         int(float(card.get("logo_bottom", 0.05)) * 100))
+        self.photo_top_max = self._slider(left, "사진 높이(%) (가로 사진일 때, 나머지는 검정)", 40, 85,
+                                          int(float(card.get("photo_top_max", 0.60)) * 100))
 
         self.rm_white = BooleanVar(value=bool(card.get("logo_remove_white", True)))
         Checkbutton(left, text="로고 흰배경 제거", variable=self.rm_white,
@@ -75,7 +77,7 @@ class Editor:
         self.logo_status.pack(anchor="w", pady=(2, 0))
 
         for s in (self.opacity, self.gstart, self.title_scale, self.title_stroke,
-                  self.logo_scale, self.logo_bottom):
+                  self.logo_scale, self.logo_bottom, self.photo_top_max):
             s.config(command=lambda _=None: self.render())
         self.render()
 
@@ -107,6 +109,7 @@ class Editor:
             "title_stroke": self.title_stroke.get() / 100,
             "logo_scale": self.logo_scale.get() / 100,
             "logo_bottom": self.logo_bottom.get() / 100,
+            "photo_top_max": self.photo_top_max.get() / 100,
             "logo_remove_white": self.rm_white.get(),
         }
 
