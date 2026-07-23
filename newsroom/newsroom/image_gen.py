@@ -84,6 +84,61 @@ def _grok(cfg: Config, prompt: str, out_path: Path) -> str | None:
     return str(out_path)
 
 
+def _read_source(source: str) -> tuple[bytes, str] | None:
+    """원본 이미지 URL/경로 → (bytes, mime). 실패 시 None."""
+    try:
+        if source.startswith("http"):
+            r = requests.get(source, timeout=60)
+            r.raise_for_status()
+            mime = r.headers.get("Content-Type", "image/jpeg").split(";")[0]
+            return r.content, mime
+        p = Path(source)
+        return p.read_bytes(), "image/jpeg"
+    except Exception:
+        return None
+
+
+def generate_from_source(cfg: Config, source: str, out_path: Path) -> str | None:
+    """2-1: 뉴스 원본 사진을 Gemini 이미지편집으로 '유사하지만 저작권 회피' 재해석.
+
+    Gemini(google-genai)만 이미지→이미지를 지원. 키/패키지 없으면 None(호출부가 text→image로 폴백).
+    """
+    key = cfg.env("GOOGLE_API_KEY")
+    if not key or not source:
+        return None
+    src = _read_source(source)
+    if not src:
+        return None
+    try:
+        from google import genai
+        from google.genai import types
+    except ImportError:
+        print("    ! google-genai 미설치: pip install google-genai")
+        return None
+
+    img_bytes, mime = src
+    prompt = cfg.get("image.reinterpret_prompt",
+                     "Recreate this news photo as an original editorial illustration that keeps the "
+                     "same scene, composition and mood, but is a distinct new artwork (avoid copyright). "
+                     "Photorealistic, high detail, no text, no logos, no watermark.")
+    model = cfg.get("image.gemini_edit_model", "gemini-2.5-flash-image")
+    try:
+        client = genai.Client(api_key=key)
+        resp = client.models.generate_content(
+            model=model,
+            contents=[prompt, types.Part.from_bytes(data=img_bytes, mime_type=mime)],
+        )
+        for part in resp.candidates[0].content.parts:
+            inline = getattr(part, "inline_data", None)
+            if inline and inline.data:
+                out_path.parent.mkdir(parents=True, exist_ok=True)
+                out_path.write_bytes(inline.data)
+                return str(out_path)
+    except Exception as e:
+        print(f"    ! Gemini 이미지편집 실패(→ text2image 폴백): {e}")
+    return None
+
+
 def generate_many(cfg: Config, prompts: list[str], out_dir: Path, slug: str) -> list[str | None]:
     paths: list[str | None] = []
     for i, p in enumerate(prompts):

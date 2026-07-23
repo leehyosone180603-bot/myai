@@ -22,6 +22,7 @@ class Article:
     summary: str = ""
     published: str = ""
     lang: str = "en"
+    image_url: str = ""      # 기사 원본 사진 (있으면 2-1 이미지편집 원본으로 사용)
 
     @property
     def id(self) -> str:
@@ -32,7 +33,8 @@ class Article:
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Article":
-        return cls(**{k: d.get(k, "") for k in ("source", "title", "url", "summary", "published", "lang")})
+        return cls(**{k: d.get(k, "") for k in
+                      ("source", "title", "url", "summary", "published", "lang", "image_url")})
 
 
 @dataclass

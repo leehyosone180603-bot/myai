@@ -56,7 +56,23 @@ def generate_and_publish(cfg: Config, cand: Candidate, publish: bool = True) -> 
     bundle.plan = plan
 
     print("STEP 3 · 이미지 생성")
-    bg_paths = image_gen.generate_many(cfg, plan.image_prompts, out_dir, slug)
+    mode = cfg.get("card.publish", "single")
+    n = 1 if mode == "single" else len(plan.card_slides)   # 단일이면 썸네일 1장만
+    bg_paths: list[str | None] = []
+    for i in range(n):
+        out = out_dir / f"{slug}_bg{i+1}.jpg"
+        bg = None
+        if i == 0 and cand.article.image_url:
+            # 2-1: 표지 배경 = 원본 뉴스 사진을 Gemini로 유사 재해석(저작권 회피)
+            bg = image_gen.generate_from_source(cfg, cand.article.image_url, out)
+            if bg:
+                print("  · 표지: 원본 사진 기반 재해석 사용")
+        if not bg:  # 폴백: 텍스트→이미지
+            prompt = plan.image_prompts[i] if i < len(plan.image_prompts) else cfg.get("image.style", "")
+            bg = image_gen.generate(cfg, prompt, out)
+        bg_paths.append(bg)
+    while len(bg_paths) < len(plan.card_slides):
+        bg_paths.append(None)
 
     print("STEP 3 · 카드뉴스 렌더")
     bundle.card_paths = cardnews.render_bundle(cfg, plan, bg_paths, out_dir, slug)

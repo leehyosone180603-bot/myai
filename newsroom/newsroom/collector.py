@@ -44,6 +44,26 @@ def _similar(a: str, b: str) -> float:
     return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
 
+def _extract_image(entry) -> str:
+    """RSS 항목에서 대표 이미지 URL 추출 (media/enclosure/thumbnail/본문 img)."""
+    # media:content
+    for m in (entry.get("media_content") or []):
+        if m.get("url"):
+            return m["url"]
+    # media:thumbnail
+    for m in (entry.get("media_thumbnail") or []):
+        if m.get("url"):
+            return m["url"]
+    # enclosure (이미지 타입)
+    for l in (entry.get("links") or []):
+        if l.get("rel") == "enclosure" and str(l.get("type", "")).startswith("image"):
+            return l.get("href", "")
+    # 본문 HTML 의 첫 <img src>
+    html = entry.get("summary", "") or entry.get("description", "")
+    m = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', html)
+    return m.group(1) if m else ""
+
+
 def collect(cfg: Config) -> list[Article]:
     if feedparser is None:
         raise RuntimeError("feedparser 미설치: `pip install feedparser` 후 다시 실행하세요.")
@@ -81,6 +101,7 @@ def collect(cfg: Config) -> list[Article]:
                 source=name, title=title, url=entry.get("link", ""),
                 summary=summary[:1200], lang=lang,
                 published=dt.isoformat() if dt else "",
+                image_url=_extract_image(entry),
             ))
             kept += 1
         print(f"  · {name}: {kept}건")
