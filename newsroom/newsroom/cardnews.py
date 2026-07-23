@@ -274,8 +274,11 @@ def render_card(cfg: Config, *, title: str, category: str = "", body: str = "",
     if logo_path is not None:
         logo = _load_logo(logo_path, int(w * float(cfg.get("card.logo_scale", 0.30))),
                           remove_white=bool(cfg.get("card.logo_remove_white", True)))
-        canvas.alpha_composite(logo, ((w - logo.width) // 2, y_bottom - logo.height))
-        y_bottom -= logo.height + int(h * 0.012)
+        # logo_bottom: 로고 아래여백(카드 높이 대비). 작을수록 로고가 더 아래로 내려간다.
+        logo_gap = int(h * float(cfg.get("card.logo_bottom", 0.05)))
+        logo_y = h - logo_gap - logo.height
+        canvas.alpha_composite(logo, ((w - logo.width) // 2, logo_y))
+        y_bottom = logo_y - int(h * 0.012)      # 텍스트 블록은 로고 위에 쌓임
 
     # 5) 하단 텍스트 블록: (위→아래) 카테고리 칩 · 제목 · 서브타이틀
     text = title if is_cover else (body or title)

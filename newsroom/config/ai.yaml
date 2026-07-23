@@ -79,6 +79,7 @@ card:
   # ── 맨 아래 로고 (assets/logo/logo.png 넣으면 자동 삽입) ──
   logo: assets/logo/logo.png  # 로고 파일 경로 (없으면 미표시)
   logo_scale: 0.30          # 카드 폭 대비 로고 크기 (0.30=30%)
+  logo_bottom: 0.05         # 로고 아래여백 (카드 높이 대비, 작을수록 아래로)
   logo_remove_white: true   # 로고 흰 배경 → 투명 처리
   # ── 폰트 (없으면 시스템 자동 탐색: 일본어 Yu Gothic/Meiryo 우선) ──
   font_bold: ""             # 예: assets/fonts/NotoSansJP-Bold.otf
