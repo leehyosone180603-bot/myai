@@ -18,6 +18,23 @@ from .models import Bundle, Candidate
 from .store import Store
 
 
+def _original_image_candidates(cand: Candidate):
+    """원본 사진 후보 URL 을 순서대로 yield: RSS 이미지 → 기사 og:image.
+
+    RSS 썸네일이 너무 작으면(다운로드 단계에서 거부) og:image(보통 대형)로 넘어간다.
+    og:image 는 실제로 필요할 때만(RSS 실패 시) 지연 조회한다.
+    """
+    seen: set[str] = set()
+    rss = cand.article.image_url
+    if rss:
+        seen.add(rss)
+        yield rss
+    hero = image_gen.fetch_hero_image(cand.article.url)
+    if hero and hero not in seen:
+        print("  · 원본 사진: 기사 대표 이미지(og:image) 시도")
+        yield hero
+
+
 def _slug(cand: Candidate) -> str:
     date = datetime.utcnow().strftime("%Y%m%d")
     safe = re.sub(r"[^a-zA-Z0-9]+", "-", cand.article.title.lower())[:32].strip("-")
@@ -70,23 +87,21 @@ def generate_and_publish(cfg: Config, cand: Candidate, publish: bool = True) -> 
     print("STEP 3 · 이미지 생성")
     mode = cfg.get("card.publish", "single")
     n = 1 if mode == "single" else len(plan.card_slides)   # 단일이면 썸네일 1장만
-    # 원본 사진 URL 확보: RSS 에 없으면 기사 페이지의 대표 이미지(og:image) 사용
-    if not cand.article.image_url and bool(cfg.get("image.use_original", True)):
-        hero = image_gen.fetch_hero_image(cand.article.url)
-        if hero:
-            cand.article.image_url = hero
-            print("  · 원본 사진: 기사 대표 이미지(og:image) 사용")
+    use_original = bool(cfg.get("image.use_original", True))
+    reinterpret = bool(cfg.get("image.reinterpret_source", False))
     bg_paths: list[str | None] = []
     for i in range(n):
         out = out_dir / f"{slug}_bg{i+1}.jpg"
         bg = None
-        use_original = bool(cfg.get("image.use_original", True))
-        reinterpret = bool(cfg.get("image.reinterpret_source", False))
-        if i == 0 and cand.article.image_url and use_original:
+        if i == 0 and use_original:
             # 표지 배경 = 원본 뉴스 사진 그대로(AI 생성 X). 출처는 캡션에 명시.
-            bg = image_gen.download_original(cfg, cand.article.image_url, out)
-            if bg:
-                print("  · 표지: 원본 뉴스 사진 그대로 사용")
+            # RSS 이미지 → (없거나 너무 작으면) 기사 페이지 og:image 순으로 시도.
+            for src_url in _original_image_candidates(cand):
+                bg = image_gen.download_original(cfg, src_url, out)
+                if bg:
+                    cand.article.image_url = src_url   # 캡션 출처 표기용
+                    print("  · 표지: 원본 뉴스 사진 그대로 사용")
+                    break
         if not bg and i == 0 and cand.article.image_url and reinterpret:
             # (옵션) 원본 사진 Gemini 재해석 — 유료 등급 필요
             bg = image_gen.generate_from_source(cfg, cand.article.image_url, out)
