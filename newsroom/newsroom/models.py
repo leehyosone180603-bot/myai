@@ -22,7 +22,8 @@ class Article:
     summary: str = ""
     published: str = ""
     lang: str = "en"
-    image_url: str = ""      # 기사 원본 사진 (있으면 2-1 이미지편집 원본으로 사용)
+    image_url: str = ""      # 기사 원본 사진 (그대로 배경으로 사용)
+    image_credit: str = ""   # 원본 사진 출처/저작권 표기 (있으면 캡션에 명시)
 
     @property
     def id(self) -> str:
@@ -34,7 +35,8 @@ class Article:
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Article":
         return cls(**{k: d.get(k, "") for k in
-                      ("source", "title", "url", "summary", "published", "lang", "image_url")})
+                      ("source", "title", "url", "summary", "published", "lang",
+                       "image_url", "image_credit")})
 
 
 @dataclass
@@ -66,6 +68,7 @@ class ContentPlan:
 
     headline: str                       # 카드 표지 제목 (2줄 이내)
     subtitle: str = ""                  # 제목 아래 한 줄 서브타이틀(각도/한줄요약)
+    body: str = ""                      # 캡션용 상세 기사 본문(여러 문단, 자세히)
     card_slides: list[str] = field(default_factory=list)   # 슬라이드별 본문 텍스트
     reels_script: list[str] = field(default_factory=list)  # 릴스 나레이션 문장(=클립 단위)
     image_prompts: list[str] = field(default_factory=list) # 슬라이드별 이미지 생성 프롬프트
@@ -78,7 +81,7 @@ class ContentPlan:
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "ContentPlan":
         return cls(**{k: d.get(k) for k in
-                      ("headline", "subtitle", "card_slides", "reels_script",
+                      ("headline", "subtitle", "body", "card_slides", "reels_script",
                        "image_prompts", "mood", "category")})
 
 

@@ -84,6 +84,32 @@ def _grok(cfg: Config, prompt: str, out_path: Path) -> str | None:
     return str(out_path)
 
 
+def download_original(cfg: Config, url: str, out_path: Path | str) -> str | None:
+    """뉴스 원본 사진을 그대로 내려받아 카드 배경으로 저장(JPEG 정규화). 실패 시 None.
+
+    AI 생성/재해석 없이 '원본 그대로' 사용하고, 출처는 캡션에 명시한다.
+    """
+    out_path = Path(out_path)
+    if not url:
+        return None
+    try:
+        from PIL import Image
+        import io
+        r = requests.get(url, timeout=60, headers={"User-Agent": "Mozilla/5.0"})
+        r.raise_for_status()
+        img = Image.open(io.BytesIO(r.content)).convert("RGB")
+        # 아이콘·트래킹픽셀 수준으로 작은 것만 거른다(실제 사진은 최대한 사용)
+        if min(img.size) < 300:
+            print(f"    ! 원본 사진이 너무 작음({img.size}) — 사용 안 함")
+            return None
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        img.save(out_path, "JPEG", quality=92)
+        return str(out_path)
+    except Exception as e:
+        print(f"    ! 원본 사진 다운로드 실패: {e}")
+        return None
+
+
 def _read_source(source: str) -> tuple[bytes, str] | None:
     """원본 이미지 URL/경로 → (bytes, mime). 실패 시 None."""
     try:

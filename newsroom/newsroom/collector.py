@@ -64,6 +64,24 @@ def _extract_image(entry) -> str:
     return m.group(1) if m else ""
 
 
+def _extract_credit(entry) -> str:
+    """RSS 항목에서 이미지 출처/저작권 표기를 추출 (media:credit / media:copyright 등)."""
+    for m in (entry.get("media_content") or []) + (entry.get("media_thumbnail") or []):
+        for k in ("credit", "copyright"):
+            v = m.get(k)
+            if v:
+                return _clean_html(str(v))
+    for k in ("media_credit", "credit", "rights", "media_copyright"):
+        v = entry.get(k)
+        if isinstance(v, list) and v:
+            v = v[0].get("content") if isinstance(v[0], dict) else v[0]
+        if isinstance(v, dict):
+            v = v.get("content") or v.get("credit")
+        if v:
+            return _clean_html(str(v))
+    return ""
+
+
 def collect(cfg: Config) -> list[Article]:
     if feedparser is None:
         raise RuntimeError("feedparser 미설치: `pip install feedparser` 후 다시 실행하세요.")
@@ -102,6 +120,7 @@ def collect(cfg: Config) -> list[Article]:
                 summary=summary[:1200], lang=lang,
                 published=dt.isoformat() if dt else "",
                 image_url=_extract_image(entry),
+                image_credit=_extract_credit(entry),
             ))
             kept += 1
         print(f"  · {name}: {kept}건")

@@ -26,7 +26,19 @@ def _slug(cand: Candidate) -> str:
 
 def _caption(cfg: Config, cand: Candidate, plan) -> str:
     tags = cfg.get("content.hashtags", "#海外ニュース #ニュース")
-    return f"{plan.headline}\n\nsource: {cand.article.source}\n{tags}"
+    art = cand.article
+    parts = [plan.headline.strip()]
+    if getattr(plan, "body", ""):
+        parts.append(plan.body.strip())          # 자세한 기사 본문
+    src = f"source: {art.source}"
+    # 이미지 출처 표기(있으면). 없으면 매체명으로 대체.
+    credit = art.image_credit or art.source
+    img_line = f"Image: {credit}" if credit else ""
+    footer = "\n".join(x for x in (src, img_line) if x)
+    parts.append(footer)
+    parts.append(tags)
+    caption = "\n\n".join(parts)
+    return caption[:2200]                         # 인스타 캡션 최대 길이 안전선
 
 
 # ── 1) 수집 → 선별 → 검토 요청 ──────────────────────────────────────
@@ -62,14 +74,19 @@ def generate_and_publish(cfg: Config, cand: Candidate, publish: bool = True) -> 
     for i in range(n):
         out = out_dir / f"{slug}_bg{i+1}.jpg"
         bg = None
-        reinterpret = bool(cfg.get("image.reinterpret_source", True))
-        if i == 0 and cand.article.image_url and reinterpret:
-            # 2-1: 표지 배경 = 원본 뉴스 사진을 Gemini로 유사 재해석(저작권 회피)
-            # ※ Gemini 이미지 모델은 유료 등급 필요(무료 등급 할당량=0). 실패 시 아래 Grok 폴백.
+        use_original = bool(cfg.get("image.use_original", True))
+        reinterpret = bool(cfg.get("image.reinterpret_source", False))
+        if i == 0 and cand.article.image_url and use_original:
+            # 표지 배경 = 원본 뉴스 사진 그대로(AI 생성 X). 출처는 캡션에 명시.
+            bg = image_gen.download_original(cfg, cand.article.image_url, out)
+            if bg:
+                print("  · 표지: 원본 뉴스 사진 그대로 사용")
+        if not bg and i == 0 and cand.article.image_url and reinterpret:
+            # (옵션) 원본 사진 Gemini 재해석 — 유료 등급 필요
             bg = image_gen.generate_from_source(cfg, cand.article.image_url, out)
             if bg:
                 print("  · 표지: 원본 사진 기반 재해석 사용")
-        if not bg:  # 폴백: 텍스트→이미지
+        if not bg:  # 최종 폴백: 텍스트→이미지(Grok/Gemini)
             prompt = plan.image_prompts[i] if i < len(plan.image_prompts) else cfg.get("image.style", "")
             bg = image_gen.generate(cfg, prompt, out)
         bg_paths.append(bg)
