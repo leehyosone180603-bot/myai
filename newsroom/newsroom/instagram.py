@@ -16,14 +16,17 @@ import requests
 
 from .config import Config
 
-GRAPH = "https://graph.facebook.com/v21.0"
-
 
 class Instagram:
     def __init__(self, cfg: Config):
         self.user_id = cfg.env("IG_USER_ID")
         self.token = cfg.env("IG_ACCESS_TOKEN")
         self.base_url = cfg.env("PUBLIC_ASSET_BASE_URL").rstrip("/")
+        # api: instagram (graph.instagram.com, Instagram 로그인) | facebook (graph.facebook.com, 페이지 토큰)
+        api = cfg.get("instagram.api", "instagram")
+        host = "graph.instagram.com" if api == "instagram" else "graph.facebook.com"
+        version = cfg.get("instagram.version", "v21.0")
+        self.graph = f"https://{host}/{version}"
 
     @property
     def enabled(self) -> bool:
@@ -67,7 +70,7 @@ class Instagram:
     # ── 내부 ────────────────────────────────────────────────────
     def _post(self, path: str, params: dict) -> dict:
         params = {**params, "access_token": self.token}
-        r = requests.post(f"{GRAPH}{path}", data=params, timeout=120)
+        r = requests.post(f"{self.graph}{path}", data=params, timeout=120)
         r.raise_for_status()
         return r.json()
 
@@ -75,7 +78,7 @@ class Instagram:
         """영상은 서버 처리시간 필요 → status_code=FINISHED 대기."""
         deadline = time.time() + timeout
         while time.time() < deadline:
-            r = requests.get(f"{GRAPH}/{container_id}",
+            r = requests.get(f"{self.graph}/{container_id}",
                              params={"fields": "status_code", "access_token": self.token},
                              timeout=30)
             r.raise_for_status()

@@ -96,6 +96,11 @@ image:
     editorial photo illustration, clean, high detail, natural lighting,
     no text, no watermark, no logos, safe-for-work
 
+# ── STEP 4 · 인스타그램 발행 ───────────────────────────────────────
+instagram:
+  api: instagram            # instagram(=graph.instagram.com, Instagram 로그인) | facebook(=페이지 토큰)
+  version: v21.0
+
 # ── 출력/상태 ──────────────────────────────────────────────────────
 output:
   dir: out                  # 생성물(카드/릴스) 저장 폴더
