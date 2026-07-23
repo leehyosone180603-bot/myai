@@ -1,0 +1,11 @@
+# 환경변수 (실제 API 키)
+.env
+
+# 파이썬
+__pycache__/
+*.pyc
+.venv/
+
+# 생성된 결과 파일
+references_*.csv
+references_*.json
