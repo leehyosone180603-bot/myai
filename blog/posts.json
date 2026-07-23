@@ -261,9 +261,9 @@
   {
     "slug": "pension-start-age",
     "title": "국민연금 수급 개시 나이 — 출생연도별 노령연금 받는 나이 (2026)",
-    "date": "",
+    "date": "2026.07.23",
     "excerpt": "국민연금 노령연금은 출생연도에 따라 받기 시작하는 나이가 다릅니다. 1952년 이전 60세부터 19",
-    "published": false
+    "published": true
   },
   {
     "slug": "senior-benefits-age",
