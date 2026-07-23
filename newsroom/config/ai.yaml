@@ -67,6 +67,7 @@ card:
   show_counter: false       # 단일 발행이라 카운터 미표시
   title_max_lines: 2        # 표지 제목 최대 줄 수
   title_scale: 0.078        # 제목 크기 (카드 폭 대비)
+  title_stroke: 0.035       # 제목 굵기 보강(외곽선). 0=끔, 클수록 굵게(얇은 폰트 대응)
   # 제목 위 카테고리 칩 라벨 (일본어). AI 카테고리 → 표시 텍스트
   chip_labels:
     economy: "経済"
@@ -85,17 +86,14 @@ card:
   font_bold: ""             # 예: assets/fonts/NotoSansJP-Bold.otf
   font_regular: ""
 
-# ── STEP 3 · 릴스(영상) ────────────────────────────────────────────
+# ── STEP 3 · 릴스(영상) — 썸네일 1장을 짧은 영상으로 ──────────────────
 reels:
-  size: [1080, 1920]        # 9:16
-  provider: higgsfield      # 영상 소스 생성 provider
-  clip_seconds: 5           # 힉스필드 클립 길이(초). 스크립트 문장 수만큼 생성
+  # TTS·힉스필드 없이, 카드 썸네일 1장을 그대로 N초 영상으로 만들어 릴스 발행.
+  duration: 10              # 영상 길이(초)
   fps: 30
-  tts:
-    provider: elevenlabs    # elevenlabs | google  (tts.py 참조)
-    voice: "korean_female"  # provider 별 voice id 로 교체
-  # 저작권 무관 배경음악 (미리 확보). mood 로 자동 선택.
-  bgm_volume: 0.18          # 나레이션 대비 배경음악 볼륨(0~1)
+  zoom: false               # true 면 아주 느린 줌(켄번스) 효과, false 면 정지 영상
+  bgm: false                # true 면 assets/music 배경음악 얹기(선택). 기본 무음.
+  bgm_volume: 0.18          # 배경음악 볼륨(0~1). bgm: true 일 때만
 
 music:
   dir: assets/music         # 배경음악 파일 폴더

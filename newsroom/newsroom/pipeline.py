@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 from datetime import datetime
 
-from . import ai_filter, ai_writer, cardnews, image_gen, instagram, reels, storage, tts
+from . import ai_filter, ai_writer, cardnews, image_gen, instagram, reels, storage
 from .collector import collect
 from .config import Config
 from .models import Bundle, Candidate
@@ -77,9 +77,9 @@ def generate_and_publish(cfg: Config, cand: Candidate, publish: bool = True) -> 
     print("STEP 3 · 카드뉴스 렌더")
     bundle.card_paths = cardnews.render_bundle(cfg, plan, bg_paths, out_dir, slug)
 
-    print("STEP 3 · 릴스(TTS + 힉스필드 + 합성)")
-    narration = tts.synthesize(cfg, plan.reels_script, out_dir / f"{slug}_narration.mp3")
-    bundle.reel_path = reels.build(cfg, plan, narration, out_dir, slug) or ""
+    print("STEP 3 · 릴스(썸네일 1장 → 약 10초 영상)")
+    thumb = bundle.card_paths[0] if bundle.card_paths else None
+    bundle.reel_path = reels.build_from_image(cfg, thumb, out_dir, slug, mood=plan.mood) or ""
 
     if not publish:
         print("STEP 4 · 발행 생략 (--no-publish) — 파일만 생성했습니다")

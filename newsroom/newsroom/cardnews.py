@@ -207,13 +207,15 @@ def _text_size(draw, text, font):
     return b[2] - b[0], b[3] - b[1], b[1]  # width, height, top-offset
 
 
-def _draw_top(draw, x, y_top, text, font, fill, shadow=None):
+def _draw_top(draw, x, y_top, text, font, fill, shadow=None, stroke=0):
     """글자의 '시각적 윗변'이 y_top 에 오도록 그린다. 높이 반환."""
     _, hgt, top = _text_size(draw, text, font)
     if shadow:
         dx, dy, sc = shadow
-        draw.text((x + dx, y_top - top + dy), text, font=font, fill=sc)
-    draw.text((x, y_top - top), text, font=font, fill=fill)
+        draw.text((x + dx, y_top - top + dy), text, font=font, fill=sc,
+                  stroke_width=stroke, stroke_fill=sc)
+    draw.text((x, y_top - top), text, font=font, fill=fill,
+              stroke_width=stroke, stroke_fill=fill)
     return hgt
 
 
@@ -287,6 +289,8 @@ def render_card(cfg: Config, *, title: str, category: str = "", body: str = "",
 
     max_lines = int(cfg.get("card.title_max_lines", 2)) if is_cover else 5
     title_size = int(w * (float(cfg.get("card.title_scale", 0.078)) if is_cover else 0.052))
+    # 얇은 시스템 폰트도 굵게 보이도록 stroke(글자 외곽선)로 두께 보강. 0=끔.
+    title_stroke = max(0, int(title_size * float(cfg.get("card.title_stroke", 0.035))))
     tfont = _font(cfg, title_size, bold=True)
     sfont = _font(cfg, int(w * 0.040), bold=True)       # 서브타이틀
     cfont = _font(cfg, int(w * 0.030), bold=True)       # 칩
@@ -319,13 +323,16 @@ def render_card(cfg: Config, *, title: str, category: str = "", body: str = "",
 
     y = title_top                                        # 제목
     for ln in tlines:
-        draw.text((margin + 3, y + 3), ln, font=tfont, fill=(0, 0, 0, 180))
-        draw.text((margin, y), ln, font=tfont, fill="white")
+        draw.text((margin + 3, y + 3), ln, font=tfont, fill=(0, 0, 0, 180),
+                  stroke_width=title_stroke, stroke_fill=(0, 0, 0, 180))
+        draw.text((margin, y), ln, font=tfont, fill="white",
+                  stroke_width=title_stroke, stroke_fill="white")
         y += line_h
 
-    if sub:                                              # 서브타이틀
+    if sub:                                              # 서브타이틀 (제목보다 얇게)
         _draw_top(draw, margin, sub_top, sub, sfont, fill=(255, 255, 255, 230),
-                  shadow=(2, 2, (0, 0, 0, 150)))
+                  shadow=(2, 2, (0, 0, 0, 150)),
+                  stroke=max(0, int(title_size * float(cfg.get("card.title_stroke", 0.035)) * 0.4)))
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     rgb = canvas.convert("RGB")

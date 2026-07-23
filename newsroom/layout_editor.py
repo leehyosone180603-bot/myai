@@ -54,6 +54,8 @@ class Editor:
                                    int(float(card.get("gradient_start", 0.5)) * 100))
         self.title_scale = self._slider(left, "제목 크기(%)", 5, 13,
                                         int(float(card.get("title_scale", 0.088)) * 100))
+        self.title_stroke = self._slider(left, "제목 굵기(%) (클수록 굵게)", 0, 10,
+                                         int(float(card.get("title_stroke", 0.035)) * 100))
         self.logo_scale = self._slider(left, "로고 크기(%)", 10, 50,
                                        int(float(card.get("logo_scale", 0.30)) * 100))
         self.logo_bottom = self._slider(left, "로고 아래여백(%) (작을수록 아래로)", 0, 20,
@@ -72,7 +74,8 @@ class Editor:
         self.logo_status = Label(left, text="", fg="#555", wraplength=240, justify="left")
         self.logo_status.pack(anchor="w", pady=(2, 0))
 
-        for s in (self.opacity, self.gstart, self.title_scale, self.logo_scale, self.logo_bottom):
+        for s in (self.opacity, self.gstart, self.title_scale, self.title_stroke,
+                  self.logo_scale, self.logo_bottom):
             s.config(command=lambda _=None: self.render())
         self.render()
 
@@ -101,6 +104,7 @@ class Editor:
             "overlay_opacity": self.opacity.get() / 100,
             "gradient_start": self.gstart.get() / 100,
             "title_scale": self.title_scale.get() / 100,
+            "title_stroke": self.title_stroke.get() / 100,
             "logo_scale": self.logo_scale.get() / 100,
             "logo_bottom": self.logo_bottom.get() / 100,
             "logo_remove_white": self.rm_white.get(),
