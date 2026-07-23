@@ -6,5 +6,10 @@ __pycache__/
 .venv/
 venv/
 assets/music/*.mp3
+# 사용자가 넣는 로고 파일(로컬 전용, README 만 커밋)
+assets/logo/*
+!assets/logo/README.txt
+# 레이아웃 편집기가 저장하는 로컬 오버라이드
+config/layout_overrides.yaml
 # 데모 샘플은 커밋 (docs/samples 는 예외)
 !docs/samples/*.png

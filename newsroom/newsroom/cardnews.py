@@ -122,6 +122,30 @@ def _bottom_gradient(w: int, h: int, opacity: float, start: float = 0.5) -> Imag
     return overlay
 
 
+def resolve_logo(cfg: Config) -> Path | None:
+    """로고 파일을 찾는다. 우선 card.logo 경로, 없으면 assets/logo 폴더에서 자동 탐색.
+
+    Windows 에서 '확장자 숨김' 때문에 logo.png 가 실제로는 logo.png.png / logo.jpg 로
+    저장되는 흔한 실수를 흡수한다. (README/txt 는 제외)
+    """
+    rel = cfg.get("card.logo", "") or ""
+    if rel:
+        p = cfg.path(rel)
+        if p.exists():
+            return p
+    logo_dir = cfg.path("assets/logo")
+    if logo_dir.is_dir():
+        cands = []
+        for f in sorted(logo_dir.iterdir()):
+            if f.is_file() and f.suffix.lower() in (".png", ".jpg", ".jpeg", ".webp"):
+                cands.append(f)
+        # 'logo' 이름을 최우선
+        cands.sort(key=lambda x: (0 if "logo" in x.stem.lower() else 1, x.name))
+        if cands:
+            return cands[0]
+    return None
+
+
 def _load_logo(path: Path, target_w: int, remove_white: bool = True,
                white_thresh: int = 225) -> Image.Image:
     """로고 이미지를 불러와 (선택) 흰/오프화이트 배경 투명 처리 후 target_w 폭으로 리사이즈."""
@@ -246,9 +270,9 @@ def render_card(cfg: Config, *, title: str, category: str = "", body: str = "",
 
     # 4) 맨 아래 로고 (assets/logo 있으면 하단 중앙에 작게, 흰배경 제거)
     y_bottom = h - margin
-    logo_rel = cfg.get("card.logo", "")
-    if logo_rel and cfg.path(logo_rel).exists():
-        logo = _load_logo(cfg.path(logo_rel), int(w * float(cfg.get("card.logo_scale", 0.30))),
+    logo_path = resolve_logo(cfg)
+    if logo_path is not None:
+        logo = _load_logo(logo_path, int(w * float(cfg.get("card.logo_scale", 0.30))),
                           remove_white=bool(cfg.get("card.logo_remove_white", True)))
         canvas.alpha_composite(logo, ((w - logo.width) // 2, y_bottom - logo.height))
         y_bottom -= logo.height + int(h * 0.012)

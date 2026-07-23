@@ -20,7 +20,7 @@ import yaml
 from PIL import Image, ImageTk
 
 from newsroom.config import ROOT, load_config
-from newsroom.cardnews import render_card
+from newsroom.cardnews import render_card, resolve_logo, _load_logo
 
 OVERRIDES = ROOT / "config" / "layout_overrides.yaml"
 PREVIEW_H = 520
@@ -67,6 +67,8 @@ class Editor:
                bg="#2E7D32", fg="white").pack(fill="x", pady=(10, 2))
         self.status = Label(left, text="", fg="#555")
         self.status.pack(anchor="w", pady=(6, 0))
+        self.logo_status = Label(left, text="", fg="#555", wraplength=240, justify="left")
+        self.logo_status.pack(anchor="w", pady=(2, 0))
 
         for s in (self.opacity, self.gstart, self.title_scale, self.logo_scale):
             s.config(command=lambda _=None: self.render())
@@ -114,8 +116,28 @@ class Editor:
             self.bg_path = p
             self.render()
 
+    def _update_logo_status(self, cfg):
+        lp = resolve_logo(cfg)
+        if lp is None:
+            self.logo_status.config(
+                text="⚠ 로고 파일을 못 찾음 → assets/logo/ 에 logo.png 저장 (확장자 숨김 주의!)",
+                fg="#C62828")
+            return
+        try:
+            lg = _load_logo(lp, 300, remove_white=self.rm_white.get())
+            opaque = sum(1 for a in lg.getdata(band=3) if a > 0)
+            if opaque < 200:
+                self.logo_status.config(
+                    text=f"⚠ 로고 찾음({lp.name})지만 '흰배경 제거'가 로고를 지움 → 체크 해제해 보세요",
+                    fg="#EF6C00")
+            else:
+                self.logo_status.config(text=f"✓ 로고: {lp.name}", fg="#2E7D32")
+        except Exception as e:
+            self.logo_status.config(text=f"로고 오류: {e}", fg="red")
+
     def render(self):
         cfg = self._preview_cfg()
+        self._update_logo_status(cfg)
         try:
             render_card(cfg, title=self.headline.get(), subtitle=self.subtitle.get(),
                         category="world", bg_path=self.bg_path,
