@@ -96,6 +96,11 @@ image:
     editorial photo illustration, clean, high detail, natural lighting,
     no text, no watermark, no logos, safe-for-work
 
+# ── STEP 4 · 공개 URL 호스팅 (Cloudflare R2) ───────────────────────
+storage:
+  provider: r2              # 완성 카드/릴스를 올려 인스타가 가져갈 공개 URL 생성
+  bucket: newsroom-assets   # R2 버킷 이름 (.env R2_BUCKET 로도 지정 가능)
+
 # ── STEP 4 · 인스타그램 발행 ───────────────────────────────────────
 instagram:
   api: instagram            # instagram(=graph.instagram.com, Instagram 로그인) | facebook(=페이지 토큰)

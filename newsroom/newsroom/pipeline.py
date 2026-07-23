@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 from datetime import datetime
 
-from . import ai_filter, ai_writer, cardnews, image_gen, instagram, reels, tts
+from . import ai_filter, ai_writer, cardnews, image_gen, instagram, reels, storage, tts
 from .collector import collect
 from .config import Config
 from .models import Bundle, Candidate
@@ -70,16 +70,23 @@ def generate_and_publish(cfg: Config, cand: Candidate, publish: bool = True) -> 
         print(f"  📁 카드 {len(bundle.card_paths)}장, 릴스: {bundle.reel_path or '없음'}  → {out_dir}")
         return bundle
 
-    print("STEP 4 · 인스타그램 업로드")
+    print("STEP 4 · 공개 URL 업로드 (R2)")
+    if not storage.enabled(cfg):
+        print("  ! 스토리지 자격증명 없음 — 업로드/발행 생략 (파일만 생성)")
+        return bundle
+    card_urls = [storage.upload(cfg, p, f"{slug}/card{i+1}.png")
+                 for i, p in enumerate(bundle.card_paths)]
+    reel_url = storage.upload(cfg, bundle.reel_path, f"{slug}/reel.mp4") if bundle.reel_path else None
+    print(f"  업로드 완료: 카드 {len(card_urls)}장" + (" + 릴스" if reel_url else ""))
+
+    print("STEP 4 · 인스타그램 발행")
     ig = instagram.Instagram(cfg)
     caption = _caption(cand, plan)
-    if bundle.card_paths:
-        pid = ig.publish_carousel([f"{slug}_card{i+1}.png" for i in range(len(bundle.card_paths))],
-                                  caption)
+    if card_urls:
+        pid = ig.publish_carousel(card_urls, caption)
         print(f"  카드뉴스 게시물: {pid or '(dry-run)'}")
-    if bundle.reel_path:
-        rid = ig.publish_reel(f"{slug}_reel.mp4", caption,
-                              cover_url=f"{slug}_card1.png" if bundle.card_paths else None)
+    if reel_url:
+        rid = ig.publish_reel(reel_url, caption, cover_url=card_urls[0] if card_urls else None)
         print(f"  릴스 게시물: {rid or '(dry-run)'}")
 
     return bundle

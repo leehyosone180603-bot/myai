@@ -2,6 +2,7 @@
 anthropic>=0.40.0        # AI 1차 선별 + 카피/스크립트 작성 (Claude)
 feedparser>=6.0.11       # 해외 뉴스 RSS 파싱
 PyYAML>=6.0.2            # config/ai.yaml 로드
+boto3>=1.34.0            # Cloudflare R2(S3 호환) 업로드 → 공개 URL
 requests>=2.32.0         # 텔레그램 / 힉스필드 / 인스타그램 Graph API HTTP
 python-dotenv>=1.0.1     # .env 로드
 Pillow>=10.4.0           # 카드뉴스 렌더링 (템플릿 합성)
