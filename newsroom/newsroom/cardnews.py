@@ -24,9 +24,15 @@ from .models import ContentPlan
 _KO_FONT_CANDIDATES = [
     # 운영 권장 폰트 (있으면 우선)
     "**/Pretendard*.otf", "**/Pretendard*.ttf",
+    "**/NotoSansJP*.otf", "**/NotoSansJP*.ttf",
     "**/NotoSansKR*.otf", "**/NotoSansKR*.ttf",
-    "**/NanumGothic*.ttf", "**/NanumBarunGothic*.ttf",
-    # Windows 기본 한글 폰트 (맑은 고딕)
+    "**/NanumGothic*.ttf",
+    # Windows 기본 일본어 폰트 (Yu Gothic / Meiryo / MS Gothic)
+    "**/YuGothB.ttc", "**/YuGothM.ttc", "**/YuGothR.ttc",
+    "**/meiryob.ttc", "**/meiryo.ttc", "**/msgothic.ttc",
+    # macOS 일본어 (히라기노)
+    "/System/Library/Fonts/**/ヒラギノ*.ttc", "/System/Library/Fonts/**/Hiragino*.ttc",
+    # Windows 기본 한글 폰트 (맑은 고딕) — 한글 폴백
     "**/malgunbd.ttf", "**/malgun.ttf",
     # macOS 기본 한글 폰트
     "/System/Library/Fonts/**/AppleSDGothicNeo.ttc",
@@ -97,18 +103,42 @@ def _placeholder_bg(w: int, h: int, seed: str) -> Image.Image:
     return base.filter(ImageFilter.GaussianBlur(40))
 
 
-def _bottom_gradient(w: int, h: int, opacity: float) -> Image.Image:
-    """하단이 진하고 위로 갈수록 투명해지는 검정 그라데이션."""
+def _bottom_gradient(w: int, h: int, opacity: float, start: float = 0.5) -> Image.Image:
+    """하단만 검정으로 어두워지는 그라데이션 (start 지점부터 아래로).
+
+    start(0~1): 그라데이션이 시작되는 세로 위치(0.5=하단 절반). 그 위는 완전 투명 →
+    이미지 상단을 가리지 않는다. 맨 아래에서도 opacity 까지만(완전 검정 아님) 올려
+    배경 이미지가 은은히 비치게 한다.
+    """
+    span = max(0.01, 1.0 - start)
     grad = Image.new("L", (1, h), 0)
     for y in range(h):
         t = y / h
-        # 아래 40%부터 진해지도록
-        a = max(0.0, (t - 0.45) / 0.55)
-        grad.putpixel((0, y), int(255 * opacity * (a ** 1.4)))
+        a = max(0.0, (t - start) / span)      # start 위는 0(투명)
+        grad.putpixel((0, y), int(255 * opacity * (a ** 1.5)))
     alpha = grad.resize((w, h))
     overlay = Image.new("RGBA", (w, h), (0, 0, 0, 255))
     overlay.putalpha(alpha)
     return overlay
+
+
+def _load_logo(path: Path, target_w: int, remove_white: bool = True,
+               white_thresh: int = 238) -> Image.Image:
+    """로고 이미지를 불러와 (선택) 흰 배경 투명 처리 후 target_w 폭으로 리사이즈."""
+    img = Image.open(path).convert("RGBA")
+    if remove_white:
+        px = img.getdata()
+        out = []
+        for r, g, b, a in px:
+            if r >= white_thresh and g >= white_thresh and b >= white_thresh:
+                out.append((r, g, b, 0))            # 흰색 → 투명
+            else:
+                out.append((r, g, b, a))
+        img.putdata(out)
+    if img.width != target_w:
+        ratio = target_w / img.width
+        img = img.resize((target_w, max(1, int(img.height * ratio))), Image.LANCZOS)
+    return img
 
 
 def _wrap(draw, text: str, font, max_width: int, max_lines: int) -> list[str]:
@@ -183,7 +213,8 @@ def render_card(cfg: Config, *, title: str, category: str = "", body: str = "",
     tagline = cfg.get("card.tagline", "")
     brand_top = cfg.get("card.brand_top", "")
     show_counter = bool(cfg.get("card.show_counter", True))
-    opacity = float(cfg.get("card.overlay_opacity", 0.5))
+    opacity = float(cfg.get("card.overlay_opacity", 0.85))
+    grad_start = float(cfg.get("card.gradient_start", 0.5))   # 하단 절반부터
 
     # 1) 배경 (풀블리드 cover-fit)
     if bg_path and Path(bg_path).exists():
@@ -192,8 +223,8 @@ def render_card(cfg: Config, *, title: str, category: str = "", body: str = "",
         bg = _placeholder_bg(w, h, seed=title)
     canvas = bg.convert("RGBA")
 
-    # 2) 하단 가독성 그라데이션
-    canvas.alpha_composite(_bottom_gradient(w, h, opacity))
+    # 2) 하단만 검정 그라데이션 (이미지 상단은 안 가림)
+    canvas.alpha_composite(_bottom_gradient(w, h, opacity, grad_start))
 
     draw = ImageDraw.Draw(canvas)
     margin = int(w * 0.06)
@@ -212,8 +243,16 @@ def render_card(cfg: Config, *, title: str, category: str = "", body: str = "",
         draw.text((pill_left - int(w * 0.02) - bw, by - btop), brand_top,
                   font=bf, fill=(255, 255, 255, 195))
 
-    # 4) 하단 블록: (아래→위) 태그라인 · 팔로우
+    # 4) 맨 아래 로고 (assets/logo 있으면 하단 중앙에 작게, 흰배경 제거)
     y_bottom = h - margin
+    logo_rel = cfg.get("card.logo", "")
+    if logo_rel and cfg.path(logo_rel).exists():
+        logo = _load_logo(cfg.path(logo_rel), int(w * float(cfg.get("card.logo_scale", 0.30))),
+                          remove_white=bool(cfg.get("card.logo_remove_white", True)))
+        canvas.alpha_composite(logo, ((w - logo.width) // 2, y_bottom - logo.height))
+        y_bottom -= logo.height + int(h * 0.012)
+
+    # 5) 하단 블록: (아래→위) 태그라인 · 팔로우
     if tagline:
         tag_h = _draw_top(draw, margin, y_bottom - _text_size(draw, tagline, _font(cfg, int(w * 0.026), True))[1],
                           tagline, _font(cfg, int(w * 0.026), bold=True), fill=(255, 255, 255, 235),
@@ -231,7 +270,7 @@ def render_card(cfg: Config, *, title: str, category: str = "", body: str = "",
     # 5) 제목(표지) 또는 본문(내지) — 크고 굵게, 좌하단 블록 위에 배치
     text = title if is_cover else (body or title)
     max_lines = int(cfg.get("card.title_max_lines", 3)) if is_cover else 5
-    font_size = int(w * (0.088 if is_cover else 0.056))
+    font_size = int(w * (float(cfg.get("card.title_scale", 0.088)) if is_cover else 0.056))
     tfont = _font(cfg, font_size, bold=True)
     lines = _wrap(draw, text, tfont, max_width=w - margin * 2, max_lines=max_lines)
     line_h = int(font_size * 1.16)

@@ -70,10 +70,24 @@ class Config:
         return self.path(self.get("output.state_file", "out/state.json"))
 
 
+def _deep_merge(base: dict, over: dict) -> dict:
+    for k, v in over.items():
+        if isinstance(v, dict) and isinstance(base.get(k), dict):
+            _deep_merge(base[k], v)
+        else:
+            base[k] = v
+    return base
+
+
 def load_config(config_path: str | os.PathLike | None = None) -> Config:
-    """.env 로드 후 ai.yaml 파싱."""
+    """.env 로드 후 ai.yaml 파싱. layout_overrides.yaml(있으면) 병합."""
     load_dotenv(ROOT / ".env")
     path = Path(config_path) if config_path else DEFAULT_CONFIG
     with open(path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
+    # 레이아웃 편집기(layout_editor.py)가 저장하는 오버라이드 병합 (주석 보존용 별도 파일)
+    overrides = ROOT / "config" / "layout_overrides.yaml"
+    if overrides.exists():
+        with open(overrides, "r", encoding="utf-8") as f:
+            _deep_merge(data, yaml.safe_load(f) or {})
     return Config(data=data)

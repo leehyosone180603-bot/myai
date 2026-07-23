@@ -24,9 +24,9 @@ def _slug(cand: Candidate) -> str:
     return f"{date}_{cand.id}_{safe or 'news'}"
 
 
-def _caption(cand: Candidate, plan) -> str:
-    tags = "#해외뉴스 #오늘의소식 #카드뉴스"
-    return f"{plan.headline}\n\n{cand.reason}\n\n출처: {cand.article.source}\n{tags}"
+def _caption(cfg: Config, cand: Candidate, plan) -> str:
+    tags = cfg.get("content.hashtags", "#海外ニュース #ニュース")
+    return f"{plan.headline}\n\nsource: {cand.article.source}\n{tags}"
 
 
 # ── 1) 수집 → 선별 → 검토 요청 ──────────────────────────────────────
@@ -70,20 +70,27 @@ def generate_and_publish(cfg: Config, cand: Candidate, publish: bool = True) -> 
         print(f"  📁 카드 {len(bundle.card_paths)}장, 릴스: {bundle.reel_path or '없음'}  → {out_dir}")
         return bundle
 
+    # 발행 모드: single(썸네일 1장만) | carousel(여러장)
+    mode = cfg.get("card.publish", "single")
+    to_upload = bundle.card_paths[:1] if mode == "single" else bundle.card_paths
+
     print("STEP 4 · 공개 URL 업로드 (R2)")
     if not storage.enabled(cfg):
         print("  ! 스토리지 자격증명 없음 — 업로드/발행 생략 (파일만 생성)")
         return bundle
     card_urls = [storage.upload(cfg, p, f"{slug}/card{i+1}.jpg")
-                 for i, p in enumerate(bundle.card_paths)]
+                 for i, p in enumerate(to_upload)]
     reel_url = storage.upload(cfg, bundle.reel_path, f"{slug}/reel.mp4") if bundle.reel_path else None
     print(f"  업로드 완료: 카드 {len(card_urls)}장" + (" + 릴스" if reel_url else ""))
 
     print("STEP 4 · 인스타그램 발행")
     ig = instagram.Instagram(cfg)
-    caption = _caption(cand, plan)
+    caption = _caption(cfg, cand, plan)
     if card_urls:
-        pid = ig.publish_carousel(card_urls, caption)
+        if mode == "single" or len(card_urls) == 1:
+            pid = ig.publish_single(card_urls[0], caption)
+        else:
+            pid = ig.publish_carousel(card_urls, caption)
         print(f"  카드뉴스 게시물: {pid or '(dry-run)'}")
     if reel_url:
         rid = ig.publish_reel(reel_url, caption, cover_url=card_urls[0] if card_urls else None)

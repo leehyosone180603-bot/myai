@@ -37,6 +37,15 @@ class Instagram:
             return filename_or_url
         return f"{self.base_url}/{filename_or_url.lstrip('/')}"
 
+    # ── 단일 이미지(썸네일 1장) ──────────────────────────────────
+    def publish_single(self, image_url: str, caption: str) -> str | None:
+        if not self.enabled:
+            print("    ! IG 자격증명 없음 — 업로드 생략")
+            return None
+        container = self._post(f"/{self.user_id}/media",
+                               {"image_url": self.public_url(image_url), "caption": caption})
+        return self._publish(container["id"])
+
     # ── 캐러셀(카드뉴스) ─────────────────────────────────────────
     def publish_carousel(self, image_urls: list[str], caption: str) -> str | None:
         if not self.enabled:

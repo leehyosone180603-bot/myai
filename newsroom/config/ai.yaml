@@ -4,6 +4,12 @@
 #  - 비밀값(API 키)은 여기 넣지 말고 .env 에 두세요.
 # ═══════════════════════════════════════════════════════════════════
 
+# ── 콘텐츠 노출 언어/대상 ──────────────────────────────────────────
+content:
+  language: ja              # 발행 언어 (ja=일본어). 제목/본문/나레이션/캡션에 적용
+  audience: "일본 인스타그램 사용자"
+  hashtags: "#海外ニュース #ニュース #今日のニュース"
+
 # ── 선별/작가에 쓸 LLM 백엔드 선택 ─────────────────────────────────
 ai:
   provider: claude              # claude | gemini
@@ -51,19 +57,25 @@ writer:
 
 # ── STEP 3 · 카드뉴스 템플릿 (첨부 5번째 사진 구조를 코드로 재현) ──────
 card:
-  size: [1080, 1350]        # 인스타 4:5 세로 (릴스 커버와 동일 비율)
-  # ── 레퍼런스 스타일: 카운터 배지 + 큰 좌하단 제목 + 팔로우/태그라인 ──
-  brand: "@your_handle"     # 좌하단 팔로우 핸들
-  follow_prefix: "팔로우 "  # 핸들 앞에 붙는 문구 (없애려면 "")
-  tagline: "Mindset · Resilience · Professional"   # 좌하단 키워드 태그라인
-  brand_top: ""             # 우상단 작은 브랜드 문구 (예: "The Daily Brief")
-  show_counter: true        # 우상단 슬라이드 카운터(1/N) 배지
+  size: [1080, 1350]        # 인스타 4:5 세로
+  publish: single           # single(썸네일 1장만 발행) | carousel(여러장)
+  # ── 텍스트 요소 ──
+  brand: ""                 # 좌하단 팔로우 핸들 (비우면 표시 안 함)
+  follow_prefix: "フォロー "  # 핸들 앞 문구 (일본어)
+  tagline: ""               # 좌하단 키워드 태그라인 (비우면 표시 안 함)
+  brand_top: ""             # 우상단 작은 브랜드 문구
+  show_counter: false       # 단일 발행이라 카운터 미표시
   title_max_lines: 3        # 표지 제목 최대 줄 수
-  overlay_opacity: 0.5      # 하단 가독성 그라데이션 진하기 (0~1)
-  # 폰트: 한국어 지원 폰트 경로. 없으면 시스템에서 자동 탐색(Windows 맑은고딕 포함).
-  #  운영 시 Pretendard / NotoSansKR 등을 assets/fonts 에 넣고 경로 지정 권장.
-  font_bold: ""             # 예: assets/fonts/Pretendard-Bold.otf
-  font_regular: ""          # 예: assets/fonts/Pretendard-Regular.otf
+  # ── 하단 그라데이션 (이미지 상단은 안 가림) ──
+  overlay_opacity: 0.85     # 맨 아래 어둡기 (0~1, 완전 검정은 1)
+  gradient_start: 0.5       # 그라데이션 시작 위치(0.5=하단 절반부터)
+  # ── 맨 아래 로고 (assets/logo/logo.png 넣으면 자동 삽입) ──
+  logo: assets/logo/logo.png  # 로고 파일 경로 (없으면 미표시)
+  logo_scale: 0.30          # 카드 폭 대비 로고 크기 (0.30=30%)
+  logo_remove_white: true   # 로고 흰 배경 → 투명 처리
+  # ── 폰트 (없으면 시스템 자동 탐색: 일본어 Yu Gothic/Meiryo 우선) ──
+  font_bold: ""             # 예: assets/fonts/NotoSansJP-Bold.otf
+  font_regular: ""
 
 # ── STEP 3 · 릴스(영상) ────────────────────────────────────────────
 reels:
