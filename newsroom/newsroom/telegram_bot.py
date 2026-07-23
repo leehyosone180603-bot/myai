@@ -101,39 +101,53 @@ def poll_loop(cfg: Config, store: Store,
 
         for upd in updates:
             offset = upd["update_id"] + 1
+            # 개별 이벤트 처리 중 오류(네트워크 끊김/만료 등)로 데몬이 죽지 않도록 격리
+            try:
+                _handle_update(bot, store, on_approve, upd)
+            except Exception as e:
+                print(f"[warn] 이벤트 처리 오류(무시하고 계속): {e}")
 
-            # chat_id 확인용: 아무 메시지나 보내면 chat id 를 알려줌
-            if "message" in upd:
-                chat = upd["message"]["chat"]["id"]
-                print(f"[info] 메시지 수신. 이 chat_id 를 .env 의 TELEGRAM_CHAT_ID 로 사용: {chat}")
-                continue
 
-            cb = upd.get("callback_query")
-            if not cb:
-                continue
-            data = cb.get("data", "")
-            msg = cb["message"]
-            chat_id, message_id = msg["chat"]["id"], msg["message_id"]
+def _handle_update(bot: "TelegramBot", store: Store,
+                   on_approve: Callable[[Candidate], None], upd: dict) -> None:
+    # chat_id 확인용: 아무 메시지나 보내면 chat id 를 알려줌
+    if "message" in upd:
+        chat = upd["message"]["chat"]["id"]
+        print(f"[info] 메시지 수신. 이 chat_id 를 .env 의 TELEGRAM_CHAT_ID 로 사용: {chat}")
+        return
 
-            if data.startswith("skip:"):
-                cid = data.split(":", 1)[1]
-                store.set_status(cid, Store.STATUS_REJECTED)
-                bot.answer_callback(cb["id"], "건너뛰었습니다.")
-                bot.edit_reply_markup(chat_id, message_id, "⏭ 건너뜀")
+    cb = upd.get("callback_query")
+    if not cb:
+        return
+    data = cb.get("data", "")
+    msg = cb["message"]
+    chat_id, message_id = msg["chat"]["id"], msg["message_id"]
 
-            elif data.startswith("pub:"):
-                cid = data.split(":", 1)[1]
-                cand = store.get_candidate(cid)
-                if not cand:
-                    bot.answer_callback(cb["id"], "만료된 후보입니다.")
-                    continue
-                bot.answer_callback(cb["id"], "발행을 시작합니다…")
-                bot.edit_reply_markup(chat_id, message_id, "⏳ 생성 중…")
-                store.set_status(cid, Store.STATUS_APPROVED)
-                try:
-                    on_approve(cand)
-                    store.set_status(cid, Store.STATUS_PUBLISHED)
-                    bot.edit_reply_markup(chat_id, message_id, "✅ 발행 완료")
-                except Exception as e:
-                    bot.send_text(f"❌ 발행 실패: {e}")
-                    bot.edit_reply_markup(chat_id, message_id, "❌ 실패")
+    def _safe(fn, *a):
+        try:
+            fn(*a)
+        except Exception as e:  # 텔레그램 응답 실패는 무시(발행 자체엔 영향 없음)
+            print(f"[warn] 텔레그램 응답 실패(무시): {e}")
+
+    if data.startswith("skip:"):
+        cid = data.split(":", 1)[1]
+        store.set_status(cid, Store.STATUS_REJECTED)
+        _safe(bot.answer_callback, cb["id"], "건너뛰었습니다.")
+        _safe(bot.edit_reply_markup, chat_id, message_id, "⏭ 건너뜀")
+
+    elif data.startswith("pub:"):
+        cid = data.split(":", 1)[1]
+        cand = store.get_candidate(cid)
+        if not cand:
+            _safe(bot.answer_callback, cb["id"], "만료된 후보입니다. run_ai.py 로 새 후보를 받아주세요.")
+            return
+        _safe(bot.answer_callback, cb["id"], "발행을 시작합니다…")
+        _safe(bot.edit_reply_markup, chat_id, message_id, "⏳ 생성 중…")
+        store.set_status(cid, Store.STATUS_APPROVED)
+        try:
+            on_approve(cand)
+            store.set_status(cid, Store.STATUS_PUBLISHED)
+            _safe(bot.edit_reply_markup, chat_id, message_id, "✅ 발행 완료")
+        except Exception as e:
+            _safe(bot.send_text, f"❌ 발행 실패: {e}")
+            _safe(bot.edit_reply_markup, chat_id, message_id, "❌ 실패")
