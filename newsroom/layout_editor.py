@@ -42,8 +42,8 @@ class Editor:
         card = self.base.get("card", {})
         content = self.base.get("content", {})
 
-        self.headline = self._entry(left, "미리보기 제목", content.get("_preview",
-                                    "海外で話題のニュース、その真相とは"))
+        self.headline = self._entry(left, "미리보기 제목", "9万4千人が事実上の兵役免除")
+        self.subtitle = self._entry(left, "서브타이틀", "兵役の公平性めぐり論争")
         self.brand = self._entry(left, "팔로우 핸들 (brand)", card.get("brand", ""))
         self.tagline = self._entry(left, "태그라인 (tagline)", card.get("tagline", ""))
         self.brand_top = self._entry(left, "우상단 문구 (brand_top)", card.get("brand_top", ""))
@@ -117,7 +117,8 @@ class Editor:
     def render(self):
         cfg = self._preview_cfg()
         try:
-            render_card(cfg, title=self.headline.get(), category="", bg_path=self.bg_path,
+            render_card(cfg, title=self.headline.get(), subtitle=self.subtitle.get(),
+                        category="world", bg_path=self.bg_path,
                         out_path=self._tmp, is_cover=True, slide_total=1)
             img = Image.open(self._tmp)
             ratio = PREVIEW_H / img.height

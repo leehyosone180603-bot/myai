@@ -65,7 +65,14 @@ card:
   tagline: ""               # 좌하단 키워드 태그라인 (비우면 표시 안 함)
   brand_top: ""             # 우상단 작은 브랜드 문구
   show_counter: false       # 단일 발행이라 카운터 미표시
-  title_max_lines: 3        # 표지 제목 최대 줄 수
+  title_max_lines: 2        # 표지 제목 최대 줄 수
+  title_scale: 0.078        # 제목 크기 (카드 폭 대비)
+  # 제목 위 카테고리 칩 라벨 (일본어). AI 카테고리 → 표시 텍스트
+  chip_labels:
+    economy: "経済"
+    world:   "海外"
+    hot:     "話題"
+    today:   "ニュース"
   # ── 하단 그라데이션 (이미지 상단은 안 가림) ──
   overlay_opacity: 0.85     # 맨 아래 어둡기 (0~1, 완전 검정은 1)
   gradient_start: 0.5       # 그라데이션 시작 위치(0.5=하단 절반부터)

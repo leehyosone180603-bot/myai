@@ -123,15 +123,16 @@ def _bottom_gradient(w: int, h: int, opacity: float, start: float = 0.5) -> Imag
 
 
 def _load_logo(path: Path, target_w: int, remove_white: bool = True,
-               white_thresh: int = 238) -> Image.Image:
-    """로고 이미지를 불러와 (선택) 흰 배경 투명 처리 후 target_w 폭으로 리사이즈."""
+               white_thresh: int = 225) -> Image.Image:
+    """로고 이미지를 불러와 (선택) 흰/오프화이트 배경 투명 처리 후 target_w 폭으로 리사이즈."""
     img = Image.open(path).convert("RGBA")
     if remove_white:
         px = img.getdata()
         out = []
         for r, g, b, a in px:
-            if r >= white_thresh and g >= white_thresh and b >= white_thresh:
-                out.append((r, g, b, 0))            # 흰색 → 투명
+            # 밝고(모든 채널 높음) 채도 낮은(회색 계열) 픽셀 = 배경으로 보고 투명 처리
+            if min(r, g, b) >= white_thresh and (max(r, g, b) - min(r, g, b)) <= 12:
+                out.append((r, g, b, 0))
             else:
                 out.append((r, g, b, a))
         img.putdata(out)
@@ -204,9 +205,9 @@ def _counter_pill(draw, right_x, top_y, text, font):
 
 
 def render_card(cfg: Config, *, title: str, category: str = "", body: str = "",
-                bg_path: str | None, out_path: Path, is_cover: bool = True,
+                subtitle: str = "", bg_path: str | None, out_path: Path, is_cover: bool = True,
                 slide_index: int = 1, slide_total: int = 1) -> Path:
-    """카드 1장 렌더링 (레퍼런스 스타일: 카운터 배지 · 큰 좌하단 제목 · 팔로우/태그라인)."""
+    """카드 1장 렌더링 (레퍼런스: 카테고리 칩 · 큰 제목 · 서브타이틀 · 하단중앙 로고)."""
     w, h = cfg.get("card.size", [1080, 1350])
     handle = cfg.get("card.brand", "")
     follow = (cfg.get("card.follow_prefix", "팔로우 ") + handle) if handle else ""
@@ -252,34 +253,52 @@ def render_card(cfg: Config, *, title: str, category: str = "", body: str = "",
         canvas.alpha_composite(logo, ((w - logo.width) // 2, y_bottom - logo.height))
         y_bottom -= logo.height + int(h * 0.012)
 
-    # 5) 하단 블록: (아래→위) 태그라인 · 팔로우
-    if tagline:
-        tag_h = _draw_top(draw, margin, y_bottom - _text_size(draw, tagline, _font(cfg, int(w * 0.026), True))[1],
-                          tagline, _font(cfg, int(w * 0.026), bold=True), fill=(255, 255, 255, 235),
-                          shadow=(2, 2, (0, 0, 0, 140)))
-        y_bottom -= tag_h + int(h * 0.010)
-    follow_top = None
-    if follow:
-        fh = _text_size(draw, follow, _font(cfg, int(w * 0.028), False))[1]
-        follow_top = y_bottom - fh
-        _draw_top(draw, margin, follow_top, follow, _font(cfg, int(w * 0.028), bold=False),
-                  fill=(255, 255, 255, 235), shadow=(2, 2, (0, 0, 0, 140)))
-    else:
-        follow_top = y_bottom
-
-    # 5) 제목(표지) 또는 본문(내지) — 크고 굵게, 좌하단 블록 위에 배치
+    # 5) 하단 텍스트 블록: (위→아래) 카테고리 칩 · 제목 · 서브타이틀
     text = title if is_cover else (body or title)
-    max_lines = int(cfg.get("card.title_max_lines", 3)) if is_cover else 5
-    font_size = int(w * (float(cfg.get("card.title_scale", 0.088)) if is_cover else 0.056))
-    tfont = _font(cfg, font_size, bold=True)
-    lines = _wrap(draw, text, tfont, max_width=w - margin * 2, max_lines=max_lines)
-    line_h = int(font_size * 1.16)
-    title_bottom = follow_top - int(h * 0.03)
-    y = title_bottom - line_h * len(lines)
-    for ln in lines:
-        draw.text((margin + 3, y + 3), ln, font=tfont, fill=(0, 0, 0, 170))  # 그림자
+    sub = subtitle if is_cover else ""
+    chip_text = cfg.get("card.chip_labels", {}).get(category, "")
+
+    max_lines = int(cfg.get("card.title_max_lines", 2)) if is_cover else 5
+    title_size = int(w * (float(cfg.get("card.title_scale", 0.078)) if is_cover else 0.052))
+    tfont = _font(cfg, title_size, bold=True)
+    sfont = _font(cfg, int(w * 0.040), bold=True)       # 서브타이틀
+    cfont = _font(cfg, int(w * 0.030), bold=True)       # 칩
+
+    tlines = _wrap(draw, text, tfont, max_width=w - margin * 2, max_lines=max_lines)
+    line_h = int(title_size * 1.16)
+    title_h = line_h * len(tlines)
+    sub_h = _text_size(draw, sub, sfont)[1] if sub else 0
+    cpadx, cpady = int(w * 0.024), int(w * 0.012)
+    chip_dim = _text_size(draw, chip_text, cfont) if chip_text else (0, 0, 0)
+    chip_h = (chip_dim[1] + cpady * 2) if chip_text else 0
+    gap = int(h * 0.014)
+
+    # 아래(로고 위)에서부터 위로 쌓기: 서브타이틀 → 제목 → 칩
+    cur = y_bottom - int(h * 0.01)
+    sub_top = None
+    if sub:
+        sub_top = cur - sub_h
+        cur = sub_top - gap
+    title_top = cur - title_h
+    cur = title_top - gap
+    chip_top = cur - chip_h
+
+    if chip_text:                                        # 카테고리 칩(반투명 검정 라운드)
+        cw = chip_dim[0] + cpadx * 2
+        draw.rounded_rectangle([margin, chip_top, margin + cw, chip_top + chip_h],
+                               radius=int(chip_h * 0.28), fill=(0, 0, 0, 150))
+        draw.text((margin + cpadx, chip_top + cpady - chip_dim[2]), chip_text,
+                  font=cfont, fill=(255, 255, 255, 245))
+
+    y = title_top                                        # 제목
+    for ln in tlines:
+        draw.text((margin + 3, y + 3), ln, font=tfont, fill=(0, 0, 0, 180))
         draw.text((margin, y), ln, font=tfont, fill="white")
         y += line_h
+
+    if sub:                                              # 서브타이틀
+        _draw_top(draw, margin, sub_top, sub, sfont, fill=(255, 255, 255, 230),
+                  shadow=(2, 2, (0, 0, 0, 150)))
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     rgb = canvas.convert("RGB")
@@ -301,6 +320,7 @@ def render_bundle(cfg: Config, plan: ContentPlan, bg_paths: list[str | None],
         render_card(
             cfg,
             title=plan.headline if i == 0 else slide_text,
+            subtitle=plan.subtitle,
             body=slide_text,
             category=plan.category,
             bg_path=bg,

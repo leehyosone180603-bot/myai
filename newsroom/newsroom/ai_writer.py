@@ -18,12 +18,13 @@ _SCHEMA = {
     "type": "object",
     "properties": {
         "headline": {"type": "string"},
+        "subtitle": {"type": "string"},
         "card_slides": {"type": "array", "items": {"type": "string"}},
         "reels_script": {"type": "array", "items": {"type": "string"}},
         "image_prompts": {"type": "array", "items": {"type": "string"}},
         "mood": {"type": "string", "enum": ["calm", "upbeat", "dramatic", "curious"]},
     },
-    "required": ["headline", "card_slides", "reels_script", "image_prompts", "mood"],
+    "required": ["headline", "subtitle", "card_slides", "reels_script", "image_prompts", "mood"],
     "additionalProperties": False,
 }
 
@@ -59,6 +60,7 @@ def write(cfg: Config, cand: Candidate) -> ContentPlan:
 
 요구사항:
 - headline: 표지 썸네일용 제목. 2줄 이내, 강한 훅. ({lang_name})
+- subtitle: 제목 아래 한 줄. 기사 각도/핵심을 짧게(15자 내외). ({lang_name})
 - card_slides: 정확히 {slides}개. 1번은 표지(headline 확장), 이후는 핵심 내용 전개. ({lang_name})
 - reels_script: 4~6문장. 릴스 나레이션용 자연스러운 구어체. 각 문장이 한 장면(클립). ({lang_name})
 - image_prompts: card_slides 와 같은 개수. 각 슬라이드 배경 이미지 생성용 '영문' 프롬프트.
@@ -76,6 +78,7 @@ def write(cfg: Config, cand: Candidate) -> ContentPlan:
 
     return ContentPlan(
         headline=result.get("headline", art.title),
+        subtitle=result.get("subtitle", ""),
         card_slides=card_slides,
         reels_script=result.get("reels_script", []),
         image_prompts=image_prompts[:len(card_slides)],

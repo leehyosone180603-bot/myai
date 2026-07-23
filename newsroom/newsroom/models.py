@@ -65,6 +65,7 @@ class ContentPlan:
     """작가(ai_writer)가 만든 카드/릴스 원고."""
 
     headline: str                       # 카드 표지 제목 (2줄 이내)
+    subtitle: str = ""                  # 제목 아래 한 줄 서브타이틀(각도/한줄요약)
     card_slides: list[str] = field(default_factory=list)   # 슬라이드별 본문 텍스트
     reels_script: list[str] = field(default_factory=list)  # 릴스 나레이션 문장(=클립 단위)
     image_prompts: list[str] = field(default_factory=list) # 슬라이드별 이미지 생성 프롬프트
@@ -77,7 +78,8 @@ class ContentPlan:
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "ContentPlan":
         return cls(**{k: d.get(k) for k in
-                      ("headline", "card_slides", "reels_script", "image_prompts", "mood", "category")})
+                      ("headline", "subtitle", "card_slides", "reels_script",
+                       "image_prompts", "mood", "category")})
 
 
 @dataclass
