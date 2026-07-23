@@ -125,9 +125,10 @@ def download_original(cfg: Config, url: str, out_path: Path | str) -> str | None
         r = requests.get(url, timeout=60, headers={"User-Agent": "Mozilla/5.0"})
         r.raise_for_status()
         img = Image.open(io.BytesIO(r.content)).convert("RGB")
-        # 아이콘·트래킹픽셀 수준으로 작은 것만 거른다(실제 사진은 최대한 사용)
-        if min(img.size) < 300:
-            print(f"    ! 원본 사진이 너무 작음({img.size}) — 사용 안 함")
+        # 폭 기준으로 판단(카드 폭에 맞추므로). 가로로 긴 사진도 폭만 충분하면 사용.
+        min_w = int(cfg.get("image.min_width", 600))
+        if img.width < min_w or min(img.size) < 150:
+            print(f"    ! 원본 사진 해상도 부족({img.size}) — 사용 안 함")
             return None
         out_path.parent.mkdir(parents=True, exist_ok=True)
         img.save(out_path, "JPEG", quality=92)
@@ -135,6 +136,22 @@ def download_original(cfg: Config, url: str, out_path: Path | str) -> str | None
     except Exception as e:
         print(f"    ! 원본 사진 다운로드 실패: {e}")
         return None
+
+
+def probe_original(cfg: Config, url: str) -> bool:
+    """원본 사진 후보가 카드 배경으로 쓸 만한 해상도인지 다운로드해 확인(저장 X)."""
+    if not url:
+        return False
+    try:
+        from PIL import Image
+        import io
+        r = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+        r.raise_for_status()
+        img = Image.open(io.BytesIO(r.content))
+        min_w = int(cfg.get("image.min_width", 600))
+        return img.width >= min_w and min(img.size) >= 150
+    except Exception:
+        return False
 
 
 def _read_source(source: str) -> tuple[bytes, str] | None:

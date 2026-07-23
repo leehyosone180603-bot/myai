@@ -35,6 +35,15 @@ def _original_image_candidates(cand: Candidate):
         yield hero
 
 
+def _ensure_photo(cfg: Config, cand: Candidate) -> bool:
+    """사용 가능한 원본 사진을 찾아 cand.article.image_url 에 확정. 없으면 False."""
+    for url in _original_image_candidates(cand):
+        if image_gen.probe_original(cfg, url):
+            cand.article.image_url = url
+            return True
+    return False
+
+
 def _slug(cand: Candidate) -> str:
     date = datetime.utcnow().strftime("%Y%m%d")
     safe = re.sub(r"[^a-zA-Z0-9]+", "-", cand.article.title.lower())[:32].strip("-")
@@ -68,6 +77,17 @@ def collect_and_review(cfg: Config, store: Store) -> list[Candidate]:
     print("STEP 1 · AI 1차 선별")
     candidates = ai_filter.select(cfg, articles)
     print(f"  선별 {len(candidates)}건")
+
+    # 쓸만한 원본 사진이 있는 기사만 검토 대상으로(사진 없는 기사는 후보에서 제외)
+    if bool(cfg.get("image.use_original", True)) and bool(cfg.get("image.skip_if_no_photo", True)):
+        kept: list[Candidate] = []
+        for c in candidates:
+            if _ensure_photo(cfg, c):
+                kept.append(c)
+            else:
+                print(f"  · 사진 없어 제외: {c.article.title[:45]}")
+        candidates = kept
+        print(f"  사진 있는 후보 {len(candidates)}건")
 
     print("STEP 2 · 텔레그램 검토 요청")
     telegram_bot.send_candidates(cfg, candidates, store)
@@ -107,6 +127,11 @@ def generate_and_publish(cfg: Config, cand: Candidate, publish: bool = True) -> 
             bg = image_gen.generate_from_source(cfg, cand.article.image_url, out)
             if bg:
                 print("  · 표지: 원본 사진 기반 재해석 사용")
+        # 쓸만한 원본 사진이 없으면 이 기사는 건너뛴다(AI 이미지 대체 안 함)
+        if not bg and i == 0 and use_original and bool(cfg.get("image.skip_if_no_photo", True)):
+            print("  ! 쓸만한 원본 사진이 없어 이 기사는 건너뜁니다")
+            bundle.skipped = True
+            return bundle
         if not bg:  # 최종 폴백: 텍스트→이미지(Grok/Gemini)
             prompt = plan.image_prompts[i] if i < len(plan.image_prompts) else cfg.get("image.style", "")
             bg = image_gen.generate(cfg, prompt, out)

@@ -146,6 +146,39 @@ def resolve_logo(cfg: Config) -> Path | None:
     return None
 
 
+def _photo_top_bg(cfg: Config, src: Image.Image, w: int, h: int) -> tuple[Image.Image, int]:
+    """가로로 긴 원본 사진을 상단에 그대로 배치하고 하단은 검정으로 채운다.
+
+    (배경 이미지, 사진 하단 y) 반환. 아래 검정 영역에 제목/서브타이틀/로고가 들어간다.
+    """
+    max_ph = int(h * float(cfg.get("card.photo_top_max", 0.60)))   # 사진 최대 높이(제목 공간 확보)
+    ph = round(w * src.height / src.width)                          # 폭을 카드에 맞췄을 때 높이
+    canvas = Image.new("RGB", (w, h), (0, 0, 0))
+    if ph <= max_ph:
+        canvas.paste(src.resize((w, ph), Image.LANCZOS), (0, 0))
+        seam = ph
+    else:                                                          # 너무 높으면 상단 밴드에 맞춰 크롭
+        canvas.paste(_cover_fit(src, w, max_ph), (0, 0))
+        seam = max_ph
+    return canvas, seam
+
+
+def _seam_gradient(w: int, h: int, seam_y: int, blend: int) -> Image.Image:
+    """사진↔검정 경계를 부드럽게: seam 위 blend 구간을 검정으로 서서히 페이드."""
+    grad = Image.new("L", (1, h), 0)
+    for y in range(h):
+        if y >= seam_y:
+            a = 255
+        elif y >= seam_y - blend:
+            a = int(255 * (y - (seam_y - blend)) / max(1, blend))
+        else:
+            a = 0
+        grad.putpixel((0, y), a)
+    overlay = Image.new("RGBA", (w, h), (0, 0, 0, 255))
+    overlay.putalpha(grad.resize((w, h)))
+    return overlay
+
+
 def _load_logo(path: Path, target_w: int, remove_white: bool = True,
                white_thresh: int = 225) -> Image.Image:
     """로고 이미지를 불러와 (선택) 흰/오프화이트 배경 투명 처리 후 target_w 폭으로 리사이즈."""
@@ -243,15 +276,25 @@ def render_card(cfg: Config, *, title: str, category: str = "", body: str = "",
     opacity = float(cfg.get("card.overlay_opacity", 0.85))
     grad_start = float(cfg.get("card.gradient_start", 0.5))   # 하단 절반부터
 
-    # 1) 배경 (풀블리드 cover-fit)
+    # 1) 배경
+    photo_seam = None                                    # 상단사진+하단검정 레이아웃일 때 사진 하단 y
+    photo_top = bool(cfg.get("card.photo_top", True))
     if bg_path and Path(bg_path).exists():
-        bg = _cover_fit(Image.open(bg_path).convert("RGB"), w, h)
+        src = Image.open(bg_path).convert("RGB")
+        # 가로로 긴(카드 비율보다 넓은) 원본 사진 → 위: 사진 그대로, 아래: 검정 배경
+        if photo_top and src.width / src.height > (w / h) * 1.02:
+            bg, photo_seam = _photo_top_bg(cfg, src, w, h)
+        else:
+            bg = _cover_fit(src, w, h)                    # 세로/정방형은 풀블리드
     else:
         bg = _placeholder_bg(w, h, seed=title)
     canvas = bg.convert("RGBA")
 
-    # 2) 하단만 검정 그라데이션 (이미지 상단은 안 가림)
-    canvas.alpha_composite(_bottom_gradient(w, h, opacity, grad_start))
+    # 2) 가독성 그라데이션
+    if photo_seam is not None:                            # 사진↔검정 경계만 부드럽게
+        canvas.alpha_composite(_seam_gradient(w, h, photo_seam, int(h * 0.10)))
+    else:                                                 # 풀블리드: 하단만 검정 그라데이션
+        canvas.alpha_composite(_bottom_gradient(w, h, opacity, grad_start))
 
     draw = ImageDraw.Draw(canvas)
     margin = int(w * 0.06)

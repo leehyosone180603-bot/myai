@@ -93,10 +93,11 @@ class Bundle:
     plan: ContentPlan | None = None
     card_paths: list[str] = field(default_factory=list)
     reel_path: str = ""
+    skipped: bool = False       # 쓸만한 원본 사진이 없어 건너뛴 경우 True
     created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
     def to_dict(self) -> dict[str, Any]:
         return {"candidate": self.candidate.to_dict(),
                 "plan": self.plan.to_dict() if self.plan else None,
                 "card_paths": self.card_paths, "reel_path": self.reel_path,
-                "created_at": self.created_at}
+                "skipped": self.skipped, "created_at": self.created_at}
