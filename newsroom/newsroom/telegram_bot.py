@@ -42,7 +42,8 @@ class TelegramBot:
             f"출처: {art.source} · <a href=\"{art.url}\">원문</a>"
         )
         keyboard = {"inline_keyboard": [[
-            {"text": "✅ 발행", "callback_data": f"pub:{cand.id}"},
+            # 콜백에 스트림(topic)을 심어, 사용자가 실제로 누른 목록의 스트림을 그대로 반영
+            {"text": "✅ 발행", "callback_data": f"pub:{cand.topic}:{cand.id}"},
             {"text": "⏭ 건너뛰기", "callback_data": f"skip:{cand.id}"},
         ]]}
         self._call("sendMessage", chat_id=self.chat_id, text=text,
@@ -145,11 +146,14 @@ def _handle_update(bot: "TelegramBot", store: Store,
         _safe(bot.edit_reply_markup, chat_id, message_id, "⏭ 건너뜀")
 
     elif data.startswith("pub:"):
-        cid = data.split(":", 1)[1]
+        parts = data.split(":", 2)          # pub:topic:cid  (구버전: pub:cid)
+        btn_topic, cid = (parts[1], parts[2]) if len(parts) == 3 else (None, parts[1])
         cand = store.get_candidate(cid)
         if not cand:
             _safe(bot.answer_callback, cb["id"], "만료된 후보입니다. run_ai.py 로 새 후보를 받아주세요.")
             return
+        if btn_topic in ("money", "general"):
+            cand.topic = btn_topic          # 사용자가 누른 목록의 스트림을 신뢰
         _safe(bot.answer_callback, cb["id"], "생성 후 발행 대기열에 넣는 중…")
         _safe(bot.edit_reply_markup, chat_id, message_id, "⏳ 생성 중…")
         store.set_status(cid, Store.STATUS_APPROVED)
