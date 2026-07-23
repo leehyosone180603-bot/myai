@@ -98,7 +98,11 @@ def poll_loop(cfg: Config, store: Store,
         try:
             updates = bot.get_updates(offset)
         except Exception as e:
-            print(f"getUpdates 오류: {e}; 5초 후 재시도")
+            if "409" in str(e):
+                print("⚠ 409 Conflict — 이 봇으로 폴링하는 다른 프로세스가 있습니다.\n"
+                      "   run_ai_bot.py 는 창 하나만 켜세요. 중복 창을 닫으면 자동 복구됩니다.")
+            else:
+                print(f"getUpdates 오류: {e}; 5초 후 재시도")
             time.sleep(5)
             continue
 
