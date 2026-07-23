@@ -47,6 +47,7 @@ class Candidate:
     reason: str = ""          # AI 가 고른 이유 (텔레그램 미리보기에 표시)
     category: str = "today"   # economy | world | hot | today
     score: float = 0.0
+    topic: str = "general"    # 발행 스트림: money(돈/경제) | general(그 외)
 
     @property
     def id(self) -> str:
@@ -54,12 +55,13 @@ class Candidate:
 
     def to_dict(self) -> dict[str, Any]:
         return {"article": self.article.to_dict(), "reason": self.reason,
-                "category": self.category, "score": self.score}
+                "category": self.category, "score": self.score, "topic": self.topic}
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Candidate":
         return cls(article=Article.from_dict(d["article"]), reason=d.get("reason", ""),
-                   category=d.get("category", "today"), score=d.get("score", 0.0))
+                   category=d.get("category", "today"), score=d.get("score", 0.0),
+                   topic=d.get("topic", "general"))
 
 
 @dataclass

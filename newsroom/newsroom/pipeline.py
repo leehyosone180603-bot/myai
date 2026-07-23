@@ -15,7 +15,12 @@ from . import ai_filter, ai_writer, cardnews, image_gen, instagram, reels, stora
 from .collector import collect
 from .config import Config
 from .models import Bundle, Candidate
+from .pubqueue import PublishQueue
 from .store import Store
+
+
+def _queue(cfg: Config) -> PublishQueue:
+    return PublishQueue(cfg.path(cfg.get("output.queue_file", "out/publish_queue.json")))
 
 
 def _original_image_candidates(cand: Candidate):
@@ -68,14 +73,20 @@ def _caption(cfg: Config, cand: Candidate, plan) -> str:
 
 
 # ── 1) 수집 → 선별 → 검토 요청 ──────────────────────────────────────
-def collect_and_review(cfg: Config, store: Store) -> list[Candidate]:
+def collect_and_review(cfg: Config, store: Store, topic: str | None = None,
+                       keep: int | None = None) -> list[Candidate]:
+    """수집 → (topic 스트림) 선별 → 사진 필터 → 텔레그램 검토 전송.
+
+    topic=money|general 이면 해당 주제만 골라 보낸다(밤 검토에서 스트림별로 호출).
+    """
     from . import telegram_bot
-    print("STEP 1 · 수집")
+    label = {"money": "💰 돈/경제", "general": "🌐 이슈"}.get(topic, "전체")
+    print(f"STEP 1 · 수집  [{label}]")
     articles = collect(cfg)
     print(f"  수집 {len(articles)}건")
 
     print("STEP 1 · AI 1차 선별")
-    candidates = ai_filter.select(cfg, articles)
+    candidates = ai_filter.select(cfg, articles, keep=keep, topic=topic)
     print(f"  선별 {len(candidates)}건")
 
     # 쓸만한 원본 사진이 있는 기사만 검토 대상으로(사진 없는 기사는 후보에서 제외)
@@ -89,13 +100,22 @@ def collect_and_review(cfg: Config, store: Store) -> list[Candidate]:
         candidates = kept
         print(f"  사진 있는 후보 {len(candidates)}건")
 
-    print("STEP 2 · 텔레그램 검토 요청")
-    telegram_bot.send_candidates(cfg, candidates, store)
+    print(f"STEP 2 · 텔레그램 검토 요청  [{label}]")
+    telegram_bot.send_candidates(cfg, candidates, store, header=label)
     return candidates
 
 
-# ── 2) 승인 → 생성 → 발행 ──────────────────────────────────────────
-def generate_and_publish(cfg: Config, cand: Candidate, publish: bool = True) -> Bundle:
+def review_all_streams(cfg: Config, store: Store) -> None:
+    """밤 검토(23시): 돈/경제 스트림 + 일반 이슈 스트림을 각각 후보로 보낸다."""
+    money_keep = int(cfg.get("schedule.money_review_keep", 4))     # 돈: 후보 넉넉히(2개 승인용)
+    general_keep = int(cfg.get("schedule.general_review_keep", 5))  # 일반: (3개 승인용)
+    collect_and_review(cfg, store, topic="money", keep=money_keep)
+    collect_and_review(cfg, store, topic="general", keep=general_keep)
+
+
+# ── 2) 생성(공용) ──────────────────────────────────────────────────
+def _generate_assets(cfg: Config, cand: Candidate) -> Bundle:
+    """원고 → 이미지 → 카드 → 릴스까지 생성(발행/업로드 전). 사진 없으면 skipped."""
     out_dir = cfg.out_dir
     slug = _slug(cand)
     bundle = Bundle(candidate=cand)
@@ -115,7 +135,6 @@ def generate_and_publish(cfg: Config, cand: Candidate, publish: bool = True) -> 
         bg = None
         if i == 0 and use_original:
             # 표지 배경 = 원본 뉴스 사진 그대로(AI 생성 X). 출처는 캡션에 명시.
-            # RSS 이미지 → (없거나 너무 작으면) 기사 페이지 og:image 순으로 시도.
             for src_url in _original_image_candidates(cand):
                 bg = image_gen.download_original(cfg, src_url, out)
                 if bg:
@@ -123,11 +142,9 @@ def generate_and_publish(cfg: Config, cand: Candidate, publish: bool = True) -> 
                     print("  · 표지: 원본 뉴스 사진 그대로 사용")
                     break
         if not bg and i == 0 and cand.article.image_url and reinterpret:
-            # (옵션) 원본 사진 Gemini 재해석 — 유료 등급 필요
             bg = image_gen.generate_from_source(cfg, cand.article.image_url, out)
             if bg:
                 print("  · 표지: 원본 사진 기반 재해석 사용")
-        # 쓸만한 원본 사진이 없으면 이 기사는 건너뛴다(AI 이미지 대체 안 함)
         if not bg and i == 0 and use_original and bool(cfg.get("image.skip_if_no_photo", True)):
             print("  ! 쓸만한 원본 사진이 없어 이 기사는 건너뜁니다")
             bundle.skipped = True
@@ -145,28 +162,26 @@ def generate_and_publish(cfg: Config, cand: Candidate, publish: bool = True) -> 
     print("STEP 3 · 릴스(썸네일 1장 → 약 10초 영상)")
     thumb = bundle.card_paths[0] if bundle.card_paths else None
     bundle.reel_path = reels.build_from_image(cfg, thumb, out_dir, slug, mood=plan.mood) or ""
+    return bundle
 
-    if not publish:
-        print("STEP 4 · 발행 생략 (--no-publish) — 파일만 생성했습니다")
-        print(f"  📁 카드 {len(bundle.card_paths)}장, 릴스: {bundle.reel_path or '없음'}  → {out_dir}")
-        return bundle
 
-    # 발행 모드: single(썸네일 1장만) | carousel(여러장)
-    mode = cfg.get("card.publish", "single")
-    to_upload = bundle.card_paths[:1] if mode == "single" else bundle.card_paths
-
-    print("STEP 4 · 공개 URL 업로드 (R2)")
+def _upload_assets(cfg: Config, bundle: Bundle, slug: str) -> tuple[list[str], str | None]:
+    """카드/릴스를 R2 에 올려 공개 URL 반환. 스토리지 없으면 ([], None)."""
     if not storage.enabled(cfg):
         print("  ! 스토리지 자격증명 없음 — 업로드/발행 생략 (파일만 생성)")
-        return bundle
+        return [], None
+    mode = cfg.get("card.publish", "single")
+    to_upload = bundle.card_paths[:1] if mode == "single" else bundle.card_paths
     card_urls = [storage.upload(cfg, p, f"{slug}/card{i+1}.jpg")
                  for i, p in enumerate(to_upload)]
     reel_url = storage.upload(cfg, bundle.reel_path, f"{slug}/reel.mp4") if bundle.reel_path else None
     print(f"  업로드 완료: 카드 {len(card_urls)}장" + (" + 릴스" if reel_url else ""))
+    return card_urls, reel_url
 
-    print("STEP 4 · 인스타그램 발행")
+
+def _publish_to_ig(cfg: Config, card_urls: list[str], reel_url: str | None, caption: str) -> None:
+    mode = cfg.get("card.publish", "single")
     ig = instagram.Instagram(cfg)
-    caption = _caption(cfg, cand, plan)
     if card_urls:
         if mode == "single" or len(card_urls) == 1:
             pid = ig.publish_single(card_urls[0], caption)
@@ -177,4 +192,63 @@ def generate_and_publish(cfg: Config, cand: Candidate, publish: bool = True) -> 
         rid = ig.publish_reel(reel_url, caption, cover_url=card_urls[0] if card_urls else None)
         print(f"  릴스 게시물: {rid or '(dry-run)'}")
 
+
+def generate_and_publish(cfg: Config, cand: Candidate, publish: bool = True) -> Bundle:
+    """즉시 발행 경로(로컬 테스트/즉시 모드). 생성 → 업로드 → 인스타 발행."""
+    bundle = _generate_assets(cfg, cand)
+    if bundle.skipped:
+        return bundle
+    if not publish:
+        print(f"STEP 4 · 발행 생략 — 카드 {len(bundle.card_paths)}장, 릴스: {bundle.reel_path or '없음'}")
+        return bundle
+    slug = _slug(cand)
+    print("STEP 4 · 공개 URL 업로드 (R2)")
+    card_urls, reel_url = _upload_assets(cfg, bundle, slug)
+    if not card_urls and not reel_url:
+        return bundle
+    print("STEP 4 · 인스타그램 발행")
+    _publish_to_ig(cfg, card_urls, reel_url, _caption(cfg, cand, bundle.plan))
     return bundle
+
+
+# ── 3) 예약 발행: 승인 시 생성+업로드 후 큐 적재 ────────────────────
+def stage_for_publish(cfg: Config, cand: Candidate) -> Bundle:
+    """승인된 후보를 생성/업로드해 발행 대기열에 적재(즉시 발행 X)."""
+    bundle = _generate_assets(cfg, cand)
+    if bundle.skipped:
+        return bundle
+    slug = _slug(cand)
+    print("STEP 4 · 공개 URL 업로드 (R2)")
+    card_urls, reel_url = _upload_assets(cfg, bundle, slug)
+    if not card_urls and not reel_url:
+        print("  ! 업로드 실패 — 대기열 적재 생략")
+        return bundle
+    _queue(cfg).enqueue({
+        "id": cand.id,
+        "topic": cand.topic,
+        "title": cand.article.title,
+        "card_urls": card_urls,
+        "reel_url": reel_url,
+        "caption": _caption(cfg, cand, bundle.plan),
+    })
+    counts = _queue(cfg).counts()
+    print(f"  📥 발행 대기열 적재: [{cand.topic}] {cand.article.title[:36]}  (대기 {counts})")
+    return bundle
+
+
+def publish_next(cfg: Config, topic: str | None = None) -> bool:
+    """대기열에서 가장 오래된 항목(topic 지정 시 해당 스트림)을 하나 발행. 발행하면 True."""
+    q = _queue(cfg)
+    item = q.pop_next(topic)
+    if not item:
+        print(f"발행할 대기 항목이 없습니다 (topic={topic or '전체'}).")
+        return False
+    print(f"STEP 4 · 예약 발행 [{item.get('topic')}] {item.get('title', '')[:40]}")
+    try:
+        _publish_to_ig(cfg, item.get("card_urls", []), item.get("reel_url"), item.get("caption", ""))
+        q.mark(item["id"], "published")
+        return True
+    except Exception as e:
+        q.mark(item["id"], "failed", {"error": str(e)})
+        print(f"  ❌ 발행 실패: {e}")
+        return False

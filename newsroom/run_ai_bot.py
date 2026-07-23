@@ -21,8 +21,9 @@ def main() -> None:
     cfg = load_config()
     store = Store(cfg.state_file)
 
-    def on_approve(cand: Candidate) -> None:
-        pipeline.generate_and_publish(cfg, cand)
+    def on_approve(cand: Candidate):
+        # 예약 발행: 승인 즉시 발행하지 않고 생성/업로드 후 대기열에 적재
+        return pipeline.stage_for_publish(cfg, cand)
 
     telegram_bot.poll_loop(cfg, store, on_approve)
 

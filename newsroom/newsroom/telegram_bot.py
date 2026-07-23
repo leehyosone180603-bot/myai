@@ -33,8 +33,9 @@ class TelegramBot:
     # ── 후보 전송 ────────────────────────────────────────────────
     def send_candidate(self, cand: Candidate) -> None:
         art = cand.article
+        stream = {"money": "💰 돈/경제", "general": "🌐 이슈"}.get(cand.topic, cand.category)
         text = (
-            f"🗞 <b>검토 요청</b> · {cand.category}\n\n"
+            f"🗞 <b>검토 요청</b> · {stream}\n\n"
             f"<b>{art.title}</b>\n"
             f"<i>{cand.reason}</i>\n\n"
             f"{art.summary[:400]}\n\n"
@@ -70,20 +71,22 @@ class TelegramBot:
         return r.json().get("result", [])
 
 
-def send_candidates(cfg: Config, candidates: list[Candidate], store: Store) -> None:
+def send_candidates(cfg: Config, candidates: list[Candidate], store: Store,
+                    header: str = "") -> None:
     """후보를 저장소에 등록하고 텔레그램으로 전송."""
     bot = TelegramBot(cfg)
+    tag = f" · {header}" if header else ""
     if not candidates:
-        bot.send_text("오늘 조건에 맞는 후보가 없습니다.")
+        bot.send_text(f"오늘 조건에 맞는 후보가 없습니다{tag}.")
         return
-    bot.send_text(f"📬 괜찮은 후보 <b>{len(candidates)}건</b> 도착. 검토 후 발행 버튼을 눌러 주세요.")
+    bot.send_text(f"📬{tag} 후보 <b>{len(candidates)}건</b> 도착. 발행할 기사의 버튼을 눌러 주세요.")
     for cand in candidates:
         store.add_candidate(cand)
         bot.send_candidate(cand)
 
 
 def poll_loop(cfg: Config, store: Store,
-              on_approve: Callable[[Candidate], None]) -> None:
+              on_approve: Callable[[Candidate], object]) -> None:
     """버튼 콜백을 계속 수신. '발행'이면 on_approve 콜백(=콘텐츠 생성/발행) 실행.
 
     이 함수는 종료되지 않는 데몬 루프다(run_ai_bot.py 에서 실행).
@@ -143,13 +146,18 @@ def _handle_update(bot: "TelegramBot", store: Store,
         if not cand:
             _safe(bot.answer_callback, cb["id"], "만료된 후보입니다. run_ai.py 로 새 후보를 받아주세요.")
             return
-        _safe(bot.answer_callback, cb["id"], "발행을 시작합니다…")
+        _safe(bot.answer_callback, cb["id"], "생성 후 발행 대기열에 넣는 중…")
         _safe(bot.edit_reply_markup, chat_id, message_id, "⏳ 생성 중…")
         store.set_status(cid, Store.STATUS_APPROVED)
         try:
-            on_approve(cand)
-            store.set_status(cid, Store.STATUS_PUBLISHED)
-            _safe(bot.edit_reply_markup, chat_id, message_id, "✅ 발행 완료")
+            result = on_approve(cand)
+            if bool(getattr(result, "skipped", False)):     # 사진 없어 건너뜀
+                store.set_status(cid, Store.STATUS_REJECTED)
+                _safe(bot.edit_reply_markup, chat_id, message_id, "⚠ 사진없음 · 건너뜀")
+                _safe(bot.send_text, "⚠ 쓸만한 원본 사진이 없어 이 기사는 건너뛰었습니다.")
+            else:
+                store.set_status(cid, Store.STATUS_PUBLISHED)
+                _safe(bot.edit_reply_markup, chat_id, message_id, "✅ 대기열 추가됨")
         except Exception as e:
-            _safe(bot.send_text, f"❌ 발행 실패: {e}")
+            _safe(bot.send_text, f"❌ 처리 실패: {e}")
             _safe(bot.edit_reply_markup, chat_id, message_id, "❌ 실패")
