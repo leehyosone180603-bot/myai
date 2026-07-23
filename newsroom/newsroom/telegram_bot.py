@@ -119,6 +119,8 @@ def _handle_update(bot: "TelegramBot", store: Store,
     cb = upd.get("callback_query")
     if not cb:
         return
+    # 다른 프로세스(run_ai.py)가 방금 추가한 후보를 반영하기 위해 파일을 다시 읽는다
+    store.reload()
     data = cb.get("data", "")
     msg = cb["message"]
     chat_id, message_id = msg["chat"]["id"], msg["message_id"]

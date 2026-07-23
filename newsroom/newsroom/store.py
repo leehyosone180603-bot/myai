@@ -32,6 +32,14 @@ class Store:
                 pass
         return {"items": {}}
 
+    def reload(self) -> None:
+        """다른 프로세스(run_ai.py)가 추가한 최신 후보를 반영하기 위해 파일을 다시 읽는다.
+
+        승인 데몬은 시작 시점의 메모리 상태만 갖고 있으므로, 버튼 콜백 처리 직전
+        이 메서드로 최신 state.json 을 다시 로드해야 '만료된 후보' 오판을 막는다.
+        """
+        self._data = self._load()
+
     def _save(self) -> None:
         self.path.write_text(json.dumps(self._data, ensure_ascii=False, indent=2), encoding="utf-8")
 
