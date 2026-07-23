@@ -120,6 +120,6 @@ Pillow 만으로 위 4개 레이어를 합성합니다. 핵심 함수:
 
 | 표지 슬라이드 | 본문 슬라이드 |
 |---|---|
-| ![표지](docs/samples/sample_card1.png) | ![본문](docs/samples/sample_card2.png) |
+| ![표지](docs/samples/sample_card1.jpg) | ![본문](docs/samples/sample_card2.jpg) |
 
 > 텍스트는 배경 이미지 위에 **코드로 얹기** 때문에, 이미지 생성 프롬프트는 "글자 없는 배경"으로 지시합니다(1번 항목 참조). 이렇게 하면 폰트/문구를 언제든 코드로 교체할 수 있어 브랜드 일관성이 유지됩니다.

@@ -74,7 +74,7 @@ def generate_and_publish(cfg: Config, cand: Candidate, publish: bool = True) -> 
     if not storage.enabled(cfg):
         print("  ! 스토리지 자격증명 없음 — 업로드/발행 생략 (파일만 생성)")
         return bundle
-    card_urls = [storage.upload(cfg, p, f"{slug}/card{i+1}.png")
+    card_urls = [storage.upload(cfg, p, f"{slug}/card{i+1}.jpg")
                  for i, p in enumerate(bundle.card_paths)]
     reel_url = storage.upload(cfg, bundle.reel_path, f"{slug}/reel.mp4") if bundle.reel_path else None
     print(f"  업로드 완료: 카드 {len(card_urls)}장" + (" + 릴스" if reel_url else ""))

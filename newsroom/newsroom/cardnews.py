@@ -243,7 +243,11 @@ def render_card(cfg: Config, *, title: str, category: str = "", body: str = "",
         y += line_h
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    canvas.convert("RGB").save(out_path, "PNG", quality=95)
+    rgb = canvas.convert("RGB")
+    if out_path.suffix.lower() in (".jpg", ".jpeg"):
+        rgb.save(out_path, "JPEG", quality=90)   # 인스타 발행은 JPEG 필요
+    else:
+        rgb.save(out_path, "PNG")
     return out_path
 
 
@@ -254,7 +258,7 @@ def render_bundle(cfg: Config, plan: ContentPlan, bg_paths: list[str | None],
     total = len(plan.card_slides)
     for i, slide_text in enumerate(plan.card_slides):
         bg = bg_paths[i] if i < len(bg_paths) else None
-        out = out_dir / f"{slug}_card{i + 1}.png"
+        out = out_dir / f"{slug}_card{i + 1}.jpg"   # 인스타 발행 위해 JPEG
         render_card(
             cfg,
             title=plan.headline if i == 0 else slide_text,

@@ -71,7 +71,8 @@ class Instagram:
     def _post(self, path: str, params: dict) -> dict:
         params = {**params, "access_token": self.token}
         r = requests.post(f"{self.graph}{path}", data=params, timeout=120)
-        r.raise_for_status()
+        if not r.ok:  # 인스타 API 에러 본문을 그대로 노출 (원인 파악용)
+            raise RuntimeError(f"IG API {r.status_code}: {r.text[:400]}")
         return r.json()
 
     def _wait_ready(self, container_id: str, timeout: int = 300) -> None:

@@ -20,7 +20,7 @@ STEP 4  인스타그램 자동 업로드          Graph API (캐러셀 + 릴스)
 
 | 표지 | 본문 |
 |---|---|
-| ![](docs/samples/sample_card1.png) | ![](docs/samples/sample_card2.png) |
+| ![](docs/samples/sample_card1.jpg) | ![](docs/samples/sample_card2.jpg) |
 
 ---
 
