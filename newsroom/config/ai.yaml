@@ -110,6 +110,9 @@ image:
   gemini_model: imagen-4.0-generate-001  # Imagen 모델(텍스트→이미지). 실패 시 imagen-3.0-generate-002
   grok_model: grok-imagine-image  # xAI 이미지 모델(텍스트→이미지, 구 grok-2-image* 는 지원종료)
   # 2-1: 뉴스 원본 사진을 유사 재해석(이미지→이미지). GOOGLE_API_KEY 필요.
+  #   ※ Gemini 이미지 모델은 유료 등급 필요(무료 등급 할당량=0, 429 발생).
+  #   무료로 쓸 거면 아래를 false 로 두면 재해석을 건너뛰고 곧바로 Grok 으로 배경 생성.
+  reinterpret_source: true  # false = 원본 재해석 건너뛰고 Grok text→image 만 사용
   gemini_edit_model: gemini-2.5-flash-image
   reinterpret_prompt: |
     Recreate this news photo as an original editorial illustration keeping the same

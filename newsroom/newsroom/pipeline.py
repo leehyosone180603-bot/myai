@@ -62,8 +62,10 @@ def generate_and_publish(cfg: Config, cand: Candidate, publish: bool = True) -> 
     for i in range(n):
         out = out_dir / f"{slug}_bg{i+1}.jpg"
         bg = None
-        if i == 0 and cand.article.image_url:
+        reinterpret = bool(cfg.get("image.reinterpret_source", True))
+        if i == 0 and cand.article.image_url and reinterpret:
             # 2-1: 표지 배경 = 원본 뉴스 사진을 Gemini로 유사 재해석(저작권 회피)
+            # ※ Gemini 이미지 모델은 유료 등급 필요(무료 등급 할당량=0). 실패 시 아래 Grok 폴백.
             bg = image_gen.generate_from_source(cfg, cand.article.image_url, out)
             if bg:
                 print("  · 표지: 원본 사진 기반 재해석 사용")
