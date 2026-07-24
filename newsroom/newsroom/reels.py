@@ -81,18 +81,20 @@ def build_from_image(cfg: Config, image_path: str | None, out_dir: Path, slug: s
 
     cmd = ["ffmpeg", "-y", "-loop", "1", "-i", str(image_path)]
 
+    # 오디오: 배경음악(있으면) 또는 '무음' 트랙. 인스타 릴스는 오디오 트랙이 없으면
+    # 처리 실패(ERROR)를 내므로, 무음이라도 AAC 트랙을 반드시 넣는다.
     bgm = pick_music(cfg, mood) if use_bgm else None
     if bgm:
         cmd += ["-stream_loop", "-1", "-i", str(bgm)]
+    else:
+        cmd += ["-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100"]
 
     cmd += ["-t", str(duration), "-r", str(fps), "-vf", vf,
-            "-c:v", "libx264", "-pix_fmt", "yuv420p"]
-
+            "-c:v", "libx264", "-pix_fmt", "yuv420p",
+            "-map", "0:v", "-map", "1:a", "-c:a", "aac", "-b:a", "128k"]
     if bgm:
-        cmd += ["-filter:a", f"volume={bgm_volume}", "-c:a", "aac", "-shortest",
-                "-map", "0:v", "-map", "1:a"]
-
-    cmd += ["-movflags", "+faststart", str(out)]
+        cmd += ["-filter:a", f"volume={bgm_volume}"]
+    cmd += ["-shortest", "-movflags", "+faststart", str(out)]
 
     try:
         _run(cmd)

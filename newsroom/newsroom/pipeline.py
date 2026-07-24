@@ -193,18 +193,37 @@ def _upload_assets(cfg: Config, bundle: Bundle, slug: str) -> tuple[list[str], s
     return card_urls, reel_url
 
 
-def _publish_to_ig(cfg: Config, card_urls: list[str], reel_url: str | None, caption: str) -> None:
+def _publish_to_ig(cfg: Config, card_urls: list[str], reel_url: str | None, caption: str) -> list[str]:
+    """카드/릴스를 각각 독립적으로 발행. 한쪽이 실패해도 다른 쪽은 올린다.
+
+    부분 실패 메시지 리스트를 반환. 둘 다(또는 유일한 하나가) 실패하면 예외.
+    """
     mode = cfg.get("card.publish", "single")
     ig = instagram.Instagram(cfg)
+    ok = 0
+    errs: list[str] = []
     if card_urls:
-        if mode == "single" or len(card_urls) == 1:
-            pid = ig.publish_single(card_urls[0], caption)
-        else:
-            pid = ig.publish_carousel(card_urls, caption)
-        print(f"  카드뉴스 게시물: {pid or '(dry-run)'}")
+        try:
+            if mode == "single" or len(card_urls) == 1:
+                pid = ig.publish_single(card_urls[0], caption)
+            else:
+                pid = ig.publish_carousel(card_urls, caption)
+            print(f"  카드뉴스 게시물: {pid or '(dry-run)'}")
+            ok += 1
+        except Exception as e:
+            errs.append(f"카드: {e}")
+            print(f"  ❌ 카드 발행 실패: {e}")
     if reel_url:
-        rid = ig.publish_reel(reel_url, caption, cover_url=card_urls[0] if card_urls else None)
-        print(f"  릴스 게시물: {rid or '(dry-run)'}")
+        try:
+            rid = ig.publish_reel(reel_url, caption, cover_url=card_urls[0] if card_urls else None)
+            print(f"  릴스 게시물: {rid or '(dry-run)'}")
+            ok += 1
+        except Exception as e:
+            errs.append(f"릴스: {e}")
+            print(f"  ❌ 릴스 발행 실패: {e}")
+    if ok == 0 and errs:              # 아무것도 못 올림 → 실패로 처리(재시도 대상)
+        raise RuntimeError("; ".join(errs))
+    return errs                        # 부분 실패(카드/릴스 중 하나만 성공)
 
 
 def generate_and_publish(cfg: Config, cand: Candidate, publish: bool = True) -> Bundle:
@@ -262,9 +281,12 @@ def publish_next(cfg: Config, topic: str | None = None) -> bool:
     label = {"money": "💰 돈/경제", "general": "🌐 이슈"}.get(item.get("topic"), item.get("topic"))
     print(f"STEP 4 · 예약 발행 [{item.get('topic')}] {title[:40]}")
     try:
-        _publish_to_ig(cfg, item.get("card_urls", []), item.get("reel_url"), item.get("caption", ""))
-        q.mark(item["id"], "published")
-        _notify(cfg, f"📤 <b>발행 완료</b> · {label}\n{title}\n\n남은 대기: {_fmt_counts(cfg)}")
+        errs = _publish_to_ig(cfg, item.get("card_urls", []), item.get("reel_url"), item.get("caption", ""))
+        q.mark(item["id"], "published", {"partial_errors": errs} if errs else None)
+        if errs:                       # 부분 성공(예: 카드는 올라갔지만 릴스 실패)
+            _notify(cfg, f"⚠️ <b>부분 발행</b> · {label}\n{title}\n실패: {'; '.join(errs)[:200]}\n\n남은 대기: {_fmt_counts(cfg)}")
+        else:
+            _notify(cfg, f"📤 <b>발행 완료</b> · {label}\n{title}\n\n남은 대기: {_fmt_counts(cfg)}")
         return True
     except Exception as e:
         q.mark(item["id"], "failed", {"error": str(e)})
