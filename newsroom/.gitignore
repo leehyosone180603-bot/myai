@@ -1,6 +1,11 @@
 # 비밀값 / 런타임 산출물
 .env
+.env.ko
+.env.*
+!.env.example
+!.env.ko.example
 out/
+out_ko/
 *.pyc
 __pycache__/
 .venv/

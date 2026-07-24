@@ -46,10 +46,12 @@ class _Tee:
 
 
 class Panel:
-    def __init__(self, root: Tk):
+    def __init__(self, root: Tk, config_path: str | None = None):
         self.root = root
-        root.title("뉴스룸 관리 패널")
-        self.cfg = load_config()
+        self.cfg = load_config(config_path)
+        lang = self.cfg.get("content.language", "ja")
+        ch = {"ja": "🇯🇵 일본어", "ko": "🇰🇷 한국어", "en": "🇺🇸 English"}.get(lang, lang)
+        root.title(f"뉴스룸 관리 패널 · {ch}")
         self.store = Store(self.cfg.state_file)
         self.bot_thread: threading.Thread | None = None
         self.logq: "_q.Queue[str]" = _q.Queue()
@@ -143,9 +145,11 @@ class Panel:
 
 
 def main():
+    import sys
+    config_path = sys.argv[1] if len(sys.argv) > 1 else None  # 예: config/ai.ko.yaml
     root = Tk()
     root.geometry("820x560")
-    Panel(root)
+    Panel(root, config_path)
     root.mainloop()
 
 

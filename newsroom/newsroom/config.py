@@ -80,11 +80,19 @@ def _deep_merge(base: dict, over: dict) -> dict:
 
 
 def load_config(config_path: str | os.PathLike | None = None) -> Config:
-    """.env 로드 후 ai.yaml 파싱. layout_overrides.yaml(있으면) 병합."""
-    load_dotenv(ROOT / ".env")
+    """.env 로드 후 지정 config 파싱. layout_overrides.yaml(있으면) 병합.
+
+    멀티 채널: config 에 `env_file: .env.ko` 가 있으면 공통 .env 위에 그 파일을
+    덮어 로드한다(채널별 텔레그램 봇/인스타 토큰 분리). 없으면 .env 만 사용.
+    """
+    load_dotenv(ROOT / ".env")                     # 공통 기본값(예: R2 공용)
     path = Path(config_path) if config_path else DEFAULT_CONFIG
     with open(path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
+    # 채널 전용 자격증명 파일(있으면 공통값 위에 덮어쓰기)
+    env_file = data.get("env_file")
+    if env_file:
+        load_dotenv(ROOT / env_file, override=True)
     # 레이아웃 편집기(layout_editor.py)가 저장하는 오버라이드 병합 (주석 보존용 별도 파일)
     overrides = ROOT / "config" / "layout_overrides.yaml"
     if overrides.exists():

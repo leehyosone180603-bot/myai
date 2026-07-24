@@ -1,0 +1,169 @@
+# ═══════════════════════════════════════════════════════════════════
+#  newsroom 파이프라인 설정
+#  - 소스(RSS), 1차 필터 기준, 브랜드/카드뉴스 템플릿, 릴스/음성 설정
+#  - 비밀값(API 키)은 여기 넣지 말고 .env 에 두세요.
+# ═══════════════════════════════════════════════════════════════════
+
+# ── 콘텐츠 노출 언어/대상 ──────────────────────────────────────────
+# ── 채널 전용 자격증명 파일 (한국어 채널) ──────────────────────────
+#  공통 .env 위에 이 파일을 덮어 로드 → 한국어 채널용 텔레그램 봇/인스타 토큰 분리.
+env_file: .env.ko
+
+content:
+  language: ko              # 발행 언어 (ko=한국어). 제목/본문/캡션에 적용
+  audience: "한국 인스타그램 사용자 (연령 무관)"
+  hashtags: "#해외뉴스 #뉴스 #오늘의뉴스"
+
+# ── 선별/작가에 쓸 LLM 백엔드 선택 ─────────────────────────────────
+ai:
+  provider: claude              # claude | gemini
+  claude_model: claude-opus-4-8 # provider=claude 일 때 (저렴: claude-haiku-4-5)
+  gemini_model: gemini-2.5-flash # provider=gemini 일 때 (고품질: gemini-2.5-pro)
+  #  Gemini 는 Google AI Studio API 키(GOOGLE_API_KEY) 필요. 무료 사용량 있음.
+
+# ── STEP 1 · 매일 소식 수집 (해외 이슈 RSS) ─────────────────────────
+sources:
+  # name: 로그/카드 라벨용,  url: RSS 피드,  lang: 원문 언어
+  - name: BBC World
+    url: https://feeds.bbci.co.uk/news/world/rss.xml
+    lang: en
+  - name: Reuters World
+    url: https://www.reutersagency.com/feed/?best-topics=world&post_type=best
+    lang: en
+  - name: The Verge
+    url: https://www.theverge.com/rss/index.xml
+    lang: en
+
+collect:
+  max_per_source: 15        # 소스별 최근 N건
+  lookback_hours: 36        # 최근 N시간 이내 기사만
+  min_summary_chars: 120    # 본문/요약이 너무 짧으면 제외 (엣날기사/스텁 차단)
+  dedup: true               # 제목 유사 중복 제거
+
+# ── STEP 1 · AI 1차 선별 ───────────────────────────────────────────
+filter:
+  model: claude-opus-4-8
+  keep: 3                   # 텔레그램으로 보낼 후보 개수
+  # 선별 기준(프롬프트에 주입). 우리 채널 톤에 맞게 수정하세요.
+  audience: "한국 인스타그램 사용자 (연령 무관)"
+  criteria: |
+    - 카드뉴스/릴스로 만들기 좋은, 시각적이고 흥미로운 해외 소식
+    - 한국 독자가 '오, 이건 몰랐네' 할 만한 신선도(옛날 이슈/속보 단순 업데이트 제외)
+    - 정치/재난 자극·혐오·논란 소지가 큰 주제는 제외
+    - 경제 이슈 카드, 해외 토픽, 화제의 뉴스, 오늘의 소식 카테고리에 적합
+    - 특정 국가 편향 없이 세계 각지의 소식을 폭넓게
+
+# ── STEP 3 · 작가(카피/스크립트) ───────────────────────────────────
+writer:
+  model: claude-opus-4-8
+  card_slides: 4            # 카드뉴스 슬라이드 수 (표지 1 + 본문 N)
+  # mood 는 릴스 배경음악 선택에 사용됨 (music.tracks 의 mood 와 매칭)
+  moods: [calm, upbeat, dramatic, curious]
+
+# ── STEP 3 · 카드뉴스 템플릿 (첨부 5번째 사진 구조를 코드로 재현) ──────
+card:
+  size: [1080, 1350]        # 인스타 4:5 세로
+  publish: single           # single(썸네일 1장만 발행) | carousel(여러장)
+  # ── 텍스트 요소 ──
+  brand: ""                 # 좌하단 팔로우 핸들 (비우면 표시 안 함)
+  follow_prefix: "フォロー "  # 핸들 앞 문구 (일본어)
+  tagline: ""               # 좌하단 키워드 태그라인 (비우면 표시 안 함)
+  brand_top: ""             # 우상단 작은 브랜드 문구
+  show_counter: false       # 단일 발행이라 카운터 미표시
+  title_max_lines: 2        # 표지 제목 최대 줄 수
+  title_scale: 0.078        # 제목 크기 (카드 폭 대비)
+  title_stroke: 0.035       # 제목 굵기 보강(외곽선). 0=끔, 클수록 굵게(얇은 폰트 대응)
+  # 제목 위 카테고리 칩 라벨 (일본어). AI 카테고리 → 표시 텍스트
+  chip_labels:
+    economy: "経済"
+    world:   "海外"
+    hot:     "話題"
+    today:   "ニュース"
+  # ── 가로로 긴 원본 사진: 위=사진 그대로 / 아래=검정 배경(제목 자리) ──
+  photo_top: true           # 가로로 긴 사진은 상단 배치 + 하단 검정(잘라내지 않음)
+  photo_top_max: 0.60       # 사진 최대 높이(카드 대비). 나머지는 검정(제목 공간)
+  # ── 하단 그라데이션 (풀블리드 사진일 때만) ──
+  overlay_opacity: 0.85     # 맨 아래 어둡기 (0~1, 완전 검정은 1)
+  gradient_start: 0.5       # 그라데이션 시작 위치(0.5=하단 절반부터)
+  # ── 맨 아래 로고 (assets/logo/logo.png 넣으면 자동 삽입) ──
+  logo: assets/logo/logo.png  # 로고 파일 경로 (없으면 미표시)
+  logo_scale: 0.30          # 카드 폭 대비 로고 크기 (0.30=30%)
+  logo_bottom: 0.05         # 로고 아래여백 (카드 높이 대비, 작을수록 아래로)
+  logo_remove_white: true   # 로고 흰 배경 → 투명 처리
+  # ── 폰트 (없으면 시스템 자동 탐색: 일본어 Yu Gothic/Meiryo 우선) ──
+  font_bold: ""             # 예: assets/fonts/NotoSansJP-Bold.otf
+  font_regular: ""
+
+# ── STEP 3 · 릴스(영상) — 썸네일 1장을 짧은 영상으로 ──────────────────
+reels:
+  # TTS·힉스필드 없이, 카드 썸네일 1장을 그대로 N초 영상으로 만들어 릴스 발행.
+  duration: 10              # 영상 길이(초)
+  fps: 30
+  zoom: false               # true 면 아주 느린 줌(켄번스) 효과, false 면 정지 영상
+  bgm: false                # true 면 assets/music 배경음악 얹기(선택). 기본 무음.
+  bgm_volume: 0.18          # 배경음악 볼륨(0~1). bgm: true 일 때만
+
+music:
+  dir: assets/music         # 배경음악 파일 폴더
+  tracks:
+    - { file: calm.mp3,     mood: calm }
+    - { file: upbeat.mp3,   mood: upbeat }
+    - { file: dramatic.mp3, mood: dramatic }
+    - { file: curious.mp3,  mood: curious }
+
+# ── STEP 3 · 이미지 생성 ───────────────────────────────────────────
+image:
+  provider: grok            # gemini | grok  (원본 사진이 없을 때만 사용되는 폴백)
+  size: [1080, 1350]        # 카드 배경과 동일 비율
+  # ── 표지 배경 정책 ──
+  # use_original: 뉴스 원본 사진을 '그대로' 배경으로 사용(AI 생성 X). 출처는 캡션에 명시.
+  #   AI 생성 이미지가 부자연스러워서 원본 사진 사용을 기본값으로 함.
+  use_original: true        # true = 원본 사진 그대로 / false = AI 생성 사용
+  skip_if_no_photo: true    # 쓸만한 원본 사진이 없는 기사는 후보/발행에서 건너뜀(AI 이미지 대체 안 함)
+  min_width: 600            # 원본 사진 최소 가로 해상도(px). 이보다 작으면 og:image 재시도/건너뜀
+  reinterpret_source: false # (옵션) use_original 실패 시 Gemini 재해석 시도(유료 등급 필요)
+  gemini_model: imagen-4.0-generate-001  # 폴백 Imagen 모델(텍스트→이미지)
+  grok_model: grok-imagine-image  # 폴백 xAI 이미지 모델(텍스트→이미지)
+  gemini_edit_model: gemini-2.5-flash-image
+  reinterpret_prompt: |
+    Recreate this news photo as an original editorial illustration keeping the same
+    scene, composition and mood, but as a distinct new artwork (avoid copyright).
+    Photorealistic, high detail, no text, no logos, no watermark.
+  aspect_ratio: "3:4"       # Imagen 지원 비율(1:1,3:4,4:3,9:16,16:9). 카드 4:5와 가장 근접
+  style: |
+    editorial photo illustration, clean, high detail, natural lighting,
+    no text, no watermark, no logos, safe-for-work
+
+# ── STEP 4 · 공개 URL 호스팅 (Cloudflare R2) ───────────────────────
+storage:
+  provider: r2              # 완성 카드/릴스를 올려 인스타가 가져갈 공개 URL 생성
+  bucket: newsroom-assets   # R2 버킷 이름 (.env R2_BUCKET 로도 지정 가능)
+
+# ── STEP 4 · 인스타그램 발행 ───────────────────────────────────────
+instagram:
+  api: instagram            # instagram(=graph.instagram.com, Instagram 로그인) | facebook(=페이지 토큰)
+  version: v21.0
+
+# ── 발행 스케줄 (예약 발행) ─────────────────────────────────────────
+#  밤 11시 검토(후보 전송) → 승인 시 생성/업로드 후 대기열 적재 →
+#  다음날 정해진 시간대에 대기열에서 하나씩 자동 발행.
+#  실제 시각 등록은 schedule_windows.bat(작업 스케줄러) 에서 함.
+schedule:
+  review_hour: 23           # 검토(후보 전송) 시각 = 밤 11시 (참고용; 실제 등록은 배치)
+  money_per_day: 2          # 하루 돈/경제 발행 수
+  general_per_day: 3        # 하루 일반 이슈 발행 수 (합계 5)
+  money_review_keep: 4      # 검토 시 보낼 돈/경제 후보 수(2개 승인용 여유)
+  general_review_keep: 5    # 검토 시 보낼 일반 이슈 후보 수(3개 승인용 여유)
+  # 다음날 발행 시간대(작업 스케줄러 등록용, HH:MM). 돈 2 + 일반 3.
+  slots:
+    - { time: "08:00", topic: money }
+    - { time: "12:00", topic: general }
+    - { time: "15:00", topic: general }
+    - { time: "19:00", topic: money }
+    - { time: "21:00", topic: general }
+
+# ── 출력/상태 ──────────────────────────────────────────────────────
+output:
+  dir: out_ko                  # 생성물(카드/릴스) 저장 폴더 (KR 전용, JP와 분리)
+  state_file: out_ko/state.json  # 승인 대기/발행 상태 저장 (KR 전용)
+  queue_file: out_ko/publish_queue.json  # 예약 발행 대기열 (KR 전용)
