@@ -73,3 +73,15 @@ class PublishQueue:
             if it.get("status") == "queued":
                 c[it.get("topic", "?")] = c.get(it.get("topic", "?"), 0) + 1
         return c
+
+    def requeue_failed(self) -> int:
+        """실패(failed)/발행중(publishing) 상태로 멈춘 항목을 다시 대기(queued)로 되돌린다."""
+        data = self._load()
+        n = 0
+        for it in data["items"]:
+            if it.get("status") in ("failed", "publishing"):
+                it["status"] = "queued"
+                it.pop("error", None)
+                n += 1
+        self._save(data)
+        return n

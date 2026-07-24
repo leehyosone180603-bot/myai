@@ -100,6 +100,20 @@ class Instagram:
             time.sleep(5)
         raise TimeoutError("IG 미디어 처리 타임아웃")
 
-    def _publish(self, creation_id: str) -> str:
-        r = self._post(f"/{self.user_id}/media_publish", {"creation_id": creation_id})
-        return r.get("id", "")
+    def _publish(self, creation_id: str, retries: int = 8) -> str:
+        """미디어 발행. 컨테이너가 아직 준비 안 됐을 때(Media ID is not available,
+        code 9007 / subcode 2207027) 잠깐 기다렸다가 재시도한다."""
+        last: Exception | None = None
+        for _ in range(retries):
+            try:
+                r = self._post(f"/{self.user_id}/media_publish", {"creation_id": creation_id})
+                return r.get("id", "")
+            except RuntimeError as e:
+                msg = str(e)
+                if ("2207027" in msg or "9007" in msg or "not available" in msg
+                        or "Media ID" in msg):
+                    last = e
+                    time.sleep(5)      # 컨테이너 준비 대기 후 재시도
+                    continue
+                raise
+        raise last if last else RuntimeError("media_publish 실패")

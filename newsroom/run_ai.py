@@ -32,6 +32,8 @@ def main() -> None:
     ap.add_argument("--review-general", action="store_true", help="일반 이슈 후보만 전송")
     ap.add_argument("--publish-next", nargs="?", const="", default=None,
                     metavar="TOPIC", help="대기열에서 1건 발행 (money|general, 생략 시 전체)")
+    ap.add_argument("--requeue-failed", action="store_true",
+                    help="실패로 멈춘 대기열 항목을 다시 발행 대기로 되돌림")
     ap.add_argument("--dry", action="store_true", help="텔레그램 전송 없이 선별 결과만 출력")
     ap.add_argument("--generate", action="store_true", help="텔레그램 없이 카드/릴스까지 로컬 생성")
     ap.add_argument("--publish", action="store_true", help="--generate 와 함께: 즉시 인스타 발행")
@@ -39,6 +41,11 @@ def main() -> None:
 
     cfg = load_config(args.config)
     store = Store(cfg.state_file)
+
+    if args.requeue_failed:
+        from newsroom import pipeline
+        pipeline.requeue_failed(cfg)
+        return
 
     # 예약 발행: 대기열에서 1건 발행 (작업 스케줄러가 시간대별로 호출)
     if args.publish_next is not None:

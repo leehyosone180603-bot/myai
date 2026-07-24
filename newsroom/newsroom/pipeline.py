@@ -270,6 +270,13 @@ def stage_for_publish(cfg: Config, cand: Candidate) -> Bundle:
     return bundle
 
 
+def requeue_failed(cfg: Config) -> int:
+    """실패로 멈춘 대기열 항목을 다시 발행 대기로 되돌린다(수정 후 재시도용)."""
+    n = _queue(cfg).requeue_failed()
+    print(f"실패 항목 {n}건을 대기열로 되돌렸습니다. (현재 대기 {_queue(cfg).counts()})")
+    return n
+
+
 def publish_next(cfg: Config, topic: str | None = None) -> bool:
     """대기열에서 가장 오래된 항목(topic 지정 시 해당 스트림)을 하나 발행. 발행하면 True."""
     q = _queue(cfg)

@@ -80,6 +80,9 @@ class Panel:
                ).grid(row=1, column=1, sticky="ew", padx=3, pady=3)
         Button(b, text="전체 대기열 발행", height=2,
                command=lambda: self._bg(self._publish_all)).grid(row=1, column=2, sticky="ew", padx=3, pady=3)
+        Button(b, text="↩ 실패 항목 재시도(대기열 복구)", height=2,
+               command=lambda: self._bg(lambda: pipeline.requeue_failed(self.cfg))
+               ).grid(row=2, column=0, columnspan=3, sticky="ew", padx=3, pady=3)
         for i in range(3):
             b.columnconfigure(i, weight=1)
 
