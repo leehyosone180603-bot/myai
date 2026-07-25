@@ -4,7 +4,7 @@ title 인스타그램 인기 콘텐츠 정렬기
 cd /d "%~dp0"
 
 echo ================================================
-echo    인스타그램 인기 콘텐츠 정렬기
+echo    📸 인스타그램 인기 콘텐츠 정렬기
 echo    (조회수 / 좋아요 순으로 내림차순 정렬)
 echo ================================================
 echo.
@@ -30,16 +30,15 @@ echo [준비] 설치 완료!
 echo.
 
 :RUNAPP
-echo [실행] config.json 의 계정을 분석합니다.
-echo        처음이라면 열리는 창에서 인스타그램에 로그인해 주세요.
+set PORT=8787
+echo [실행] 프로그램을 시작합니다. 잠시 후 브라우저가 자동으로 열립니다.
+echo        * 사용을 마치면 이 창을 닫으면 종료됩니다.
 echo.
-node insta-top.js
-if errorlevel 1 goto FAILRUN
+REM 3초 뒤 기본 브라우저로 화면 열기 (서버는 아래에서 이 창에 계속 실행)
+start "" /min cmd /c "ping -n 4 127.0.0.1 >nul & explorer http://127.0.0.1:8787/"
+node server.js
 echo.
-if exist "report.html" start "" "report.html"
-echo [완료] 결과 리포트 report.html 를 열었습니다.
-echo.
-echo 이 창은 아무 키나 누르면 닫힙니다.
+echo [종료] 프로그램이 종료되었습니다.
 pause >nul
 exit /b 0
 
@@ -62,11 +61,5 @@ exit /b 1
 :FAILPW
 echo.
 echo [오류] 브라우저 설치에 실패했습니다. 다시 실행해 주세요.
-pause
-exit /b 1
-
-:FAILRUN
-echo.
-echo [오류] 실행 중 문제가 발생했습니다. 위 메시지를 확인해 주세요.
 pause
 exit /b 1

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>인스타그램 인기 콘텐츠 정렬기</title>
+<style>
+  :root{
+    --bd:#e9e9ef; --muted:#8a8f98; --ink:#22242b; --bg:#f5f6fa;
+    --ig1:#f09433; --ig3:#dc2743; --ig5:#bc1888;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Malgun Gothic",-apple-system,system-ui,"Segoe UI",sans-serif;}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px 18px 60px}
+
+  /* 헤더 */
+  header{background:linear-gradient(120deg,#f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%);
+    color:#fff;border-radius:18px;padding:26px 26px;margin-bottom:20px;box-shadow:0 8px 24px rgba(188,24,136,.25)}
+  header h1{margin:0;font-size:1.55rem;letter-spacing:-.02em}
+  header p{margin:8px 0 0;opacity:.92;font-size:.95rem}
+
+  /* 카드 공통 */
+  .panel{background:#fff;border:1px solid var(--bd);border-radius:16px;padding:20px;
+    box-shadow:0 2px 14px rgba(0,0,0,.05);margin-bottom:18px}
+
+  /* 입력 폼 */
+  .field{margin-bottom:14px}
+  label{display:block;font-size:.85rem;font-weight:700;margin-bottom:6px;color:#3a3d45}
+  .hint{font-weight:400;color:var(--muted);font-size:.8rem}
+  input[type=text],input[type=password],select{width:100%;padding:12px 14px;border:1.5px solid #dfe1e8;
+    border-radius:10px;font-size:1rem;background:#fff;color:var(--ink);outline:none;transition:border-color .15s}
+  input:focus,select:focus{border-color:var(--ig3)}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .row .field{flex:1;min-width:150px}
+
+  .adv-toggle{background:none;border:none;color:var(--ig3);cursor:pointer;font-size:.85rem;padding:0;margin-top:2px}
+  .adv{display:none;margin-top:12px;padding-top:12px;border-top:1px dashed var(--bd)}
+  .adv.open{display:block}
+
+  .go{width:100%;margin-top:6px;border:none;border-radius:12px;cursor:pointer;color:#fff;
+    font-size:1.08rem;font-weight:800;padding:15px;letter-spacing:.02em;
+    background:linear-gradient(120deg,#e6683c,#dc2743,#bc1888);box-shadow:0 6px 18px rgba(220,39,67,.3);transition:transform .08s,opacity .2s}
+  .go:hover{transform:translateY(-1px)}
+  .go:disabled{opacity:.55;cursor:not-allowed;transform:none}
+
+  .subline{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:.8rem;color:var(--muted)}
+  .subline a{color:var(--muted);cursor:pointer;text-decoration:underline}
+
+  /* 진행 로그 */
+  #progress{display:none}
+  .log{background:#14151a;color:#c6f7d5;border-radius:12px;padding:14px 16px;font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:.85rem;line-height:1.7;max-height:180px;overflow:auto;white-space:pre-wrap}
+  .log .warn{color:#ffd479}.log .key{color:#8ec7ff}
+  .spinner{display:inline-block;width:15px;height:15px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;
+    border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:8px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* 결과 */
+  #results{display:none}
+  .rhead{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:14px}
+  .avatar{width:52px;height:52px;border-radius:50%;object-fit:cover;background:#eee;border:2px solid #fff;box-shadow:0 0 0 2px var(--ig3)}
+  .rhead .who b{font-size:1.1rem}.rhead .who span{color:var(--muted);font-size:.85rem}
+  .cards{display:flex;flex-wrap:wrap;gap:10px;margin-left:auto}
+  .stat{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:9px 14px;min-width:104px}
+  .stat .k{font-size:.72rem;color:var(--muted)}.stat .v{font-size:1.12rem;font-weight:800;margin-top:1px}
+
+  .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+  .controls .seg button{border:1px solid #d7d9e0;background:#fff;border-radius:9px;padding:8px 15px;cursor:pointer;font-size:.9rem;margin-right:6px;font-weight:600}
+  .controls .seg button.on{background:var(--ig3);border-color:var(--ig3);color:#fff}
+  .controls .dl{margin-left:auto;border:1px solid #cfd2da;background:#fff;border-radius:9px;padding:8px 15px;cursor:pointer;font-size:.88rem;font-weight:600}
+
+  .tablewrap{overflow-x:auto;border-radius:14px;border:1px solid var(--bd);box-shadow:0 2px 12px rgba(0,0,0,.05)}
+  table{width:100%;border-collapse:collapse;background:#fff;min-width:720px}
+  th,td{padding:10px 12px;border-bottom:1px solid var(--bd);font-size:.9rem;text-align:left;vertical-align:middle}
+  th{background:#22242b;color:#fff;font-weight:600;white-space:nowrap;position:sticky;top:0}
+  tr:hover td{background:#fafbff}
+  .rank{text-align:center;font-weight:800;color:#adb0b8;width:40px}
+  td.thumb{width:66px}
+  td.thumb img{width:56px;height:56px;object-fit:cover;border-radius:9px;display:block;background:#eee}
+  .noimg{width:56px;height:56px;border-radius:9px;background:#eef;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+  .numcell{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .views{color:#0b7285;font-weight:700}.likes{color:#e8590c;font-weight:700}
+  .date{white-space:nowrap;color:#666}
+  .cap{max-width:340px}.cap a{color:var(--ink);text-decoration:none}.cap a:hover{text-decoration:underline}
+  .muted{color:var(--muted)}
+  .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.75rem;font-weight:800}
+  .b-릴스{background:#fde2f3;color:#bc1888}.b-동영상{background:#e3f2fd;color:#1565c0}
+  .b-사진{background:#e9f7ef;color:#2b8a3e}.b-앨범{background:#fff3e0;color:#e8590c}
+
+  .banner{border-radius:12px;padding:13px 16px;font-size:.9rem;margin-bottom:14px;display:none}
+  .banner.err{display:block;background:#fff0f0;border:1px solid #ffc9c9;color:#c92a2a}
+  .banner.info{display:block;background:#eef6ff;border:1px solid #b6d8ff;color:#1565c0}
+
+  .foot{color:var(--muted);font-size:.8rem;line-height:1.7;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>📸 인스타그램 인기 콘텐츠 정렬기</h1>
+    <p>계정 주소만 붙여넣으면, 게시물을 <b>조회수 · 좋아요 순</b>으로 정렬해 보여드려요.</p>
+  </header>
+
+  <!-- 입력 패널 -->
+  <div class="panel" id="form">
+    <div class="field">
+      <label>분석할 인스타그램 계정 <span class="hint">— 주소 또는 아이디</span></label>
+      <input id="profile" type="text" placeholder="예: https://www.instagram.com/instagram/  또는  instagram" autofocus>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>가져올 게시물 수</label>
+        <select id="max">
+          <option value="30">최근 30개</option>
+          <option value="60" selected>최근 60개</option>
+          <option value="100">최근 100개</option>
+          <option value="200">최근 200개</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>기본 정렬 기준</label>
+        <select id="sort">
+          <option value="likes" selected>❤️ 좋아요순</option>
+          <option value="views">▶️ 조회수순</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="adv-toggle" onclick="toggleAdv()">＋ 자동 로그인 정보 입력 (선택)</button>
+    <div class="adv" id="adv">
+      <p class="hint" style="margin:0 0 10px">비워두면 처음 실행 때 <b>인스타그램 로그인 창</b>이 열립니다. 거기서 직접 로그인하면 되고, 한 번 로그인하면 다음부터는 자동 진행됩니다. (입력값은 이 컴퓨터 밖으로 나가지 않습니다.)</p>
+      <div class="row">
+        <div class="field"><label>인스타그램 아이디</label><input id="username" type="text" autocomplete="off"></div>
+        <div class="field"><label>비밀번호</label><input id="password" type="password" autocomplete="off"></div>
+      </div>
+    </div>
+
+    <button class="go" id="goBtn" onclick="start()">🔎 분석 시작</button>
+    <div class="subline">
+      <span id="sessionState"></span>
+      <a onclick="logout()">로그인 초기화</a>
+    </div>
+  </div>
+
+  <!-- 진행 -->
+  <div class="panel" id="progress">
+    <div style="font-weight:700;margin-bottom:10px"><span class="spinner" id="spin"></span><span id="progTitle">분석 중...</span></div>
+    <div class="log" id="log"></div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="panel" id="results">
+    <div class="banner" id="banner"></div>
+    <div class="rhead" id="rhead"></div>
+    <div class="controls">
+      <div class="seg">
+        <button id="btnLikes" onclick="setSort('likes')">❤️ 좋아요순</button>
+        <button id="btnViews" onclick="setSort('views')">▶️ 조회수순</button>
+      </div>
+      <button class="dl" onclick="downloadCsv()">⬇️ CSV 저장</button>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>#</th><th>썸네일</th><th>유형</th><th>조회수</th><th>좋아요</th><th>댓글</th><th>게시일</th><th>캡션</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <p class="foot">
+      ※ 조회수는 <b>릴스·동영상</b>에만 표시됩니다. 사진/앨범은 조회수가 없어 <b>-</b> 로 표시됩니다.<br>
+      ※ 좋아요를 숨긴 게시물은 정확한 수가 나오지 않을 수 있습니다. 수치는 수집 시점 기준입니다.
+    </p>
+  </div>
+
+  <p class="foot">이 프로그램은 내 컴퓨터에서만 동작하는 로컬 도구입니다. 인스타그램 이용약관과 관련 법규를 지켜 개인적·정당한 범위에서 사용하세요.</p>
+</div>
+
+<script>
+  var STATE = { posts: [], meta: null, sort: "likes" };
+
+  function el(id){ return document.getElementById(id); }
+  function toggleAdv(){ el('adv').classList.toggle('open'); }
+  function fmt(n){ return (n===null||n===undefined) ? "-" : Number(n).toLocaleString('ko-KR'); }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function fmtDate(ts){ if(!ts) return "-"; var d=new Date(ts*1000),p=function(x){return String(x).padStart(2,'0');}; return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate()); }
+
+  function refreshStatus(){
+    fetch('/api/status').then(function(r){return r.json();}).then(function(s){
+      el('sessionState').textContent = s.hasSession ? "✅ 로그인 저장됨 — 바로 분석됩니다" : "ℹ️ 첫 실행 시 로그인 창이 열립니다";
+    }).catch(function(){});
+  }
+  refreshStatus();
+
+  function logout(){
+    fetch('/api/logout',{method:'POST'}).then(function(){ refreshStatus(); addLog('로그인 세션을 초기화했습니다.', 'warn'); });
+  }
+
+  function addLog(msg, cls){
+    var log=el('log');
+    var line=document.createElement('div');
+    if(cls) line.className=cls;
+    line.textContent="· "+msg;
+    log.appendChild(line);
+    log.scrollTop=log.scrollHeight;
+  }
+
+  var es=null;
+  function start(){
+    var profile=el('profile').value.trim();
+    if(!profile){ el('profile').focus(); el('profile').style.borderColor='#e8590c'; return; }
+    el('profile').style.borderColor='';
+    el('goBtn').disabled=true;
+    el('progress').style.display='block';
+    el('results').style.display='none';
+    el('log').innerHTML='';
+    el('progTitle').textContent='분석 중...';
+    el('spin').style.display='inline-block';
+
+    var qs=new URLSearchParams({
+      profile:profile,
+      max:el('max').value,
+      sort:el('sort').value,
+      username:el('username').value,
+      password:el('password').value
+    });
+    if(es) es.close();
+    es=new EventSource('/api/analyze?'+qs.toString());
+
+    es.addEventListener('log', function(e){
+      var d=JSON.parse(e.data); var cls='';
+      if(/로그인|🔑/.test(d.message)) cls='key';
+      if(/비공개|제한|문제|🔒/.test(d.message)) cls='warn';
+      addLog(d.message, cls);
+    });
+    es.addEventListener('result', function(e){
+      var data=JSON.parse(e.data);
+      STATE.posts=data.posts; STATE.meta=data.meta; STATE.sort=data.sortBy||'likes';
+      renderResults();
+    });
+    es.addEventListener('error', function(e){
+      var msg="알 수 없는 오류가 발생했습니다.";
+      try{ if(e.data){ msg=JSON.parse(e.data).message; } }catch(_){ }
+      showBanner('err', "⚠️ "+msg);
+      finish();
+    });
+    es.addEventListener('done', function(){ finish(); });
+    es.onerror=function(){ /* 스트림 종료 */ };
+  }
+
+  function finish(){
+    if(es){ es.close(); es=null; }
+    el('goBtn').disabled=false;
+    el('spin').style.display='none';
+    el('progTitle').textContent='완료';
+    refreshStatus();
+  }
+
+  function showBanner(type, msg){
+    el('results').style.display='block';
+    var b=el('banner'); b.className='banner '+type; b.textContent=msg;
+  }
+
+  function renderResults(){
+    var m=STATE.meta;
+    el('results').style.display='block';
+    el('banner').className='banner';
+    // 헤더
+    var totalViews=STATE.posts.reduce(function(s,p){return s+(p.views||0);},0);
+    var totalLikes=STATE.posts.reduce(function(s,p){return s+(p.likes||0);},0);
+    el('rhead').innerHTML=
+      (m.profilePic?'<img class="avatar" referrerpolicy="no-referrer" src="'+esc(m.profilePic)+'">':'')+
+      '<div class="who"><b>@'+esc(m.username)+'</b>'+(m.fullName?' <span>('+esc(m.fullName)+')</span>':'')+
+      '<br><span>팔로워 '+fmt(m.followers)+'명 · 전체 게시물 '+fmt(m.postCount)+'개'+(m.isPrivate?' · 🔒 비공개':'')+'</span></div>'+
+      '<div class="cards">'+
+        '<div class="stat"><div class="k">수집한 게시물</div><div class="v">'+fmt(STATE.posts.length)+'</div></div>'+
+        '<div class="stat"><div class="k">합계 조회수</div><div class="v">'+fmt(totalViews)+'</div></div>'+
+        '<div class="stat"><div class="k">합계 좋아요</div><div class="v">'+fmt(totalLikes)+'</div></div>'+
+      '</div>';
+    setSort(STATE.sort);
+  }
+
+  function setSort(key){
+    STATE.sort=key;
+    var posts=STATE.posts.slice().sort(function(a,b){
+      var av=(key==='views')?(a.views==null?-1:a.views):(a.likes==null?-1:a.likes);
+      var bv=(key==='views')?(b.views==null?-1:b.views):(b.likes==null?-1:b.likes);
+      if(bv!==av) return bv-av;
+      return (b.likes==null?-1:b.likes)-(a.likes==null?-1:a.likes);
+    });
+    var rows=posts.map(function(p,i){
+      var thumb=p.thumb ? '<img loading="lazy" referrerpolicy="no-referrer" src="'+esc(p.thumb)+'">' : '<div class="noimg">🖼️</div>';
+      var cap=p.caption ? esc(p.caption.slice(0,80))+(p.caption.length>80?'…':'') : '<span class="muted">(캡션 없음)</span>';
+      return '<tr>'+
+        '<td class="rank">'+(i+1)+'</td>'+
+        '<td class="thumb"><a href="'+esc(p.url)+'" target="_blank" rel="noopener">'+thumb+'</a></td>'+
+        '<td><span class="badge b-'+p.type+'">'+p.type+'</span></td>'+
+        '<td class="numcell views">'+(p.views==null?'<span class="muted">-</span>':fmt(p.views))+'</td>'+
+        '<td class="numcell likes">'+fmt(p.likes)+'</td>'+
+        '<td class="numcell">'+fmt(p.comments)+'</td>'+
+        '<td class="date">'+fmtDate(p.takenAt)+'</td>'+
+        '<td class="cap"><a href="'+esc(p.url)+'" target="_blank" rel="noopener">'+cap+'</a></td>'+
+      '</tr>';
+    }).join('');
+    el('tbody').innerHTML=rows;
+    el('btnLikes').className=(key==='likes')?'on':'';
+    el('btnViews').className=(key==='views')?'on':'';
+  }
+
+  function downloadCsv(){
+    var posts=STATE.posts.slice().sort(function(a,b){
+      var av=(STATE.sort==='views')?(a.views==null?-1:a.views):(a.likes==null?-1:a.likes);
+      var bv=(STATE.sort==='views')?(b.views==null?-1:b.views):(b.likes==null?-1:b.likes);
+      return bv-av;
+    });
+    var head="순위,유형,조회수,좋아요,댓글,게시일,캡션,URL";
+    var lines=posts.map(function(p,i){
+      var cap='"'+String(p.caption||"").replace(/"/g,'""').replace(/\r?\n/g,' ')+'"';
+      return [i+1,p.type,(p.views==null?"":p.views),(p.likes==null?"":p.likes),(p.comments==null?"":p.comments),fmtDate(p.takenAt),cap,p.url].join(",");
+    });
+    var csv="﻿"+[head].concat(lines).join("\n");
+    var blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="insta-"+(STATE.meta?STATE.meta.username:"report")+".csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // 엔터로 시작
+  el('profile').addEventListener('keydown', function(e){ if(e.key==='Enter') start(); });
+</script>
+</body>
+</html>

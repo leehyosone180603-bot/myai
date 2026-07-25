@@ -1,9 +1,9 @@
 #!/bin/bash
-# Mac용 실행 파일 — 더블클릭하면 실행됩니다.
+# Mac용 실행 파일 — 더블클릭하면 프로그램이 브라우저에서 열립니다.
 cd "$(dirname "$0")"
 
 echo "================================================"
-echo "   인스타그램 인기 콘텐츠 정렬기"
+echo "   📸 인스타그램 인기 콘텐츠 정렬기"
 echo "   (조회수 · 좋아요 순으로 내림차순 정렬)"
 echo "================================================"
 echo
@@ -30,13 +30,13 @@ if [ ! -d node_modules/playwright ]; then
   echo
 fi
 
-# 3) 실행
-echo "[실행] config.json 의 계정을 분석합니다."
-echo "       처음이라면 열리는 창에서 인스타그램에 로그인해 주세요."
+# 3) 서버 실행 + 브라우저 자동 열기
+PORT="${PORT:-8787}"
+echo "[실행] 프로그램을 시작합니다. 잠시 후 브라우저가 자동으로 열립니다."
+echo "       ▶ 사용을 마치면 이 창을 닫으면 종료됩니다."
 echo
-node insta-top.js || { echo "[오류] 실행 중 문제가 발생했습니다."; read -n1; exit 1; }
+( sleep 3; open "http://127.0.0.1:${PORT}/" >/dev/null 2>&1 ) &
+PORT="$PORT" node server.js
 
-# 4) 결과 열기
 echo
-[ -f report.html ] && { echo "[완료] 결과 리포트(report.html)를 엽니다."; open report.html; }
-read -n1 -p "완료되었습니다. 엔터를 누르면 종료합니다..."
+read -n1 -p "종료되었습니다. 엔터를 누르면 창을 닫습니다..."
