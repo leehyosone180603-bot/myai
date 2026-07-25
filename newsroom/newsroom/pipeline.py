@@ -418,9 +418,17 @@ def queue_listing(cfg: Config, now: datetime | None = None) -> list[dict]:
     queued = [it for it in all_items if it.get("status") == "queued"]
 
     by_topic: dict[str, deque] = defaultdict(deque)
+    remaining = 0
     for it in queued:
-        by_topic[it.get("topic", "general")].append(it)
-    remaining = len(queued)
+        pa = it.get("publish_at")
+        if pa:                                          # 개별 지정시각: 슬롯 배정 제외
+            try:
+                it["_when"] = datetime.fromisoformat(pa)
+            except Exception:
+                it["_when"] = None
+        else:
+            by_topic[it.get("topic", "general")].append(it)
+            remaining += 1
     day = 0
     while remaining > 0 and day < 90:
         date = (now + timedelta(days=day)).date()
@@ -462,6 +470,52 @@ def remove_from_queue(cfg: Config, item_id: str) -> int:
     n = _queue(cfg).remove(item_id)
     print(f"대기열에서 {n}건 삭제 (id={item_id})")
     return n
+
+
+def set_item_time(cfg: Config, item_id: str, dt: datetime | None) -> None:
+    """항목별 발행 예약시각 지정. dt=None 이면 해제(자동 시간대로 복귀)."""
+    iso = dt.isoformat(timespec="minutes") if dt else None
+    _queue(cfg).set_publish_at(item_id, iso)
+    print(f"발행 시각 지정: id={item_id} → {iso or '자동(시간대)'}")
+
+
+def publish_item(cfg: Config, item_id: str) -> bool:
+    """대기열의 특정 항목을 발행한다(항목별 예약시각 도래 시 사용)."""
+    q = _queue(cfg)
+    item = q.get_item(item_id)
+    if not item or item.get("status") != "queued":
+        return False
+    title = item.get("title", "")
+    label = {"money": "💰 돈/경제", "general": "🌐 이슈"}.get(item.get("topic"), item.get("topic"))
+    q.mark(item_id, "publishing")
+    print(f"STEP 4 · 예약 발행(지정시각) [{item.get('topic')}] {title[:40]}")
+    try:
+        errs = _publish_to_ig(cfg, item.get("card_urls", []), item.get("reel_url"), item.get("caption", ""))
+        q.mark(item_id, "published", {"partial_errors": errs} if errs else None)
+        head = "⚠️ 부분 발행" if errs else "📤 발행 완료"
+        tail = f"\n실패: {'; '.join(errs)[:200]}" if errs else ""
+        _notify(cfg, f"{head} · {label}\n{title}{tail}\n\n남은 대기: {_fmt_counts(cfg)}")
+        return True
+    except Exception as e:
+        q.mark(item_id, "failed", {"error": str(e)})
+        print(f"  ❌ 발행 실패: {e}")
+        _notify(cfg, f"❌ <b>발행 실패</b> · {label}\n{title}\n{str(e)[:200]}")
+        return False
+
+
+def publish_due(cfg: Config, now: datetime | None = None) -> int:
+    """항목별 예약시각(publish_at)이 도래한 대기 항목들을 발행한다."""
+    now = now or datetime.now()
+    published = 0
+    for it in _queue(cfg).all():
+        if it.get("status") == "queued" and it.get("publish_at"):
+            try:
+                due = datetime.fromisoformat(it["publish_at"]) <= now
+            except Exception:
+                due = False
+            if due and publish_item(cfg, it["id"]):
+                published += 1
+    return published
 
 
 def publish_next(cfg: Config, topic: str | None = None) -> bool:

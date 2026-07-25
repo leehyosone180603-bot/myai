@@ -116,12 +116,15 @@ class Studio:
             lambda: pipeline.requeue_failed(self.cfg))).pack(side="left", expand=True, fill="x", padx=2)
         rb2 = Frame(right)
         rb2.pack(fill="x", pady=(4, 0))
+        Button(rb2, text="🕒 이 항목 발행시각 지정", command=self.set_item_time).pack(
+            side="left", expand=True, fill="x", padx=2)
         Button(rb2, text="🗑 선택 삭제", command=self.delete_selected, fg="#C62828").pack(
             side="left", expand=True, fill="x", padx=2)
-        Button(rb2, text="🧹 발행완료 기록 정리", command=lambda: self._bg_refresh(
+        Button(rb2, text="🧹 발행완료 정리", command=lambda: self._bg_refresh(
             lambda: pipeline._queue(self.cfg).clear("published"))).pack(side="left", expand=True, fill="x", padx=2)
-        Label(right, text="※ 표에서 항목을 선택(여러 개 가능)한 뒤 '선택 삭제'",
-              fg="#888").pack(anchor="w")
+        Label(right, text="※ 표에서 항목 선택 → '발행시각 지정'(개별 시각) 또는 '선택 삭제'. "
+                          "전체 반복 시간대는 '⏰ 발행 시간 설정'.",
+              fg="#888", wraplength=430, justify="left").pack(anchor="w")
 
         # ── 로그 ──
         self.log = Text(root, height=6, wrap=WORD)
@@ -264,6 +267,36 @@ class Studio:
             iid = str(idx)
             self.row_map[iid] = row["id"]
             self.tree.insert("", END, iid=iid, values=(row["seq"], tp, kd, row["title"][:36], st, when))
+
+    def set_item_time(self):
+        sel = self.tree.selection()
+        if len(sel) != 1:
+            self.status.config(text="발행시각을 지정할 항목 하나를 표에서 선택하세요.", fg="red")
+            return
+        qid = self.row_map.get(sel[0])
+        from tkinter.simpledialog import askstring
+        from datetime import datetime
+        default = datetime.now().strftime("%Y-%m-%d %H:%M")
+        s = askstring("발행 시각 지정",
+                      "이 항목을 발행할 시각을 입력하세요 (YYYY-MM-DD HH:MM).\n"
+                      "비워두면 자동(반복 시간대) 발행으로 되돌립니다.",
+                      initialvalue=default, parent=self.root)
+        if s is None:
+            return
+        s = s.strip()
+        if not s:
+            pipeline.set_item_time(self.cfg, qid, None)
+            self.refresh()
+            self.status.config(text="자동(시간대) 발행으로 되돌림", fg="#555")
+            return
+        try:
+            dt = datetime.strptime(s, "%Y-%m-%d %H:%M")
+        except ValueError:
+            self.status.config(text="형식 오류: YYYY-MM-DD HH:MM (예: 2026-07-26 21:30)", fg="red")
+            return
+        pipeline.set_item_time(self.cfg, qid, dt)
+        self.refresh()
+        self.status.config(text=f"발행시각 지정: {dt.strftime('%m/%d %H:%M')} (스케줄러가 그 시각에 발행)", fg="#2E7D32")
 
     def delete_selected(self):
         sel = self.tree.selection()

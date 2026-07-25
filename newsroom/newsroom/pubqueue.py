@@ -52,14 +52,37 @@ class PublishQueue:
         return items
 
     def pop_next(self, topic: str | None = None) -> dict[str, Any] | None:
-        """가장 오래된 대기 항목을 꺼내 'publishing' 으로 표시하고 반환. 없으면 None."""
+        """가장 오래된 대기 항목을 꺼내 'publishing' 으로 표시하고 반환. 없으면 None.
+
+        발행시각이 개별 지정(publish_at)된 항목은 시간대 FIFO 대상에서 제외한다.
+        """
         data = self._load()
         for it in data["items"]:                       # 파일 순서 = 적재 순서(오래된 것 먼저)
-            if it.get("status") == "queued" and (topic is None or it.get("topic") == topic):
+            if (it.get("status") == "queued" and not it.get("publish_at")
+                    and (topic is None or it.get("topic") == topic)):
                 it["status"] = "publishing"
                 self._save(data)
                 return it
         return None
+
+    def get_item(self, item_id: str) -> dict[str, Any] | None:
+        for it in self._load()["items"]:
+            if it.get("id") == item_id:
+                return it
+        return None
+
+    def set_publish_at(self, item_id: str, iso: str | None) -> bool:
+        """항목별 발행 예약시각 지정(iso). None 이면 해제(자동 시간대로 복귀)."""
+        data = self._load()
+        for it in data["items"]:
+            if it.get("id") == item_id:
+                if iso:
+                    it["publish_at"] = iso
+                else:
+                    it.pop("publish_at", None)
+                self._save(data)
+                return True
+        return False
 
     def mark(self, item_id: str, status: str, extra: dict[str, Any] | None = None) -> None:
         data = self._load()

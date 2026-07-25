@@ -28,6 +28,12 @@ def run_scheduler(config_path: str | None = None,
             today = now.strftime("%Y-%m-%d")
             fired = {k for k in fired if k[0] == today}     # 오늘 것만 유지
 
+            # 항목별 지정시각(publish_at) 도래분 발행
+            from . import pipeline
+            due = pipeline.publish_due(cfg, now)
+            if due:
+                log(f"⏰ 지정시각 발행 {due}건")
+
             for slot in cfg.get("schedule.slots", []) or []:
                 t = str(slot.get("time", ""))
                 topic = slot.get("topic")
