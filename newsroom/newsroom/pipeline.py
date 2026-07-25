@@ -320,12 +320,13 @@ def _repost_caption(cfg: Config, plan: ContentPlan, source: str = "") -> str:
     return "\n\n".join(p for p in parts if p)[:2200]
 
 
-def stage_repost(cfg: Config, image_path: str, caption_text: str, topic: str = "general",
-                 source: str = "", redraw: bool = True, make_reel: bool = True) -> Bundle:
-    """리포스트 1건: (번역) → 카드 → (릴스) → R2 업로드 → 대기열 적재.
+def repost_generate(cfg: Config, image_path: str, caption_text: str, topic: str = "general",
+                    source: str = "", redraw: bool = True, make_reel: bool = True) -> dict:
+    """리포스트 '미리보기용' 생성: (번역) → 카드 → (릴스). 업로드/적재는 안 함.
 
     redraw=True  : 첨부 이미지를 배경으로 일본어 카드를 새로 그림(깨끗한 사진 권장).
     redraw=False : 첨부 이미지를 그대로 카드로 사용(원문 텍스트가 박힌 카드일 때).
+    반환 dict: slug, topic, source, title, card_path, reel_path, caption
     """
     from PIL import Image
     out_dir = cfg.out_dir
@@ -346,29 +347,44 @@ def stage_repost(cfg: Config, image_path: str, caption_text: str, topic: str = "
         print("리포스트 · 첨부 이미지를 그대로 카드로 사용")
         Image.open(image_path).convert("RGB").save(card, "JPEG", quality=92)
 
-    art = Article(source=source, title=plan.headline, url="")
-    cand = Candidate(article=art, topic=topic, category=plan.category)
-    bundle = Bundle(candidate=cand, plan=plan)
-    bundle.card_paths = [str(card)]
+    reel_path = ""
     if make_reel:
         print("리포스트 · 릴스(썸네일 → 영상)")
-        bundle.reel_path = reels.build_from_image(cfg, str(card), out_dir, slug) or ""
+        reel_path = reels.build_from_image(cfg, str(card), out_dir, slug) or ""
 
+    return {"slug": slug, "topic": topic, "source": source, "title": plan.headline,
+            "card_path": str(card), "reel_path": reel_path,
+            "caption": _repost_caption(cfg, plan, source)}
+
+
+def repost_commit(cfg: Config, prepared: dict) -> bool:
+    """미리보기로 만든 리포스트를 확정: R2 업로드 → 대기열 적재."""
+    slug, topic = prepared["slug"], prepared.get("topic", "general")
+    art = Article(source=prepared.get("source", ""), title=prepared["title"], url="")
+    bundle = Bundle(candidate=Candidate(article=art, topic=topic))
+    bundle.card_paths = [prepared["card_path"]]
+    bundle.reel_path = prepared.get("reel_path", "")
     print("리포스트 · R2 업로드")
     card_urls, reel_url = _upload_assets(cfg, bundle, slug)
     if not card_urls and not reel_url:
         print("  ! 업로드 실패 — 대기열 적재 생략")
-        return bundle
-
+        return False
     _queue(cfg).enqueue({
-        "id": slug, "topic": topic, "title": plan.headline,
+        "id": slug, "topic": topic, "title": prepared["title"],
         "card_urls": card_urls, "reel_url": reel_url,
-        "caption": _repost_caption(cfg, plan, source), "kind": "repost",
+        "caption": prepared["caption"], "kind": "repost",
     })
     label = {"money": "💰 돈/경제", "general": "🌐 이슈"}.get(topic, topic)
-    print(f"  📥 리포스트 대기열 적재: [{topic}] {plan.headline[:36]}  (대기 {_queue(cfg).counts()})")
-    _notify(cfg, f"📥 <b>리포스트 대기열 적재</b> · {label}\n{plan.headline}\n\n현재 대기: {_fmt_counts(cfg)}")
-    return bundle
+    print(f"  📥 리포스트 대기열 적재: [{topic}] {prepared['title'][:36]}  (대기 {_queue(cfg).counts()})")
+    _notify(cfg, f"📥 <b>리포스트 대기열 적재</b> · {label}\n{prepared['title']}\n\n현재 대기: {_fmt_counts(cfg)}")
+    return True
+
+
+def stage_repost(cfg: Config, image_path: str, caption_text: str, topic: str = "general",
+                 source: str = "", redraw: bool = True, make_reel: bool = True) -> bool:
+    """생성 + 대기열 적재를 한 번에(미리보기 없이)."""
+    prepared = repost_generate(cfg, image_path, caption_text, topic, source, redraw, make_reel)
+    return repost_commit(cfg, prepared)
 
 
 # ── 대기열 발행 예정시각 계산(UI 표시용) ────────────────────────────

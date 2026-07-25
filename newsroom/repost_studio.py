@@ -14,9 +14,11 @@ from __future__ import annotations
 import queue as _q
 import sys
 import threading
-from tkinter import (Tk, Frame, Label, Button, Text, StringVar, END, WORD,
+from tkinter import (Tk, Toplevel, Frame, Label, Button, Text, StringVar, END, WORD,
                      filedialog, LabelFrame, Radiobutton, BooleanVar, Checkbutton)
 from tkinter import ttk
+
+from PIL import Image, ImageTk
 
 from newsroom.config import load_config
 from newsroom import pipeline
@@ -80,9 +82,9 @@ class Studio:
         self.make_reel = BooleanVar(value=True)
         Checkbutton(left, text="릴스(10초 영상)도 함께 생성", variable=self.make_reel).pack(anchor="w")
 
-        Button(left, text="📥 번역해서 대기열에 추가", command=self.add_to_queue,
-               bg="#2E7D32", fg="white", height=2).pack(fill="x", pady=(8, 4))
-        self.status = Label(left, text="", fg="#555")
+        Button(left, text="👁 미리보기 만들기 (번역→카드)", command=self.make_preview,
+               bg="#1565C0", fg="white", height=2).pack(fill="x", pady=(8, 4))
+        self.status = Label(left, text="", fg="#555", wraplength=380, justify="left")
         self.status.pack(anchor="w")
 
         # ── 오른쪽: 대기열 현황 ──
@@ -119,7 +121,7 @@ class Studio:
             self.image_path = p
             self.img_label.config(text=p.split("/")[-1].split("\\")[-1], fg="#2E7D32")
 
-    def add_to_queue(self):
+    def make_preview(self):
         text = self.caption.get("1.0", END).strip()
         if not text:
             self.status.config(text="원문 캡션을 붙여넣어 주세요.", fg="red")
@@ -129,16 +131,58 @@ class Studio:
             return
         img, topic = self.image_path, self.topic.get()
         redraw, reel = self.redraw.get(), self.make_reel.get()
-        self.status.config(text="생성 중… (번역→카드→업로드, 1~2분)", fg="#555")
+        self.status.config(text="미리보기 생성 중… (번역→카드, 30초~1분)", fg="#555")
 
         def work():
             try:
-                b = pipeline.stage_repost(self.cfg, img, text, topic=topic,
-                                          redraw=redraw, make_reel=reel)
-                if b.card_paths or b.reel_path:
-                    self.root.after(0, lambda: self._done_ok())
-                else:
-                    self.root.after(0, lambda: self.status.config(text="업로드 실패(스토리지 설정 확인)", fg="red"))
+                prepared = pipeline.repost_generate(self.cfg, img, text, topic=topic,
+                                                    redraw=redraw, make_reel=reel)
+                self.root.after(0, lambda: self.open_preview(prepared))
+            except Exception as e:
+                self.root.after(0, lambda: self.status.config(text=f"오류: {e}", fg="red"))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def open_preview(self, prepared: dict):
+        self.status.config(text="미리보기 준비됨 — 확인 후 대기열에 추가하세요.", fg="#1565C0")
+        top = Toplevel(self.root)
+        top.title("발행 미리보기")
+        top.geometry("780x720")
+        Label(top, text="① 카드(썸네일) — 실제 발행 이미지", font=("", 10, "bold")).pack(anchor="w", padx=12, pady=(8, 0))
+        try:
+            im = Image.open(prepared["card_path"])
+            ratio = 430 / im.height
+            im = im.resize((int(im.width * ratio), 430), Image.LANCZOS)
+            ph = ImageTk.PhotoImage(im)
+            lbl = Label(top, image=ph, bd=1, relief="solid")
+            lbl.image = ph
+            lbl.pack(pady=6)
+        except Exception as e:
+            Label(top, text=f"이미지 미리보기 오류: {e}", fg="red").pack()
+        Label(top, text="② 인스타 캡션 (여기서 바로 수정 가능)", font=("", 10, "bold")).pack(anchor="w", padx=12)
+        cap = Text(top, height=8, wrap=WORD)
+        cap.pack(fill="both", expand=True, padx=12, pady=4)
+        cap.insert(END, prepared["caption"])
+        tp = {"money": "💰 돈/경제", "general": "🌐 이슈"}.get(prepared["topic"], prepared["topic"])
+        Label(top, text=f"스트림: {tp}    릴스: {'있음' if prepared.get('reel_path') else '없음'}",
+              fg="#555").pack(anchor="w", padx=12)
+        bar = Frame(top)
+        bar.pack(fill="x", padx=12, pady=10)
+        Button(bar, text="📥 이대로 대기열에 추가", bg="#2E7D32", fg="white",
+               command=lambda: self._commit(top, prepared, cap.get("1.0", END).strip())
+               ).pack(side="left", expand=True, fill="x", padx=3)
+        Button(bar, text="닫기(취소)", command=top.destroy).pack(side="left", expand=True, fill="x", padx=3)
+
+    def _commit(self, top, prepared: dict, caption_edited: str):
+        prepared["caption"] = caption_edited or prepared["caption"]
+        top.destroy()
+        self.status.config(text="대기열에 추가 중… (업로드)", fg="#555")
+
+        def work():
+            try:
+                ok = pipeline.repost_commit(self.cfg, prepared)
+                self.root.after(0, self._done_ok if ok else
+                                lambda: self.status.config(text="업로드 실패(스토리지 설정 확인)", fg="red"))
             except Exception as e:
                 self.root.after(0, lambda: self.status.config(text=f"오류: {e}", fg="red"))
             self.root.after(0, self.refresh)
