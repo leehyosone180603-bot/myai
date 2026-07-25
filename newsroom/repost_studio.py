@@ -54,6 +54,7 @@ class Studio:
         root.title(f"리포스트 스튜디오 · {ch}")
         self.logq: "_q.Queue[str]" = _q.Queue()
         self.image_path: str | None = None
+        self.detail_images: list[str] = []
 
         # ── 왼쪽: 입력 ──
         left = LabelFrame(root, text="새 리포스트", padx=10, pady=8)
@@ -65,9 +66,16 @@ class Studio:
 
         row = Frame(left)
         row.pack(fill="x", pady=2)
-        Button(row, text="🖼 이미지 첨부", command=self.pick_image).pack(side="left")
-        self.img_label = Label(row, text="(이미지 없음)", fg="#888")
+        Button(row, text="🖼 ① 표지 이미지", command=self.pick_image).pack(side="left")
+        self.img_label = Label(row, text="(없음)", fg="#888")
         self.img_label.pack(side="left", padx=8)
+
+        drow = Frame(left)
+        drow.pack(fill="x", pady=2)
+        Button(drow, text="➕ ② 상세 이미지 추가", command=self.add_detail).pack(side="left")
+        Button(drow, text="비우기", command=self.clear_details).pack(side="left", padx=4)
+        self.detail_label = Label(drow, text="상세 0장 (선택)", fg="#888")
+        self.detail_label.pack(side="left", padx=8)
 
         opt = Frame(left)
         opt.pack(fill="x", pady=6)
@@ -121,6 +129,16 @@ class Studio:
             self.image_path = p
             self.img_label.config(text=p.split("/")[-1].split("\\")[-1], fg="#2E7D32")
 
+    def add_detail(self):
+        ps = filedialog.askopenfilenames(filetypes=[("이미지", "*.jpg *.jpeg *.png *.webp")])
+        if ps:
+            self.detail_images.extend(ps)
+            self.detail_label.config(text=f"상세 {len(self.detail_images)}장", fg="#2E7D32")
+
+    def clear_details(self):
+        self.detail_images = []
+        self.detail_label.config(text="상세 0장 (선택)", fg="#888")
+
     def make_preview(self):
         text = self.caption.get("1.0", END).strip()
         if not text:
@@ -131,12 +149,14 @@ class Studio:
             return
         img, topic = self.image_path, self.topic.get()
         redraw, reel = self.redraw.get(), self.make_reel.get()
+        details = list(self.detail_images)
         self.status.config(text="미리보기 생성 중… (번역→카드, 30초~1분)", fg="#555")
 
         def work():
             try:
                 prepared = pipeline.repost_generate(self.cfg, img, text, topic=topic,
-                                                    redraw=redraw, make_reel=reel)
+                                                    redraw=redraw, make_reel=reel,
+                                                    detail_images=details)
                 self.root.after(0, lambda: self.open_preview(prepared))
             except Exception as e:
                 self.root.after(0, lambda: self.status.config(text=f"오류: {e}", fg="red"))
@@ -145,20 +165,29 @@ class Studio:
 
     def open_preview(self, prepared: dict):
         self.status.config(text="미리보기 준비됨 — 확인 후 대기열에 추가하세요.", fg="#1565C0")
+        paths = prepared.get("card_paths") or [prepared.get("card_path")]
         top = Toplevel(self.root)
         top.title("발행 미리보기")
-        top.geometry("780x720")
-        Label(top, text="① 카드(썸네일) — 실제 발행 이미지", font=("", 10, "bold")).pack(anchor="w", padx=12, pady=(8, 0))
-        try:
-            im = Image.open(prepared["card_path"])
-            ratio = 430 / im.height
-            im = im.resize((int(im.width * ratio), 430), Image.LANCZOS)
-            ph = ImageTk.PhotoImage(im)
-            lbl = Label(top, image=ph, bd=1, relief="solid")
-            lbl.image = ph
-            lbl.pack(pady=6)
-        except Exception as e:
-            Label(top, text=f"이미지 미리보기 오류: {e}", fg="red").pack()
+        top.geometry("860x760")
+        carousel = "  (캐러셀 — 좌우로 넘겨서 봄)" if len(paths) > 1 else ""
+        Label(top, text=f"① 카드 미리보기 — 총 {len(paths)}장{carousel}",
+              font=("", 10, "bold")).pack(anchor="w", padx=12, pady=(8, 0))
+        strip = Frame(top)
+        strip.pack(pady=6)
+        top._imgs = []                                   # 참조 유지(가비지 방지)
+        for i, p in enumerate(paths, 1):
+            try:
+                im = Image.open(p)
+                r = 340 / im.height
+                im = im.resize((int(im.width * r), 340), Image.LANCZOS)
+                ph = ImageTk.PhotoImage(im)
+                top._imgs.append(ph)
+                cell = Frame(strip)
+                cell.pack(side="left", padx=6)
+                Label(cell, image=ph, bd=1, relief="solid").pack()
+                Label(cell, text=f"{i}장{' (표지)' if i == 1 else ''}").pack()
+            except Exception as e:
+                Label(strip, text=f"미리보기 오류: {e}", fg="red").pack(side="left")
         Label(top, text="② 인스타 캡션 (여기서 바로 수정 가능)", font=("", 10, "bold")).pack(anchor="w", padx=12)
         cap = Text(top, height=8, wrap=WORD)
         cap.pack(fill="both", expand=True, padx=12, pady=4)
@@ -193,7 +222,9 @@ class Studio:
         self.status.config(text="✅ 대기열에 추가됨", fg="#2E7D32")
         self.caption.delete("1.0", END)
         self.image_path = None
-        self.img_label.config(text="(이미지 없음)", fg="#888")
+        self.img_label.config(text="(없음)", fg="#888")
+        self.detail_images = []
+        self.detail_label.config(text="상세 0장 (선택)", fg="#888")
 
     _STATUS = {"queued": "⏳대기", "publishing": "⚠멈춤", "failed": "❌실패", "published": "✅발행됨"}
 

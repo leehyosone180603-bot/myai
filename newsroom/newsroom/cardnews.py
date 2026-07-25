@@ -386,6 +386,24 @@ def render_card(cfg: Config, *, title: str, category: str = "", body: str = "",
     return out_path
 
 
+def render_contain_slide(cfg: Config, bg_path: str, out_path: Path) -> str:
+    """상세 슬라이드: 이미지 '전체'가 보이도록 4:5 프레임에 넣는다(잘라내지 않음).
+
+    제목/텍스트 없이, 이미지를 통째로 contain-fit 하고 남는 여백은 블러 배경으로 채운다.
+    (인스타 캐러셀은 첫 장 비율로 맞추므로, 상세 이미지가 잘리지 않게 프레임에 담는다.)
+    """
+    w, h = cfg.get("card.size", [1080, 1350])
+    src = Image.open(bg_path).convert("RGB")
+    bg = _cover_fit(src, w, h).filter(ImageFilter.GaussianBlur(30))   # 여백용 블러 배경
+    ratio = min(w / src.width, h / src.height)                        # 전체가 들어가게
+    nw, nh = max(1, int(src.width * ratio)), max(1, int(src.height * ratio))
+    fg = src.resize((nw, nh), Image.LANCZOS)
+    bg.paste(fg, ((w - nw) // 2, (h - nh) // 2))
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    bg.convert("RGB").save(out_path, "JPEG", quality=92)
+    return str(out_path)
+
+
 def render_bundle(cfg: Config, plan: ContentPlan, bg_paths: list[str | None],
                   out_dir: Path, slug: str) -> list[str]:
     """표지 + 본문 슬라이드 전체를 렌더링해 파일 경로 리스트 반환."""

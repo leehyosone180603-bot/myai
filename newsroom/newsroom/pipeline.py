@@ -201,13 +201,12 @@ def _publish_to_ig(cfg: Config, card_urls: list[str], reel_url: str | None, capt
 
     부분 실패 메시지 리스트를 반환. 둘 다(또는 유일한 하나가) 실패하면 예외.
     """
-    mode = cfg.get("card.publish", "single")
     ig = instagram.Instagram(cfg)
     ok = 0
     errs: list[str] = []
     if card_urls:
         try:
-            if mode == "single" or len(card_urls) == 1:
+            if len(card_urls) == 1:                    # 1장이면 단일, 2장 이상이면 캐러셀
                 pid = ig.publish_single(card_urls[0], caption)
             else:
                 pid = ig.publish_carousel(card_urls, caption)
@@ -321,51 +320,64 @@ def _repost_caption(cfg: Config, plan: ContentPlan, source: str = "") -> str:
 
 
 def repost_generate(cfg: Config, image_path: str, caption_text: str, topic: str = "general",
-                    source: str = "", redraw: bool = True, make_reel: bool = True) -> dict:
-    """리포스트 '미리보기용' 생성: (번역) → 카드 → (릴스). 업로드/적재는 안 함.
+                    source: str = "", redraw: bool = True, make_reel: bool = True,
+                    detail_images: list[str] | None = None) -> dict:
+    """리포스트 '미리보기용' 생성: (번역) → 카드 여러 장 → (릴스). 업로드/적재는 안 함.
 
-    redraw=True  : 첨부 이미지를 배경으로 일본어 카드를 새로 그림(깨끗한 사진 권장).
-    redraw=False : 첨부 이미지를 그대로 카드로 사용(원문 텍스트가 박힌 카드일 때).
-    반환 dict: slug, topic, source, title, card_path, reel_path, caption
+    - 1번(표지): image_path. redraw=True 면 일본어 제목을 얹어 카드로, False 면 이미지 그대로.
+    - 2번~(상세): detail_images. 잘리지 않게 전체가 보이도록 프레임에 담는다(제목 없음).
+    반환 dict: slug, topic, source, title, card_paths(list), reel_path, caption
     """
     from PIL import Image
+    detail_images = detail_images or []
     out_dir = cfg.out_dir
     print(f"리포스트 · 번역 시작 — {caption_text[:40]}…")
     plan = _translate_repost(cfg, caption_text)
 
     slug = datetime.utcnow().strftime("%Y%m%d") + "_repost_" + \
         hashlib.sha1((image_path + caption_text[:120]).encode("utf-8")).hexdigest()[:8]
-    card = out_dir / f"{slug}_card1.jpg"
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    card_paths: list[str] = []
+    cover = out_dir / f"{slug}_card1.jpg"
     if redraw:
-        print("리포스트 · 카드 렌더(일본어 새로 그림)")
+        print("리포스트 · 1번 표지 카드 렌더(일본어 제목)")
         cardnews.render_card(cfg, title=plan.headline, subtitle=plan.subtitle,
                              category=plan.category, bg_path=str(image_path),
-                             out_path=card, is_cover=True, slide_total=1)
+                             out_path=cover, is_cover=True, slide_total=1)
     else:
-        print("리포스트 · 첨부 이미지를 그대로 카드로 사용")
-        Image.open(image_path).convert("RGB").save(card, "JPEG", quality=92)
+        print("리포스트 · 1번 표지: 첨부 이미지를 그대로 사용")
+        Image.open(image_path).convert("RGB").save(cover, "JPEG", quality=92)
+    card_paths.append(str(cover))
+
+    for i, dimg in enumerate(detail_images, start=2):
+        print(f"리포스트 · {i}번 상세 이미지(전체 표시)")
+        dcard = out_dir / f"{slug}_card{i}.jpg"
+        cardnews.render_contain_slide(cfg, dimg, dcard)
+        card_paths.append(str(dcard))
 
     reel_path = ""
     if make_reel:
-        print("리포스트 · 릴스(썸네일 → 영상)")
-        reel_path = reels.build_from_image(cfg, str(card), out_dir, slug) or ""
+        print("리포스트 · 릴스(표지 → 영상)")
+        reel_path = reels.build_from_image(cfg, card_paths[0], out_dir, slug) or ""
 
     return {"slug": slug, "topic": topic, "source": source, "title": plan.headline,
-            "card_path": str(card), "reel_path": reel_path,
+            "card_paths": card_paths, "reel_path": reel_path,
             "caption": _repost_caption(cfg, plan, source)}
 
 
 def repost_commit(cfg: Config, prepared: dict) -> bool:
-    """미리보기로 만든 리포스트를 확정: R2 업로드 → 대기열 적재."""
+    """미리보기로 만든 리포스트를 확정: R2 업로드(여러 장) → 대기열 적재."""
     slug, topic = prepared["slug"], prepared.get("topic", "general")
-    art = Article(source=prepared.get("source", ""), title=prepared["title"], url="")
-    bundle = Bundle(candidate=Candidate(article=art, topic=topic))
-    bundle.card_paths = [prepared["card_path"]]
-    bundle.reel_path = prepared.get("reel_path", "")
-    print("리포스트 · R2 업로드")
-    card_urls, reel_url = _upload_assets(cfg, bundle, slug)
+    card_paths = prepared.get("card_paths") or \
+        ([prepared["card_path"]] if prepared.get("card_path") else [])
+    if not storage.enabled(cfg):
+        print("  ! 스토리지 자격증명 없음 — 업로드/적재 생략")
+        return False
+    print(f"리포스트 · R2 업로드 (카드 {len(card_paths)}장)")
+    card_urls = [storage.upload(cfg, p, f"{slug}/card{i+1}.jpg") for i, p in enumerate(card_paths)]
+    reel_url = storage.upload(cfg, prepared["reel_path"], f"{slug}/reel.mp4") \
+        if prepared.get("reel_path") else None
     if not card_urls and not reel_url:
         print("  ! 업로드 실패 — 대기열 적재 생략")
         return False
@@ -375,15 +387,19 @@ def repost_commit(cfg: Config, prepared: dict) -> bool:
         "caption": prepared["caption"], "kind": "repost",
     })
     label = {"money": "💰 돈/경제", "general": "🌐 이슈"}.get(topic, topic)
-    print(f"  📥 리포스트 대기열 적재: [{topic}] {prepared['title'][:36]}  (대기 {_queue(cfg).counts()})")
-    _notify(cfg, f"📥 <b>리포스트 대기열 적재</b> · {label}\n{prepared['title']}\n\n현재 대기: {_fmt_counts(cfg)}")
+    print(f"  📥 리포스트 대기열 적재: [{topic}] {prepared['title'][:36]}  "
+          f"(카드 {len(card_urls)}장, 대기 {_queue(cfg).counts()})")
+    _notify(cfg, f"📥 <b>리포스트 대기열 적재</b> · {label}\n{prepared['title']}\n"
+                 f"(카드 {len(card_urls)}장)\n\n현재 대기: {_fmt_counts(cfg)}")
     return True
 
 
 def stage_repost(cfg: Config, image_path: str, caption_text: str, topic: str = "general",
-                 source: str = "", redraw: bool = True, make_reel: bool = True) -> bool:
+                 source: str = "", redraw: bool = True, make_reel: bool = True,
+                 detail_images: list[str] | None = None) -> bool:
     """생성 + 대기열 적재를 한 번에(미리보기 없이)."""
-    prepared = repost_generate(cfg, image_path, caption_text, topic, source, redraw, make_reel)
+    prepared = repost_generate(cfg, image_path, caption_text, topic, source, redraw,
+                               make_reel, detail_images)
     return repost_commit(cfg, prepared)
 
 
