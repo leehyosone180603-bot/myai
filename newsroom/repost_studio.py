@@ -114,6 +114,14 @@ class Studio:
         Button(rb, text="⏰ 발행 시간 설정", command=self.open_schedule).pack(side="left", expand=True, fill="x", padx=2)
         Button(rb, text="↩ 실패 재시도", command=lambda: self._bg_refresh(
             lambda: pipeline.requeue_failed(self.cfg))).pack(side="left", expand=True, fill="x", padx=2)
+        rb2 = Frame(right)
+        rb2.pack(fill="x", pady=(4, 0))
+        Button(rb2, text="🗑 선택 삭제", command=self.delete_selected, fg="#C62828").pack(
+            side="left", expand=True, fill="x", padx=2)
+        Button(rb2, text="🧹 발행완료 기록 정리", command=lambda: self._bg_refresh(
+            lambda: pipeline._queue(self.cfg).clear("published"))).pack(side="left", expand=True, fill="x", padx=2)
+        Label(right, text="※ 표에서 항목을 선택(여러 개 가능)한 뒤 '선택 삭제'",
+              fg="#888").pack(anchor="w")
 
         # ── 로그 ──
         self.log = Text(root, height=6, wrap=WORD)
@@ -247,12 +255,26 @@ class Studio:
         self.counts.set(f"대기열: 💰{c.get('money', 0)} · 🌐{c.get('general', 0)}  (대기 {total}개)")
         for r in self.tree.get_children():
             self.tree.delete(r)
-        for row in pipeline.queue_listing(self.cfg):
+        self.row_map = {}
+        for idx, row in enumerate(pipeline.queue_listing(self.cfg)):
             tp = {"money": "💰돈", "general": "🌐이슈"}.get(row["topic"], row["topic"])
             kd = {"repost": "리포스트", "news": "뉴스"}.get(row["kind"], row["kind"])
             st = self._STATUS.get(row.get("status"), row.get("status", ""))
             when = row["when"].strftime("%m/%d %H:%M") if row["when"] else "-"
-            self.tree.insert("", END, values=(row["seq"], tp, kd, row["title"][:36], st, when))
+            iid = str(idx)
+            self.row_map[iid] = row["id"]
+            self.tree.insert("", END, iid=iid, values=(row["seq"], tp, kd, row["title"][:36], st, when))
+
+    def delete_selected(self):
+        sel = self.tree.selection()
+        if not sel:
+            self.status.config(text="삭제할 항목을 표에서 선택하세요.", fg="red")
+            return
+        from tkinter import messagebox
+        if not messagebox.askyesno("삭제 확인", f"선택한 {len(sel)}건을 대기열에서 삭제할까요?"):
+            return
+        ids = [self.row_map.get(i) for i in sel]
+        self._bg_refresh(lambda: [pipeline.remove_from_queue(self.cfg, q) for q in ids if q])
 
     def _drain(self):
         try:

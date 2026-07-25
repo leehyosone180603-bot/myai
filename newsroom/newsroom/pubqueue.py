@@ -78,6 +78,25 @@ class PublishQueue:
                 c[it.get("topic", "?")] = c.get(it.get("topic", "?"), 0) + 1
         return c
 
+    def remove(self, item_id: str) -> int:
+        """대기열에서 해당 id 항목을 삭제. 삭제한 개수 반환."""
+        data = self._load()
+        before = len(data["items"])
+        data["items"] = [it for it in data["items"] if it.get("id") != item_id]
+        self._save(data)
+        return before - len(data["items"])
+
+    def clear(self, status: str | None = None) -> int:
+        """항목 전체(또는 특정 상태만) 삭제. 삭제한 개수 반환."""
+        data = self._load()
+        before = len(data["items"])
+        if status is None:
+            data["items"] = []
+        else:
+            data["items"] = [it for it in data["items"] if it.get("status") != status]
+        self._save(data)
+        return before - len(data["items"])
+
     def requeue_failed(self) -> int:
         """실패(failed)/발행중(publishing) 상태로 멈춘 항목을 다시 대기(queued)로 되돌린다."""
         data = self._load()

@@ -444,7 +444,7 @@ def queue_listing(cfg: Config, now: datetime | None = None) -> list[dict]:
                     key=lambda it: it.get("staged_at", ""))
     out = []
     for i, it in enumerate(q_rows + others, 1):
-        out.append({"seq": i, "topic": it.get("topic", "general"),
+        out.append({"seq": i, "id": it.get("id", ""), "topic": it.get("topic", "general"),
                     "title": it.get("title", ""), "kind": it.get("kind", "news"),
                     "status": it.get("status", "queued"), "when": it.get("_when")})
     return out
@@ -454,6 +454,13 @@ def requeue_failed(cfg: Config) -> int:
     """실패로 멈춘 대기열 항목을 다시 발행 대기로 되돌린다(수정 후 재시도용)."""
     n = _queue(cfg).requeue_failed()
     print(f"실패 항목 {n}건을 대기열로 되돌렸습니다. (현재 대기 {_queue(cfg).counts()})")
+    return n
+
+
+def remove_from_queue(cfg: Config, item_id: str) -> int:
+    """대기열에서 특정 항목을 삭제한다."""
+    n = _queue(cfg).remove(item_id)
+    print(f"대기열에서 {n}건 삭제 (id={item_id})")
     return n
 
 
