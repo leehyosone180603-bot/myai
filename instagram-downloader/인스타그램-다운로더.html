@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>인스타그램 이미지·본문 다운로더</title>
+<style>
+  :root{
+    --bg1:#f7508a; --bg2:#a033ff; --bg3:#3b5bdb;
+    --card:#ffffff; --text:#1f2333; --muted:#7a8093;
+    --border:#e7e9f2; --primary:#8b3dff; --primary2:#e1306c;
+    --ok:#2f9e44; --err:#e03131; --soft:#f6f4ff;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+    color:var(--text); line-height:1.6; min-height:100vh;
+    background:linear-gradient(135deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    background-attachment:fixed; padding:28px 16px 60px;
+  }
+  .wrap{max-width:680px;margin:0 auto;}
+  header{text-align:center;color:#fff;margin-bottom:22px;}
+  header .logo{font-size:2.6rem;line-height:1;}
+  header h1{margin:10px 0 4px;font-size:1.7rem;font-weight:800;letter-spacing:-.5px;}
+  header p{margin:0;opacity:.92;font-size:.96rem;}
+  .card{
+    background:var(--card);border-radius:18px;padding:24px;margin-bottom:18px;
+    box-shadow:0 18px 45px rgba(40,20,80,.22);
+  }
+  label.fld{display:block;font-weight:700;margin-bottom:8px;font-size:.98rem;}
+  .inrow{display:flex;gap:10px;}
+  #url{
+    flex:1;min-width:0;padding:14px 14px;font-size:1rem;border:1.5px solid var(--border);
+    border-radius:12px;background:#fff;color:var(--text);transition:.15s;
+  }
+  #url:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px rgba(139,61,255,.15);}
+  .btn{
+    border:none;cursor:pointer;font-weight:800;border-radius:12px;transition:.15s;
+    font-family:inherit;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-go{
+    padding:0 22px;font-size:1rem;color:#fff;white-space:nowrap;
+    background:linear-gradient(120deg,var(--primary2),var(--primary));
+  }
+  .btn-go:hover{filter:brightness(1.06);}
+  .btn-go:disabled{opacity:.6;cursor:default;}
+  .hint{margin:12px 0 0;padding-left:18px;color:var(--muted);font-size:.86rem;}
+  .hint li{margin:2px 0;}
+  .msg{margin:12px 0 0;min-height:1.1em;font-size:.92rem;}
+  .msg.err{color:var(--err);}
+  .msg.busy{color:var(--primary);}
+  .spinner{
+    display:inline-block;width:14px;height:14px;border:2.5px solid rgba(139,61,255,.25);
+    border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;
+    vertical-align:-2px;margin-right:6px;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .rhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .rhead h2{margin:0;font-size:1.15rem;}
+  .btn-line{
+    padding:9px 14px;font-size:.88rem;color:var(--primary);background:#fff;
+    border:1.5px solid var(--primary);border-radius:10px;
+  }
+  .btn-line:hover{background:var(--soft);}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
+  .cell{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#fafbff;
+    display:flex;flex-direction:column;}
+  .cell img,.cell video{width:100%;height:180px;object-fit:cover;display:block;background:#eef;}
+  .cell .dl{border:none;border-top:1px solid var(--border);border-radius:0;padding:11px;width:100%;
+    background:#fff;color:var(--primary);font-weight:700;cursor:pointer;font-size:.9rem;}
+  .cell .dl:hover{background:var(--soft);}
+  .cap{margin-top:18px;}
+  .cap textarea{
+    width:100%;min-height:140px;padding:13px;font-size:.98rem;line-height:1.65;
+    border:1.5px solid var(--border);border-radius:12px;resize:vertical;font-family:inherit;
+    color:var(--text);background:#fff;
+  }
+  .cap-btns{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;}
+  .note{color:rgba(255,255,255,.9);font-size:.82rem;text-align:center;line-height:1.7;margin-top:6px;}
+  .note strong{color:#fff;}
+  details.card summary{cursor:pointer;font-weight:800;font-size:1.02rem;list-style:none;}
+  details.card summary::-webkit-details-marker{display:none;}
+  details.card summary::before{content:"▸ ";color:var(--primary);}
+  details.card[open] summary::before{content:"▾ ";}
+  details .body{margin-top:12px;color:#444;font-size:.93rem;}
+  details .body h4{margin:14px 0 4px;font-size:.95rem;}
+  details .body p{margin:2px 0 8px;}
+  @media(max-width:520px){
+    .inrow{flex-direction:column;}
+    .btn-go{padding:14px;}
+    header h1{font-size:1.45rem;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">📸</div>
+    <h1>인스타그램 다운로더</h1>
+    <p>공개 게시물 링크로 이미지·영상과 본문 텍스트를 한 번에 저장</p>
+  </header>
+
+  <div class="card">
+    <label class="fld" for="url">인스타그램 게시물 링크</label>
+    <div class="inrow">
+      <input type="text" id="url" inputmode="url" autocomplete="off" spellcheck="false"
+             placeholder="https://www.instagram.com/p/XXXXXXXXXXX/">
+      <button class="btn btn-go" id="go">가져오기</button>
+    </div>
+    <ul class="hint">
+      <li>게시물(/p/), 릴스(/reel/), IGTV(/tv/) 링크를 지원합니다.</li>
+      <li><strong>공개 계정</strong>의 콘텐츠만 가져올 수 있습니다.</li>
+    </ul>
+    <p class="msg" id="msg"></p>
+  </div>
+
+  <div class="card" id="result" hidden>
+    <div class="rhead">
+      <h2>결과</h2>
+      <button class="btn btn-line" id="dlAll" hidden>⬇ 이미지 모두 저장</button>
+    </div>
+    <div id="mediaWrap" hidden><div class="grid" id="grid"></div></div>
+    <div class="cap" id="capBox" hidden>
+      <label class="fld" for="cap">본문(캡션) 텍스트</label>
+      <textarea id="cap" readonly></textarea>
+      <div class="cap-btns">
+        <button class="btn btn-line" id="copy">📋 본문 복사</button>
+        <button class="btn btn-line" id="dlTxt">⬇ 텍스트(.txt) 저장</button>
+      </div>
+    </div>
+  </div>
+
+  <details class="card">
+    <summary>사용 방법 &amp; 자주 묻는 질문</summary>
+    <div class="body">
+      <h4>사용 방법</h4>
+      <p>1. 인스타그램에서 게시물 우측 상단 <strong>⋯ → "링크 복사"</strong>를 눌러 URL을 복사합니다.<br>
+         2. 위 입력창에 붙여넣고 <strong>「가져오기」</strong>를 누릅니다.<br>
+         3. 이미지·영상은 각각 저장하거나 「모두 저장」으로 한 번에, 본문은 복사하거나 .txt로 저장합니다.</p>
+      <h4>Q. 로그인이나 설치가 필요한가요?</h4>
+      <p>아니요. 이 파일을 더블클릭해 열기만 하면 됩니다. 공개된 게시물의 정보만 읽어옵니다.</p>
+      <h4>Q. 비공개 계정도 되나요?</h4>
+      <p>안 됩니다. 로그인 없이 볼 수 있는 <strong>공개 게시물</strong>만 지원하며, 스토리는 대상이 아닙니다.</p>
+      <h4>Q. 가끔 불러오기에 실패해요.</h4>
+      <p>인터넷 연결이 필요하며, 공개 중계 서버를 거쳐 동작하므로 서버가 혼잡하거나 인스타그램이 구조를 바꾸면 실패할 수 있습니다. 잠시 후 다시 시도해 주세요.</p>
+      <h4>⚠️ 저작권 안내</h4>
+      <p>이미지와 글의 저작권은 원작성자에게 있습니다. 본인 콘텐츠 백업, 저작권자의 허락, 또는 정당한 인용 범위 안에서만 사용하세요.</p>
+    </div>
+  </details>
+
+  <p class="note">💡 이 파일은 인터넷만 연결되어 있으면 <strong>더블클릭</strong>으로 바로 실행됩니다.<br>설치·회원가입이 필요 없습니다.</p>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var PROXIES=[
+    function(u){return "https://api.allorigins.win/raw?url="+encodeURIComponent(u);},
+    function(u){return "https://corsproxy.io/?url="+encodeURIComponent(u);},
+    function(u){return "https://thingproxy.freeboard.io/fetch/"+u;}
+  ];
+  var $=function(id){return document.getElementById(id);};
+  var url=$("url"),go=$("go"),msg=$("msg"),result=$("result"),grid=$("grid"),
+      mediaWrap=$("mediaWrap"),capBox=$("capBox"),cap=$("cap"),copy=$("copy"),
+      dlTxt=$("dlTxt"),dlAll=$("dlAll");
+  var shortcode="";
+
+  go.addEventListener("click",run);
+  url.addEventListener("keydown",function(e){if(e.key==="Enter")run();});
+  copy.addEventListener("click",copyCap);
+  dlTxt.addEventListener("click",saveCapTxt);
+
+  function parseShortcode(u){var m=u.match(/(?:\/p\/|\/reel\/|\/reels\/|\/tv\/)([A-Za-z0-9_-]+)/);return m?m[1]:null;}
+
+  function fetchText(target){
+    var i=0;
+    function nxt(){
+      if(i>=PROXIES.length)return Promise.reject(new Error("proxy"));
+      return fetch(PROXIES[i++](target),{headers:{"Accept":"text/html,*/*"}})
+        .then(function(r){if(!r.ok)throw 0;return r.text();})
+        .then(function(t){if(!t||t.length<30)throw 0;return t;})
+        .catch(function(){return nxt();});
+    }
+    return nxt();
+  }
+  function fetchBlob(target){
+    var i=0;
+    function nxt(){
+      if(i>=PROXIES.length)return Promise.reject(new Error("proxy"));
+      return fetch(PROXIES[i++](target))
+        .then(function(r){if(!r.ok)throw 0;return r.blob();})
+        .then(function(b){if(!b||b.size<100)throw 0;return b;})
+        .catch(function(){return nxt();});
+    }
+    return nxt();
+  }
+
+  function decodeEnt(s){if(!s)return "";var el=document.createElement("textarea");el.innerHTML=s;return el.value;}
+  function unesc(u){return u.replace(/\\u0026/g,"&").replace(/\\\//g,"/").replace(/&amp;/g,"&");}
+
+  function extractMedia(html){
+    var images=[],videos=[],seen={};
+    function pi(u){if(!u)return;u=unesc(u);if(seen[u])return;seen[u]=1;images.push(u);}
+    function pv(u){if(!u)return;u=unesc(u);if(u.indexOf("http")!==0)return;videos.push(u);}
+    var re=/"display_url":"(https:[^"\\]*(?:\\.[^"\\]*)*)"/g,m;
+    while((m=re.exec(html))!==null)pi(m[1]);
+    var rv=/"video_url":"(https:[^"\\]*(?:\\.[^"\\]*)*)"/g,vm;
+    while((vm=rv.exec(html))!==null)pv(vm[1]);
+    var oi=html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
+    if(oi)pi(decodeEnt(oi[1]));
+    var ov=html.match(/<meta[^>]+property=["']og:video["'][^>]+content=["']([^"']+)["']/i);
+    if(ov)pv(decodeEnt(ov[1]));
+    try{
+      var doc=new DOMParser().parseFromString(html,"text/html");
+      var im=doc.querySelectorAll("img.EmbeddedMediaImage, img[class*='Media']");
+      Array.prototype.forEach.call(im,function(x){if(x.src&&x.src.indexOf("http")===0)pi(x.src);});
+    }catch(e){}
+    return {images:images,videos:videos};
+  }
+
+  function extractCaption(html){
+    try{
+      var doc=new DOMParser().parseFromString(html,"text/html");
+      var c=doc.querySelector(".Caption");
+      if(c){
+        var cl=c.cloneNode(true);
+        cl.querySelectorAll(".CaptionUsername,.CaptionComments").forEach(function(n){n.remove();});
+        cl.querySelectorAll("a").forEach(function(a){a.replaceWith(document.createTextNode(a.textContent));});
+        var t=(cl.textContent||"").trim();
+        if(t)return t;
+      }
+    }catch(e){}
+    var jm=html.match(/"edge_media_to_caption":\{"edges":\[\{"node":\{"text":"((?:\\.|[^"\\])*)"/);
+    if(!jm)jm=html.match(/"caption":\{[^}]*"text":"((?:\\.|[^"\\])*)"/);
+    if(jm){try{return JSON.parse('"'+jm[1]+'"');}catch(e){}}
+    var od=html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i);
+    if(od){var d=decodeEnt(od[1]);var mm=d.match(/^.*?:\s*["\u201c]([\s\S]*)["\u201d]\s*$/);return mm?mm[1].trim():d.trim();}
+    return "";
+  }
+
+  function run(){
+    var raw=(url.value||"").trim();
+    setMsg("");result.hidden=true;
+    if(!raw){return setMsg("인스타그램 게시물 링크를 입력해 주세요.","err");}
+    var sc=parseShortcode(raw);
+    if(!sc){return setMsg("올바른 게시물 링크가 아닙니다. 예) https://www.instagram.com/p/XXXXXXXXXXX/","err");}
+    shortcode=sc;
+    busy(true);
+    setMsg('<span class="spinner"></span>인스타그램에서 콘텐츠를 불러오는 중…',"busy");
+    var embed="https://www.instagram.com/p/"+sc+"/embed/captioned/";
+    var page="https://www.instagram.com/p/"+sc+"/";
+    fetchText(embed).catch(function(){return "";}).then(function(eh){
+      return fetchText(page).catch(function(){return "";}).then(function(ph){return {eh:eh,ph:ph};});
+    }).then(function(r){
+      var all=(r.eh||"")+"\n"+(r.ph||"");
+      if(!all.trim())throw new Error("nodata");
+      var media=extractMedia(all);
+      var caption=extractCaption(r.eh||"")||extractCaption(r.ph||"")||"";
+      if(media.images.length===0&&media.videos.length===0&&!caption)throw new Error("nomedia");
+      render(media,caption);
+      setMsg("");
+    }).catch(function(err){
+      if(err&&err.message==="nomedia")
+        setMsg("이미지나 본문을 찾지 못했습니다. 비공개 게시물이거나 인스타그램 구조가 바뀌었을 수 있습니다.","err");
+      else
+        setMsg("콘텐츠를 불러오지 못했습니다. 인터넷 연결과 공개 게시물 여부를 확인하고 잠시 뒤 다시 시도해 주세요.","err");
+    }).then(function(){busy(false);});
+  }
+
+  function render(media,caption){
+    grid.innerHTML="";
+    var items=[];
+    media.images.forEach(function(u){items.push({url:u,type:"image"});});
+    media.videos.forEach(function(u){items.push({url:u,type:"video"});});
+    items.forEach(function(it,idx){
+      var cell=document.createElement("div");cell.className="cell";
+      var pv;
+      if(it.type==="video"){pv=document.createElement("video");pv.src=it.url;pv.controls=true;pv.playsInline=true;}
+      else{pv=document.createElement("img");pv.src=it.url;pv.alt="이미지 "+(idx+1);pv.loading="lazy";pv.referrerPolicy="no-referrer";}
+      cell.appendChild(pv);
+      var b=document.createElement("button");b.className="dl";
+      b.textContent=it.type==="video"?"⬇ 영상 저장":"⬇ 이미지 저장";
+      b.addEventListener("click",function(){dlMedia(it,idx,b);});
+      cell.appendChild(b);grid.appendChild(cell);
+    });
+    mediaWrap.hidden=items.length===0;
+    if(items.length>1){dlAll.hidden=false;dlAll.onclick=function(){dlAllFn(items);};}
+    else dlAll.hidden=true;
+    if(caption){cap.value=caption;capBox.hidden=false;}else capBox.hidden=true;
+    result.hidden=false;
+    result.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
+  function ext(it){
+    if(it.type==="video")return ".mp4";
+    if(/\.png(\?|$)/i.test(it.url))return ".png";
+    if(/\.webp(\?|$)/i.test(it.url))return ".webp";
+    return ".jpg";
+  }
+  function save(blob,name){
+    var a=document.createElement("a"),o=URL.createObjectURL(blob);
+    a.href=o;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(o);},4000);
+  }
+  function dlMedia(it,idx,btn){
+    var orig=btn?btn.textContent:"";
+    if(btn){btn.disabled=true;btn.textContent="저장 중…";}
+    var name="instagram_"+shortcode+"_"+(idx+1)+ext(it);
+    return fetchBlob(it.url).then(function(b){save(b,name);if(btn)btn.textContent="✓ 저장됨";})
+      .catch(function(){window.open(it.url,"_blank","noopener");if(btn)btn.textContent="새 탭에서 열림";})
+      .then(function(){if(btn)setTimeout(function(){btn.disabled=false;btn.textContent=orig;},2500);});
+  }
+  function dlAllFn(items){
+    dlAll.disabled=true;var orig=dlAll.textContent,i=0;
+    function nxt(){
+      if(i>=items.length){dlAll.textContent="✓ 모두 저장됨";
+        setTimeout(function(){dlAll.disabled=false;dlAll.textContent=orig;},2500);return;}
+      dlAll.textContent="저장 중… ("+(i+1)+"/"+items.length+")";
+      dlMedia(items[i],i,null).then(function(){i++;setTimeout(nxt,600);});
+    }
+    nxt();
+  }
+  function copyCap(){
+    var t=cap.value;if(!t)return;
+    var done=function(){copy.textContent="✓ 복사됨";setTimeout(function(){copy.textContent="📋 본문 복사";},1800);};
+    if(navigator.clipboard&&navigator.clipboard.writeText)
+      navigator.clipboard.writeText(t).then(done,function(){cap.select();document.execCommand("copy");done();});
+    else{cap.select();document.execCommand("copy");done();}
+  }
+  function saveCapTxt(){
+    var t=cap.value;if(!t)return;
+    save(new Blob([t],{type:"text/plain;charset=utf-8"}),"instagram_"+shortcode+"_caption.txt");
+  }
+  function setMsg(html,cls){msg.innerHTML=html||"";msg.className="msg"+(cls?" "+cls:"");}
+  function busy(b){go.disabled=b;go.textContent=b?"불러오는 중…":"가져오기";}
+})();
+</script>
+</body>
+</html>
