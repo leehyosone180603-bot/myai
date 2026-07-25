@@ -157,10 +157,14 @@
 <script>
 (function(){
   "use strict";
+  // 여러 공개 중계(CORS 프록시) 서버. json:true 는 {contents:"..."} 형태로 감싸서 준다.
+  // 파일(file://·null origin)에서도 동작하는 서버를 앞쪽에 둔다.
   var PROXIES=[
-    function(u){return "https://api.allorigins.win/raw?url="+encodeURIComponent(u);},
-    function(u){return "https://corsproxy.io/?url="+encodeURIComponent(u);},
-    function(u){return "https://thingproxy.freeboard.io/fetch/"+u;}
+    {name:"codetabs", txt:function(u){return "https://api.codetabs.com/v1/proxy/?quest="+encodeURIComponent(u);}, bin:true, json:false},
+    {name:"allorigins", txt:function(u){return "https://api.allorigins.win/get?url="+encodeURIComponent(u);}, bin:false, json:true},
+    {name:"allorigins-raw", txt:function(u){return "https://api.allorigins.win/raw?url="+encodeURIComponent(u);}, bin:true, json:false},
+    {name:"corsproxy", txt:function(u){return "https://corsproxy.io/?url="+encodeURIComponent(u);}, bin:true, json:false},
+    {name:"thingproxy", txt:function(u){return "https://thingproxy.freeboard.io/fetch/"+u;}, bin:true, json:false}
   ];
   var $=function(id){return document.getElementById(id);};
   var url=$("url"),go=$("go"),msg=$("msg"),result=$("result"),grid=$("grid"),
@@ -175,22 +179,32 @@
 
   function parseShortcode(u){var m=u.match(/(?:\/p\/|\/reel\/|\/reels\/|\/tv\/)([A-Za-z0-9_-]+)/);return m?m[1]:null;}
 
-  function fetchText(target){
+  var reachedServer=false; // 중계 서버 한 곳이라도 응답을 줬는지(원인 구분용)
+
+  function fetchText(target,onTry){
     var i=0;
     function nxt(){
       if(i>=PROXIES.length)return Promise.reject(new Error("proxy"));
-      return fetch(PROXIES[i++](target),{headers:{"Accept":"text/html,*/*"}})
+      var p=PROXIES[i++];
+      if(onTry)onTry(p.name);
+      return fetch(p.txt(target),{headers:{"Accept":"text/html,*/*"}})
         .then(function(r){if(!r.ok)throw 0;return r.text();})
-        .then(function(t){if(!t||t.length<30)throw 0;return t;})
+        .then(function(t){
+          if(p.json){try{t=(JSON.parse(t).contents)||"";}catch(e){t="";}}
+          if(!t||t.length<50)throw 0;
+          reachedServer=true;
+          return t;
+        })
         .catch(function(){return nxt();});
     }
     return nxt();
   }
   function fetchBlob(target){
+    var list=PROXIES.filter(function(p){return p.bin;});
     var i=0;
     function nxt(){
-      if(i>=PROXIES.length)return Promise.reject(new Error("proxy"));
-      return fetch(PROXIES[i++](target))
+      if(i>=list.length)return Promise.reject(new Error("proxy"));
+      return fetch(list[i++].txt(target))
         .then(function(r){if(!r.ok)throw 0;return r.blob();})
         .then(function(b){if(!b||b.size<100)throw 0;return b;})
         .catch(function(){return nxt();});
@@ -248,15 +262,16 @@
     var sc=parseShortcode(raw);
     if(!sc){return setMsg("올바른 게시물 링크가 아닙니다. 예) https://www.instagram.com/p/XXXXXXXXXXX/","err");}
     shortcode=sc;
+    reachedServer=false;
     busy(true);
-    setMsg('<span class="spinner"></span>인스타그램에서 콘텐츠를 불러오는 중…',"busy");
+    var onTry=function(name){setMsg('<span class="spinner"></span>중계 서버 시도 중… ('+name+')',"busy");};
     var embed="https://www.instagram.com/p/"+sc+"/embed/captioned/";
     var page="https://www.instagram.com/p/"+sc+"/";
-    fetchText(embed).catch(function(){return "";}).then(function(eh){
-      return fetchText(page).catch(function(){return "";}).then(function(ph){return {eh:eh,ph:ph};});
+    fetchText(embed,onTry).catch(function(){return "";}).then(function(eh){
+      return fetchText(page,onTry).catch(function(){return "";}).then(function(ph){return {eh:eh,ph:ph};});
     }).then(function(r){
       var all=(r.eh||"")+"\n"+(r.ph||"");
-      if(!all.trim())throw new Error("nodata");
+      if(!all.trim())throw new Error(reachedServer?"nomedia":"nodata");
       var media=extractMedia(all);
       var caption=extractCaption(r.eh||"")||extractCaption(r.ph||"")||"";
       if(media.images.length===0&&media.videos.length===0&&!caption)throw new Error("nomedia");
@@ -264,9 +279,9 @@
       setMsg("");
     }).catch(function(err){
       if(err&&err.message==="nomedia")
-        setMsg("이미지나 본문을 찾지 못했습니다. 비공개 게시물이거나 인스타그램 구조가 바뀌었을 수 있습니다.","err");
+        setMsg("게시물은 열었지만 이미지·본문을 찾지 못했습니다. 비공개 게시물이거나, 인스타그램이 로그인 화면을 반환했을 수 있습니다. 다른 공개 게시물로 다시 시도해 보세요.","err");
       else
-        setMsg("콘텐츠를 불러오지 못했습니다. 인터넷 연결과 공개 게시물 여부를 확인하고 잠시 뒤 다시 시도해 주세요.","err");
+        setMsg("중계 서버에 모두 연결하지 못했습니다. 잠시 후 다시 시도하거나, 사용 중인 광고 차단기·VPN을 잠시 끄고 시도해 보세요. (무료 중계 서버가 일시적으로 혼잡할 수 있습니다.)","err");
     }).then(function(){busy(false);});
   }
 

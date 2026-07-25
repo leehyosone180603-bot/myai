@@ -9,10 +9,13 @@
   "use strict";
 
   // 여러 공개 CORS 프록시. 앞에서부터 시도하고 실패하면 다음으로 넘어간다.
+  // json:true 는 {contents:"..."} 형태로 감싸 주는 서버, bin:true 는 바이너리(이미지) 중계 가능.
   var PROXIES = [
-    function (u) { return "https://api.allorigins.win/raw?url=" + encodeURIComponent(u); },
-    function (u) { return "https://corsproxy.io/?url=" + encodeURIComponent(u); },
-    function (u) { return "https://thingproxy.freeboard.io/fetch/" + u; }
+    { txt: function (u) { return "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(u); }, bin: true, json: false },
+    { txt: function (u) { return "https://api.allorigins.win/get?url=" + encodeURIComponent(u); }, bin: false, json: true },
+    { txt: function (u) { return "https://api.allorigins.win/raw?url=" + encodeURIComponent(u); }, bin: true, json: false },
+    { txt: function (u) { return "https://corsproxy.io/?url=" + encodeURIComponent(u); }, bin: true, json: false },
+    { txt: function (u) { return "https://thingproxy.freeboard.io/fetch/" + u; }, bin: true, json: false }
   ];
 
   var $ = function (id) { return document.getElementById(id); };
@@ -58,14 +61,15 @@
       if (i >= PROXIES.length) {
         return Promise.reject(new Error("all-proxy-failed"));
       }
-      var proxyUrl = PROXIES[i++](targetUrl);
-      return fetch(proxyUrl, { headers: { "Accept": "text/html,*/*" } })
+      var p = PROXIES[i++];
+      return fetch(p.txt(targetUrl), { headers: { "Accept": "text/html,*/*" } })
         .then(function (res) {
           if (!res.ok) throw new Error("http-" + res.status);
           return res.text();
         })
         .then(function (text) {
-          if (!text || text.length < 30) throw new Error("empty");
+          if (p.json) { try { text = (JSON.parse(text).contents) || ""; } catch (e) { text = ""; } }
+          if (!text || text.length < 50) throw new Error("empty");
           return text;
         })
         .catch(function () { return tryNext(); });
@@ -75,13 +79,13 @@
 
   // --- 프록시를 통한 이미지/영상 blob fetch -----------------------------------
   function fetchBlob(targetUrl) {
+    var list = PROXIES.filter(function (p) { return p.bin; });
     var i = 0;
     function tryNext() {
-      if (i >= PROXIES.length) {
+      if (i >= list.length) {
         return Promise.reject(new Error("all-proxy-failed"));
       }
-      var proxyUrl = PROXIES[i++](targetUrl);
-      return fetch(proxyUrl)
+      return fetch(list[i++].txt(targetUrl))
         .then(function (res) {
           if (!res.ok) throw new Error("http-" + res.status);
           return res.blob();
