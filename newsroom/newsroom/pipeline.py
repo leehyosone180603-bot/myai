@@ -8,13 +8,16 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
-from datetime import datetime
+from collections import defaultdict, deque
+from datetime import datetime, time as _dtime, timedelta
 
 from . import ai_filter, ai_writer, cardnews, image_gen, instagram, reels, storage
+from .ai import structured
 from .collector import collect
 from .config import Config
-from .models import Bundle, Candidate
+from .models import Article, Bundle, Candidate, ContentPlan
 from .pubqueue import PublishQueue
 from .store import Store
 
@@ -268,6 +271,146 @@ def stage_for_publish(cfg: Config, cand: Candidate) -> Bundle:
     label = {"money": "💰 돈/경제", "general": "🌐 이슈"}.get(cand.topic, cand.topic)
     _notify(cfg, f"📥 <b>발행 대기열 적재</b> · {label}\n{cand.article.title}\n\n현재 대기: {_fmt_counts(cfg)}")
     return bundle
+
+
+# ── 4) 리포스트(번역) — 붙여넣은 캡션 + 이미지 → 일본어 카드 → 대기열 ───
+_REPOST_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "headline": {"type": "string"},
+        "subtitle": {"type": "string"},
+        "body": {"type": "string"},
+    },
+    "required": ["headline", "subtitle", "body"],
+    "additionalProperties": False,
+}
+
+
+def _translate_repost(cfg: Config, caption_text: str) -> ContentPlan:
+    """붙여넣은 원문 캡션을 발행 언어(기본 일본어)로 번역·재구성."""
+    lang = cfg.get("content.language", "ja")
+    lang_name = {"ja": "일본어(自然な日本語)", "ko": "한국어", "en": "English"}.get(lang, "일본어")
+    model = cfg.get("writer.model", "claude-opus-4-8")
+    system = (
+        f"당신은 인스타그램 채널 에디터입니다. 사용자가 준 '원문 게시물 캡션'을 "
+        f"{lang_name}로 자연스럽게 번역·재구성합니다. 번역투 없이 현지인이 읽기 자연스럽게, "
+        "사실은 그대로 유지하고 없는 내용을 지어내지 마세요. 원문 언어 문장을 그대로 남기지 마세요."
+    )
+    user = (
+        f"[원문 게시물 캡션]\n{caption_text}\n\n"
+        f"요구사항(모두 {lang_name}):\n"
+        f"- headline: 카드 표지 제목. 2줄 이내, 강한 훅.\n"
+        f"- subtitle: 제목 아래 한 줄(15자 내외).\n"
+        f"- body: 캡션용 상세 본문. 원문 핵심을 살려 3~4문단으로, 문단은 빈 줄로 구분."
+    )
+    r = structured(cfg, system, user, _REPOST_SCHEMA, model=model, max_tokens=3000)
+    return ContentPlan(headline=r.get("headline", ""), subtitle=r.get("subtitle", ""),
+                       body=r.get("body", ""), card_slides=[r.get("headline", "")],
+                       category="today", mood="calm")
+
+
+def _repost_caption(cfg: Config, plan: ContentPlan, source: str = "") -> str:
+    tags = cfg.get("content.hashtags", "")
+    parts = [plan.headline.strip()]
+    if plan.body:
+        parts.append(plan.body.strip())
+    if source:
+        parts.append(f"via {source}")
+    parts.append(tags)
+    return "\n\n".join(p for p in parts if p)[:2200]
+
+
+def stage_repost(cfg: Config, image_path: str, caption_text: str, topic: str = "general",
+                 source: str = "", redraw: bool = True, make_reel: bool = True) -> Bundle:
+    """리포스트 1건: (번역) → 카드 → (릴스) → R2 업로드 → 대기열 적재.
+
+    redraw=True  : 첨부 이미지를 배경으로 일본어 카드를 새로 그림(깨끗한 사진 권장).
+    redraw=False : 첨부 이미지를 그대로 카드로 사용(원문 텍스트가 박힌 카드일 때).
+    """
+    from PIL import Image
+    out_dir = cfg.out_dir
+    print(f"리포스트 · 번역 시작 — {caption_text[:40]}…")
+    plan = _translate_repost(cfg, caption_text)
+
+    slug = datetime.utcnow().strftime("%Y%m%d") + "_repost_" + \
+        hashlib.sha1((image_path + caption_text[:120]).encode("utf-8")).hexdigest()[:8]
+    card = out_dir / f"{slug}_card1.jpg"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    if redraw:
+        print("리포스트 · 카드 렌더(일본어 새로 그림)")
+        cardnews.render_card(cfg, title=plan.headline, subtitle=plan.subtitle,
+                             category=plan.category, bg_path=str(image_path),
+                             out_path=card, is_cover=True, slide_total=1)
+    else:
+        print("리포스트 · 첨부 이미지를 그대로 카드로 사용")
+        Image.open(image_path).convert("RGB").save(card, "JPEG", quality=92)
+
+    art = Article(source=source, title=plan.headline, url="")
+    cand = Candidate(article=art, topic=topic, category=plan.category)
+    bundle = Bundle(candidate=cand, plan=plan)
+    bundle.card_paths = [str(card)]
+    if make_reel:
+        print("리포스트 · 릴스(썸네일 → 영상)")
+        bundle.reel_path = reels.build_from_image(cfg, str(card), out_dir, slug) or ""
+
+    print("리포스트 · R2 업로드")
+    card_urls, reel_url = _upload_assets(cfg, bundle, slug)
+    if not card_urls and not reel_url:
+        print("  ! 업로드 실패 — 대기열 적재 생략")
+        return bundle
+
+    _queue(cfg).enqueue({
+        "id": slug, "topic": topic, "title": plan.headline,
+        "card_urls": card_urls, "reel_url": reel_url,
+        "caption": _repost_caption(cfg, plan, source), "kind": "repost",
+    })
+    label = {"money": "💰 돈/경제", "general": "🌐 이슈"}.get(topic, topic)
+    print(f"  📥 리포스트 대기열 적재: [{topic}] {plan.headline[:36]}  (대기 {_queue(cfg).counts()})")
+    _notify(cfg, f"📥 <b>리포스트 대기열 적재</b> · {label}\n{plan.headline}\n\n현재 대기: {_fmt_counts(cfg)}")
+    return bundle
+
+
+# ── 대기열 발행 예정시각 계산(UI 표시용) ────────────────────────────
+def queue_listing(cfg: Config, now: datetime | None = None) -> list[dict]:
+    """대기 중 항목들에 '예상 발행 시각'을 붙여 시간순으로 반환.
+
+    schedule.slots(시간대·스트림)와 현재시각 기준으로, 스트림별 대기 순서대로
+    앞으로의 슬롯에 하나씩 배정한다(그 시각에 PC가 켜져 있다는 가정의 예측치).
+    """
+    now = now or datetime.now()
+    slots = cfg.get("schedule.slots", []) or []
+    items = _queue(cfg).pending()                     # 적재 순서(오래된 것 먼저)
+    by_topic: dict[str, deque] = defaultdict(deque)
+    for it in items:
+        it["_when"] = None
+        by_topic[it.get("topic", "general")].append(it)
+
+    remaining = len(items)
+    day = 0
+    while remaining > 0 and day < 90:
+        date = (now + timedelta(days=day)).date()
+        for slot in sorted(slots, key=lambda s: str(s.get("time", ""))):
+            try:
+                hh, mm = map(int, str(slot.get("time", "")).split(":"))
+            except ValueError:
+                continue
+            dt = datetime.combine(date, _dtime(hh, mm))
+            if dt <= now:
+                continue
+            tp = slot.get("topic")
+            if by_topic.get(tp):
+                by_topic[tp].popleft()["_when"] = dt
+                remaining -= 1
+        day += 1
+
+    rows = sorted(items, key=lambda it: (it.get("_when") or datetime.max))
+    out = []
+    for i, it in enumerate(rows, 1):
+        out.append({"seq": i, "topic": it.get("topic", "general"),
+                    "title": it.get("title", ""), "kind": it.get("kind", "news"),
+                    "when": it.get("_when")})
+    return out
 
 
 def requeue_failed(cfg: Config) -> int:
