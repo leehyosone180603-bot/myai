@@ -93,9 +93,13 @@ def load_config(config_path: str | os.PathLike | None = None) -> Config:
     env_file = data.get("env_file")
     if env_file:
         load_dotenv(ROOT / env_file, override=True)
-    # 레이아웃 편집기(layout_editor.py)가 저장하는 오버라이드 병합 (주석 보존용 별도 파일)
-    overrides = ROOT / "config" / "layout_overrides.yaml"
-    if overrides.exists():
-        with open(overrides, "r", encoding="utf-8") as f:
-            _deep_merge(data, yaml.safe_load(f) or {})
+    # GUI 편집기가 저장하는 오버라이드들 병합 (주석 보존용 별도 파일)
+    #  - layout_overrides.yaml : 카드 레이아웃
+    #  - schedule_overrides(.ja/.ko).yaml : 발행 시간대(채널별)
+    lang = (data.get("content", {}) or {}).get("language", "ja")
+    for name in ("layout_overrides.yaml", f"schedule_overrides.{lang}.yaml"):
+        ov = ROOT / "config" / name
+        if ov.exists():
+            with open(ov, "r", encoding="utf-8") as f:
+                _deep_merge(data, yaml.safe_load(f) or {})
     return Config(data=data)

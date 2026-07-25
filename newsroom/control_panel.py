@@ -21,7 +21,7 @@ from tkinter import (Tk, Frame, Label, Button, Text, StringVar, END, DISABLED, W
 
 from newsroom.config import load_config
 from newsroom.store import Store
-from newsroom import pipeline, telegram_bot
+from newsroom import pipeline, telegram_bot, scheduler
 
 
 class _Tee:
@@ -48,6 +48,7 @@ class _Tee:
 class Panel:
     def __init__(self, root: Tk, config_path: str | None = None):
         self.root = root
+        self.config_path = config_path
         self.cfg = load_config(config_path)
         lang = self.cfg.get("content.language", "ja")
         ch = {"ja": "🇯🇵 일본어", "ko": "🇰🇷 한국어", "en": "🇺🇸 English"}.get(lang, lang)
@@ -82,7 +83,9 @@ class Panel:
                command=lambda: self._bg(self._publish_all)).grid(row=1, column=2, sticky="ew", padx=3, pady=3)
         Button(b, text="↩ 실패 항목 재시도(대기열 복구)", height=2,
                command=lambda: self._bg(lambda: pipeline.requeue_failed(self.cfg))
-               ).grid(row=2, column=0, columnspan=3, sticky="ew", padx=3, pady=3)
+               ).grid(row=2, column=0, columnspan=2, sticky="ew", padx=3, pady=3)
+        Button(b, text="⏰ 발행 시간 설정", height=2,
+               command=self.open_schedule).grid(row=2, column=2, sticky="ew", padx=3, pady=3)
         for i in range(3):
             b.columnconfigure(i, weight=1)
 
@@ -128,9 +131,16 @@ class Panel:
 
         self.bot_thread = threading.Thread(target=run, daemon=True)
         self.bot_thread.start()
-        self.status.set("봇: 켜짐 (승인 대기)")
-        self.bot_btn.config(text="✅ 봇 실행 중", state=DISABLED)
-        print("승인 봇 시작 — 텔레그램 '발행' 버튼을 기다립니다. (start_bot.bat 는 켜지 마세요)")
+        # 내장 스케줄러도 함께 시작(설정된 시간대에 자동 발행 + 밤 검토)
+        threading.Thread(target=lambda: scheduler.run_scheduler(self.config_path, log=print),
+                         daemon=True).start()
+        self.status.set("봇+스케줄러: 켜짐")
+        self.bot_btn.config(text="✅ 봇+스케줄러 실행 중", state=DISABLED)
+        print("승인 봇 + 스케줄러 시작 — 발행 버튼 처리 + 시간대 자동 발행. (start_bot.bat 는 켜지 마세요)")
+
+    def open_schedule(self):
+        import schedule_editor
+        schedule_editor.open_editor(self.root, self.config_path, on_save=self.refresh)
 
     def refresh(self):
         c = pipeline._queue(self.cfg).counts()

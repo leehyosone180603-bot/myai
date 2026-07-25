@@ -45,6 +45,7 @@ class _Tee:
 class Studio:
     def __init__(self, root: Tk, config_path: str | None = None):
         self.root = root
+        self.config_path = config_path
         self.cfg = load_config(config_path)
         lang = self.cfg.get("content.language", "ja")
         ch = {"ja": "🇯🇵 일본어", "ko": "🇰🇷 한국어"}.get(lang, lang)
@@ -90,14 +91,19 @@ class Studio:
         self.counts = StringVar(value="대기열: 💰0 · 🌐0  (총 0개)")
         Label(right, textvariable=self.counts, font=("", 11, "bold")).pack(anchor="w")
 
-        cols = ("seq", "topic", "kind", "title", "when")
+        cols = ("seq", "topic", "kind", "title", "status", "when")
         self.tree = ttk.Treeview(right, columns=cols, show="headings", height=14)
-        for c, t, w in (("seq", "#", 34), ("topic", "스트림", 70), ("kind", "종류", 60),
-                        ("title", "제목", 240), ("when", "예상 발행", 130)):
+        for c, t, w in (("seq", "#", 30), ("topic", "스트림", 62), ("kind", "종류", 58),
+                        ("title", "제목", 210), ("status", "상태", 74), ("when", "예상 발행", 110)):
             self.tree.heading(c, text=t)
             self.tree.column(c, width=w, anchor="w")
         self.tree.pack(fill="both", expand=True, pady=6)
-        Button(right, text="🔄 새로고침", command=self.refresh).pack(fill="x")
+        rb = Frame(right)
+        rb.pack(fill="x")
+        Button(rb, text="🔄 새로고침", command=self.refresh).pack(side="left", expand=True, fill="x", padx=2)
+        Button(rb, text="⏰ 발행 시간 설정", command=self.open_schedule).pack(side="left", expand=True, fill="x", padx=2)
+        Button(rb, text="↩ 실패 재시도", command=lambda: self._bg_refresh(
+            lambda: pipeline.requeue_failed(self.cfg))).pack(side="left", expand=True, fill="x", padx=2)
 
         # ── 로그 ──
         self.log = Text(root, height=6, wrap=WORD)
@@ -145,17 +151,33 @@ class Studio:
         self.image_path = None
         self.img_label.config(text="(이미지 없음)", fg="#888")
 
+    _STATUS = {"queued": "⏳대기", "publishing": "⚠멈춤", "failed": "❌실패", "published": "✅발행됨"}
+
+    def open_schedule(self):
+        import schedule_editor
+        schedule_editor.open_editor(self.root, self.config_path, on_save=self.refresh)
+
+    def _bg_refresh(self, fn):
+        def work():
+            try:
+                fn()
+            except Exception as e:
+                print(f"[오류] {e}")
+            self.root.after(0, self.refresh)
+        threading.Thread(target=work, daemon=True).start()
+
     def refresh(self):
         c = pipeline._queue(self.cfg).counts()
         total = sum(c.values())
-        self.counts.set(f"대기열: 💰{c.get('money', 0)} · 🌐{c.get('general', 0)}  (총 {total}개)")
+        self.counts.set(f"대기열: 💰{c.get('money', 0)} · 🌐{c.get('general', 0)}  (대기 {total}개)")
         for r in self.tree.get_children():
             self.tree.delete(r)
         for row in pipeline.queue_listing(self.cfg):
             tp = {"money": "💰돈", "general": "🌐이슈"}.get(row["topic"], row["topic"])
             kd = {"repost": "리포스트", "news": "뉴스"}.get(row["kind"], row["kind"])
+            st = self._STATUS.get(row.get("status"), row.get("status", ""))
             when = row["when"].strftime("%m/%d %H:%M") if row["when"] else "-"
-            self.tree.insert("", END, values=(row["seq"], tp, kd, row["title"][:40], when))
+            self.tree.insert("", END, values=(row["seq"], tp, kd, row["title"][:36], st, when))
 
     def _drain(self):
         try:

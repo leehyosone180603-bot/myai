@@ -380,13 +380,15 @@ def queue_listing(cfg: Config, now: datetime | None = None) -> list[dict]:
     """
     now = now or datetime.now()
     slots = cfg.get("schedule.slots", []) or []
-    items = _queue(cfg).pending()                     # 적재 순서(오래된 것 먼저)
-    by_topic: dict[str, deque] = defaultdict(deque)
-    for it in items:
+    all_items = _queue(cfg).all()                     # 상태 무관 전체(발행됨/실패/멈춤 포함)
+    for it in all_items:
         it["_when"] = None
-        by_topic[it.get("topic", "general")].append(it)
+    queued = [it for it in all_items if it.get("status") == "queued"]
 
-    remaining = len(items)
+    by_topic: dict[str, deque] = defaultdict(deque)
+    for it in queued:
+        by_topic[it.get("topic", "general")].append(it)
+    remaining = len(queued)
     day = 0
     while remaining > 0 and day < 90:
         date = (now + timedelta(days=day)).date()
@@ -404,12 +406,15 @@ def queue_listing(cfg: Config, now: datetime | None = None) -> list[dict]:
                 remaining -= 1
         day += 1
 
-    rows = sorted(items, key=lambda it: (it.get("_when") or datetime.max))
+    # 대기중(예상시각순) → 그 외(적재순). 검토했던 항목을 상태와 함께 모두 표시.
+    q_rows = sorted(queued, key=lambda it: (it.get("_when") or datetime.max))
+    others = sorted((it for it in all_items if it.get("status") != "queued"),
+                    key=lambda it: it.get("staged_at", ""))
     out = []
-    for i, it in enumerate(rows, 1):
+    for i, it in enumerate(q_rows + others, 1):
         out.append({"seq": i, "topic": it.get("topic", "general"),
                     "title": it.get("title", ""), "kind": it.get("kind", "news"),
-                    "when": it.get("_when")})
+                    "status": it.get("status", "queued"), "when": it.get("_when")})
     return out
 
 

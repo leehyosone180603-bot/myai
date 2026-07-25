@@ -41,6 +41,10 @@ class PublishQueue:
         data["items"].append(item)
         self._save(data)
 
+    def all(self) -> list[dict[str, Any]]:
+        """상태 무관 모든 항목(발행됨/실패/멈춤 포함)."""
+        return self._load()["items"]
+
     def pending(self, topic: str | None = None) -> list[dict[str, Any]]:
         items = [it for it in self._load()["items"] if it.get("status") == "queued"]
         if topic:
