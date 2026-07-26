@@ -15,13 +15,21 @@
 const fs = require("fs");
 const path = require("path");
 
-const SESSION_FILE = path.join(__dirname, "ig-session.json");
+// 실제 브라우저 프로필을 폴더에 저장해 로그인을 유지합니다(가장 안정적).
+const PROFILE_DIR = path.join(__dirname, "ig-profile");
+const MARKER_FILE = path.join(PROFILE_DIR, ".logged_in"); // 로그인 성공 표시
+const LEGACY_SESSION_FILE = path.join(__dirname, "ig-session.json"); // 예전 방식(정리용)
 const IG_APP_ID = "936619743392459"; // 인스타그램 웹 API 호출에 필요한 공개 app id
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
 
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
-function hasSession() { return fs.existsSync(SESSION_FILE); }
-function clearSession() { try { fs.unlinkSync(SESSION_FILE); } catch (e) {} }
+// 이전에 로그인에 성공한 적이 있으면 true (→ 창 없이 조용히 실행 시도)
+function hasSession() { return fs.existsSync(MARKER_FILE); }
+function markLoggedIn() { try { fs.mkdirSync(PROFILE_DIR, { recursive: true }); fs.writeFileSync(MARKER_FILE, new Date().toISOString()); } catch (e) {} }
+function clearSession() {
+  try { fs.rmSync(PROFILE_DIR, { recursive: true, force: true }); } catch (e) {}
+  try { fs.unlinkSync(LEGACY_SESSION_FILE); } catch (e) {}
+}
 
 // 프로필 입력에서 인스타그램 아이디(username) 추출
 function parseUsername(input) {
@@ -34,24 +42,33 @@ function parseUsername(input) {
   return s;
 }
 
-// ----- 로그인 처리 -----
-async function ensureLogin(browser, opts) {
+// 로그인 여부 확인 — 가장 확실한 방법: 컨텍스트의 sessionid 쿠키 존재 여부.
+// (sessionid 는 HttpOnly 라 페이지 스크립트로는 안 보이므로 반드시 컨텍스트 API 로 확인)
+async function isLoggedIn(ctx, page) {
+  try {
+    const cookies = await ctx.cookies("https://www.instagram.com");
+    if (cookies.some((c) => c.name === "sessionid" && c.value && c.value.length > 10)) return true;
+  } catch (e) { /* 무시하고 DOM 검사로 폴백 */ }
+  try {
+    return await page.evaluate(() => {
+      if (document.querySelector('input[name="password"]')) return false;
+      return Boolean(document.querySelector('a[href="/explore/"], a[href^="/direct/"], svg[aria-label="홈"], svg[aria-label="Home"]'));
+    });
+  } catch (e) { return false; }
+}
+
+// 열린 persistent 컨텍스트에서 로그인 상태를 보장합니다.
+// 반환: "ok" (로그인됨) 또는 "need-ui" (창을 띄워 직접 로그인이 필요 — 호출측이 headful 로 재실행)
+async function ensureLogin(ctx, opts) {
   const { username, password, headless, onLog } = opts;
   const log = onLog || (() => {});
-  const ctxOpts = { userAgent: UA, viewport: { width: 1280, height: 900 }, locale: "ko-KR" };
-  if (hasSession()) ctxOpts.storageState = SESSION_FILE;
-  const ctx = await browser.newContext(ctxOpts);
-  const page = await ctx.newPage();
+  const page = (ctx.pages()[0]) || (await ctx.newPage());
 
   await page.goto("https://www.instagram.com/", { waitUntil: "domcontentloaded", timeout: 40000 });
   await sleep(2500);
-  if (await isLoggedIn(page)) {
-    await ctx.storageState({ path: SESSION_FILE });
-    await page.close();
-    return ctx;
-  }
+  if (await isLoggedIn(ctx, page)) { markLoggedIn(); return "ok"; }
 
-  // 자동 로그인 시도
+  // 아이디/비밀번호가 있으면 자동 로그인 시도
   if (username && password) {
     log("저장된 아이디/비밀번호로 로그인 시도 중...");
     try {
@@ -60,39 +77,21 @@ async function ensureLogin(browser, opts) {
       await page.fill('input[name="username"]', String(username), { timeout: 15000 });
       await page.fill('input[name="password"]', String(password), { timeout: 15000 });
       await page.click('button[type="submit"]');
-      for (let i = 0; i < 30; i++) { await sleep(1500); if (await isLoggedIn(page)) break; }
+      for (let i = 0; i < 30; i++) { await sleep(1500); if (await isLoggedIn(ctx, page)) break; }
     } catch (e) { log("자동 로그인 중 문제: " + e.message); }
+    if (await isLoggedIn(ctx, page)) { markLoggedIn(); log("로그인 완료 ✅ (프로필에 저장 — 다음부터는 창 없이 자동 로그인)"); return "ok"; }
   }
 
-  // 직접 로그인 안내
-  if (!(await isLoggedIn(page))) {
-    if (headless) {
-      throw new Error("로그인이 필요합니다. 아이디/비밀번호를 입력하거나, 화면 브라우저에서 직접 로그인할 수 있게 다시 실행하세요.");
-    }
-    log("🔑 열린 인스타그램 창에서 직접 로그인해 주세요. (2단계 인증 포함) — 완료되면 자동으로 진행됩니다.");
-    let ok = false;
-    for (let i = 0; i < 160; i++) { // 최대 약 4분
-      await sleep(1500);
-      if (await isLoggedIn(page)) { ok = true; break; }
-    }
-    if (!ok) throw new Error("로그인이 확인되지 않아 중단했습니다.");
+  // 여기까지 로그인 안 됨
+  if (headless) return "need-ui"; // 조용히 실행 중이었다면, 창을 띄우도록 상위에 신호
+
+  // 창이 떠 있는 상태 → 직접 로그인 대기
+  log("🔑 열린 인스타그램 창에서 로그인해 주세요. (2단계 인증 포함) — 완료되면 자동으로 진행됩니다.");
+  for (let i = 0; i < 200; i++) { // 최대 약 5분
+    await sleep(1500);
+    if (await isLoggedIn(ctx, page)) { markLoggedIn(); log("로그인 완료 ✅ (프로필에 저장 — 다음부터는 창 없이 자동 로그인)"); return "ok"; }
   }
-
-  await ctx.storageState({ path: SESSION_FILE });
-  log("로그인 완료 ✅ (세션 저장)");
-  await page.close();
-  return ctx;
-}
-
-async function isLoggedIn(page) {
-  try {
-    return await page.evaluate(() => {
-      if (document.querySelector('input[name="password"]')) return false;
-      const hasNav = document.querySelector('svg[aria-label="홈"], svg[aria-label="Home"], a[href="/"] svg');
-      const cookie = document.cookie || "";
-      return Boolean(hasNav) || /sessionid=/.test(cookie);
-    });
-  } catch (e) { return false; }
+  throw new Error("로그인이 확인되지 않아 중단했습니다. 다시 시도해 주세요.");
 }
 
 async function dismissCookieBanner(page) {
@@ -307,11 +306,32 @@ async function runAnalysis(opts) {
   if (!username) throw new Error("인스타그램 계정 주소나 아이디를 입력하세요. 예: https://www.instagram.com/instagram/");
 
   const { chromium } = require("playwright");
-  onLog(`브라우저 준비 중...`);
-  const browser = await chromium.launch({ headless });
+
+  // 실제 브라우저 프로필(PROFILE_DIR)로 로그인을 저장 → 다음 실행부터는 창 없이 자동 로그인
+  async function openCtx(hl) {
+    return chromium.launchPersistentContext(PROFILE_DIR, {
+      headless: hl,
+      viewport: { width: 1280, height: 900 },
+      locale: "ko-KR",
+      args: ["--no-first-run", "--no-default-browser-check", "--disable-blink-features=AutomationControlled"],
+    });
+  }
+
+  onLog("브라우저 준비 중...");
+  let wantHeadless = headless;
+  let ctx = await openCtx(wantHeadless);
   try {
-    const ctx = await ensureLogin(browser, { username: opts.username, password: opts.password, headless, onLog });
-    const page = await ctx.newPage();
+    let state = await ensureLogin(ctx, { username: opts.username, password: opts.password, headless: wantHeadless, onLog });
+    // 조용히 실행했는데 세션이 만료된 경우 → 창을 띄워 로그인 받기
+    if (state === "need-ui") {
+      onLog("저장된 로그인이 만료되었어요. 로그인 창을 엽니다...");
+      await ctx.close();
+      wantHeadless = false;
+      ctx = await openCtx(false);
+      state = await ensureLogin(ctx, { username: opts.username, password: opts.password, headless: false, onLog });
+    }
+
+    const page = (ctx.pages()[0]) || (await ctx.newPage());
     await page.goto("https://www.instagram.com/", { waitUntil: "domcontentloaded", timeout: 40000 });
     await sleep(1500);
 
@@ -328,7 +348,7 @@ async function runAnalysis(opts) {
     onLog(`완료 ✅ ${sorted.length}개 게시물을 정렬했습니다.`);
     return { posts: sorted, meta, sortBy };
   } finally {
-    await browser.close();
+    try { await ctx.close(); } catch (e) {}
   }
 }
 
@@ -361,5 +381,5 @@ if (require.main === module) main();
 
 module.exports = {
   parseUsername, normalizeItem, sortPosts, buildHtml, buildCsv, fmtNum, fmtDate,
-  runAnalysis, hasSession, clearSession, SESSION_FILE,
+  runAnalysis, hasSession, clearSession, PROFILE_DIR,
 };
