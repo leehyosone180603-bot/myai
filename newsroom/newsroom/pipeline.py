@@ -504,6 +504,49 @@ def publish_item(cfg: Config, item_id: str) -> bool:
         return False
 
 
+def rebuild_reel(cfg: Config, item_id: str) -> bool:
+    """대기열 항목의 릴스를 카드 이미지들로 다시 만든다(슬라이드쇼로 갱신).
+
+    로컬 카드 파일이 있으면 그것으로, 없으면 R2 URL 에서 내려받아 재생성 후 업로드.
+    """
+    import os
+    q = _queue(cfg)
+    item = q.get_item(item_id)
+    if not item:
+        return False
+    out_dir = cfg.out_dir
+    paths = [p for p in (item.get("card_paths") or []) if p and os.path.exists(p)]
+    if not paths:                                     # 로컬 없으면 URL 다운로드
+        import io
+        import requests
+        from PIL import Image
+        for i, u in enumerate(item.get("card_urls") or [], 1):
+            try:
+                r = requests.get(u, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+                r.raise_for_status()
+                fp = out_dir / f"{item_id}_dl{i}.jpg"
+                Image.open(io.BytesIO(r.content)).convert("RGB").save(fp, "JPEG", quality=92)
+                paths.append(str(fp))
+            except Exception as e:
+                print(f"  ! 카드 다운로드 실패: {e}")
+    if not paths:
+        print("  ! 카드 이미지를 찾지 못해 릴스 재생성 실패")
+        return False
+    print(f"릴스 재생성 · 카드 {len(paths)}장 → 슬라이드쇼")
+    reel = reels.build_from_images(cfg, paths, out_dir, f"{item_id}_rebuild")
+    if not reel:
+        print("  ! ffmpeg 실패 — 릴스 재생성 못함")
+        return False
+    if not storage.enabled(cfg):
+        print("  ! 스토리지 없음 — 업로드 못함")
+        return False
+    reel_url = storage.upload(cfg, reel, f"{item_id}/reel.mp4")
+    q.set_field(item_id, "reel_url", reel_url)
+    q.set_field(item_id, "reel_path", reel)
+    print("  ✅ 릴스 재생성 완료 — '지금 발행/다시 발행'으로 새 릴스를 올리세요.")
+    return True
+
+
 def republish_item(cfg: Config, item_id: str) -> bool:
     """이미 발행된(또는 어떤 상태든) 항목을 다시 발행한다 — 인스타에 중복 게시물 생성.
 

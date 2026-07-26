@@ -114,6 +114,8 @@ class Studio:
         Button(rb, text="⏰ 발행 시간 설정", command=self.open_schedule).pack(side="left", expand=True, fill="x", padx=2)
         Button(rb, text="↩ 실패 재시도", command=lambda: self._bg_refresh(
             lambda: pipeline.requeue_failed(self.cfg))).pack(side="left", expand=True, fill="x", padx=2)
+        Button(rb, text="🎬 릴스 재생성", command=self.rebuild_reel_selected).pack(
+            side="left", expand=True, fill="x", padx=2)
         rb2 = Frame(right)
         rb2.pack(fill="x", pady=(4, 0))
         Button(rb2, text="👁 미리보기", command=self.preview_selected,
@@ -271,6 +273,15 @@ class Studio:
             iid = str(idx)
             self.row_map[iid] = row["id"]
             self.tree.insert("", END, iid=iid, values=(row["seq"], tp, kd, row["title"][:36], st, when))
+
+    def rebuild_reel_selected(self):
+        sel = self.tree.selection()
+        if len(sel) != 1:
+            self.status.config(text="릴스를 다시 만들 항목 하나를 표에서 선택하세요.", fg="red")
+            return
+        qid = self.row_map.get(sel[0])
+        self.status.config(text="릴스 재생성 중… (카드 여러 장 → 슬라이드쇼, 최대 1분)", fg="#555")
+        self._bg_refresh(lambda: pipeline.rebuild_reel(self.cfg, qid))
 
     def preview_selected(self):
         sel = self.tree.selection()
