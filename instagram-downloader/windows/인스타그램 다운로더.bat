@@ -43,6 +43,68 @@ try {
         } catch { return $null }
     }
 
+    # ---------------- 인스타그램 내부 API (GraphQL) ----------------
+    # 최신 인스타그램은 HTML에 데이터를 넣지 않고 JS로 불러온다.
+    # 공개 게시물은 X-IG-App-ID 헤더를 붙인 GraphQL 호출로 JSON을 받을 수 있다.
+    function Api-Call([string]$url, [string]$method, [string]$body) {
+        try {
+            $req = [System.Net.HttpWebRequest]::Create($url)
+            $req.Method = $method
+            $req.UserAgent = $UA
+            $req.Accept = "*/*"
+            $req.Timeout = 25000
+            $req.AutomaticDecompression = [System.Net.DecompressionMethods]::GZip -bor [System.Net.DecompressionMethods]::Deflate
+            $req.Headers.Add("X-IG-App-ID", "936619743392459")
+            $req.Headers.Add("Accept-Language", "ko,en;q=0.8")
+            if ($method -eq "POST") {
+                $req.ContentType = "application/x-www-form-urlencoded"
+                $bytes = [System.Text.Encoding]::UTF8.GetBytes($body)
+                $req.ContentLength = $bytes.Length
+                $rs = $req.GetRequestStream(); $rs.Write($bytes, 0, $bytes.Length); $rs.Close()
+            }
+            $resp = $req.GetResponse()
+            $sr = New-Object System.IO.StreamReader($resp.GetResponseStream(), [System.Text.Encoding]::UTF8)
+            $t = $sr.ReadToEnd(); $sr.Close(); $resp.Close()
+            return $t
+        } catch { return "" }
+    }
+    function Get-ApiMedia([string]$sc) {
+        $vars = '{"shortcode":"' + $sc + '"}'
+        $enc = [System.Uri]::EscapeDataString($vars)
+        $docids = @("8845758582119845", "9510064595728286", "10015901848480474", "9066276850131169")
+        foreach ($doc in $docids) {
+            $t = Api-Call "https://www.instagram.com/graphql/query" "POST" ("variables=$enc&doc_id=$doc")
+            if ($t.Length -gt 0) { $script:apiRaw = $t }
+            if ($t -match 'xdt_shortcode_media') {
+                try { $j = $t | ConvertFrom-Json; if ($j.data.xdt_shortcode_media) { return $j.data.xdt_shortcode_media } } catch {}
+            }
+        }
+        # GET 변형 시도
+        foreach ($doc in $docids) {
+            $t = Api-Call "https://www.instagram.com/graphql/query/?doc_id=$doc&variables=$enc" "GET" $null
+            if ($t.Length -gt 0) { $script:apiRaw = $t }
+            if ($t -match 'xdt_shortcode_media') {
+                try { $j = $t | ConvertFrom-Json; if ($j.data.xdt_shortcode_media) { return $j.data.xdt_shortcode_media } } catch {}
+            }
+        }
+        return $null
+    }
+    function Extract-FromApi($sm) {
+        $imgs = New-Object System.Collections.Generic.List[string]
+        $vids = New-Object System.Collections.Generic.List[string]
+        $cap = ""
+        try { $cap = [string]$sm.edge_media_to_caption.edges[0].node.text } catch {}
+        $nodes = @()
+        if ($sm.edge_sidecar_to_children -and $sm.edge_sidecar_to_children.edges) {
+            foreach ($e in $sm.edge_sidecar_to_children.edges) { $nodes += $e.node }
+        } else { $nodes += $sm }
+        foreach ($nd in $nodes) {
+            if ($nd.is_video -and $nd.video_url) { $vids.Add([string]$nd.video_url) | Out-Null }
+            elseif ($nd.display_url) { $imgs.Add([string]$nd.display_url) | Out-Null }
+        }
+        return @{ images = $imgs; videos = $vids; caption = $cap }
+    }
+
     # ---------------- 파싱 ----------------
     function Get-Shortcode([string]$u) {
         $m = [regex]::Match($u, '/(?:p|reel|reels|tv)/([A-Za-z0-9_\-]+)')
@@ -145,6 +207,7 @@ try {
     $script:shortcode = ""
     $script:caption = ""
     $script:diag = $null
+    $script:apiRaw = ""
 
     # ---------------- GUI ----------------
     $form = New-Object System.Windows.Forms.Form
@@ -323,28 +386,41 @@ try {
         $btnGo.Enabled = $false
         Set-Status "인스타그램에서 콘텐츠를 불러오는 중…" ([System.Drawing.Color]::FromArgb(139, 61, 255))
 
+        # 1) 내부 API(GraphQL) 우선 시도 — 본문·전체 이미지·영상을 JSON으로 획득
+        $imgList = New-Object System.Collections.Generic.List[string]
+        $vidList = New-Object System.Collections.Generic.List[string]
+        $cap = ""
+        $sm = Get-ApiMedia $sc
+        if ($null -ne $sm) {
+            $r = Extract-FromApi $sm
+            foreach ($u in $r.images) { $imgList.Add($u) | Out-Null }
+            foreach ($u in $r.videos) { $vidList.Add($u) | Out-Null }
+            $cap = $r.caption
+        }
+
+        # 2) HTML 폴백 (API 실패 대비): CDN URL·/media 이미지, 캡션 백업
         $eh = Get-Text "https://www.instagram.com/p/$sc/embed/captioned/"
         $e2 = Get-Text "https://www.instagram.com/p/$sc/embed/"
         $ph = Get-Text "https://www.instagram.com/p/$sc/"
         $all = "$eh`n$e2`n$ph"
         $script:diag = @{ embed = $eh; embed2 = $e2; page = $ph }
 
-        if ([string]::IsNullOrWhiteSpace($all)) {
-            Set-Status "콘텐츠를 불러오지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요." ([System.Drawing.Color]::FromArgb(224, 49, 49))
-            $btnGo.Enabled = $true; return
+        if ($imgList.Count -eq 0) {
+            foreach ($u in (Extract-Images $all)) { if (-not $imgList.Contains($u)) { $imgList.Add($u) | Out-Null } }
         }
-
-        $imgs = Extract-Images $all
-        $vids = Extract-Videos $all
-        $cap = Extract-Caption $eh
+        if ($vidList.Count -eq 0) {
+            foreach ($u in (Extract-Videos $all)) { if (-not $vidList.Contains($u)) { $vidList.Add($u) | Out-Null } }
+        }
+        if ([string]::IsNullOrWhiteSpace($cap)) { $cap = Extract-Caption $eh }
         if ([string]::IsNullOrWhiteSpace($cap)) { $cap = Extract-Caption $e2 }
         if ([string]::IsNullOrWhiteSpace($cap)) { $cap = Extract-Caption $ph }
+
         $script:caption = $cap
         $txtCap.Text = $cap
 
         $list = @()
-        foreach ($u in $imgs) { $list += @{ Url = $u; Type = "image"; Bytes = $null } }
-        foreach ($u in $vids) { $list += @{ Url = $u; Type = "video"; Bytes = $null } }
+        foreach ($u in $imgList) { $list += @{ Url = $u; Type = "image"; Bytes = $null } }
+        foreach ($u in $vidList) { $list += @{ Url = $u; Type = "video"; Bytes = $null } }
 
         # 폴백: 파싱으로 이미지를 못 찾으면 /media/?size=l 로 대표 이미지 직접 요청
         if ($list.Count -eq 0) {
@@ -419,6 +495,7 @@ try {
         [System.IO.File]::WriteAllText((Join-Path $dir "embed_captioned.html"), [string]$script:diag.embed, [System.Text.Encoding]::UTF8)
         [System.IO.File]::WriteAllText((Join-Path $dir "embed.html"), [string]$script:diag.embed2, [System.Text.Encoding]::UTF8)
         [System.IO.File]::WriteAllText((Join-Path $dir "page.html"), [string]$script:diag.page, [System.Text.Encoding]::UTF8)
+        [System.IO.File]::WriteAllText((Join-Path $dir "api_response.json"), [string]$script:apiRaw, [System.Text.Encoding]::UTF8)
         $urls = ($script:items | ForEach-Object { $_.Url }) -join "`n"
         $info = "shortcode: " + $script:shortcode + "`r`n" +
                 "embed_captioned length: " + $script:diag.embed.Length + "`r`n" +
