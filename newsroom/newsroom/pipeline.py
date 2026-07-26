@@ -359,8 +359,8 @@ def repost_generate(cfg: Config, image_path: str, caption_text: str, topic: str 
 
     reel_path = ""
     if make_reel:
-        print("리포스트 · 릴스(표지 → 영상)")
-        reel_path = reels.build_from_image(cfg, card_paths[0], out_dir, slug) or ""
+        print(f"리포스트 · 릴스(카드 {len(card_paths)}장 → 슬라이드쇼 영상)")
+        reel_path = reels.build_from_images(cfg, card_paths, out_dir, slug) or ""
 
     return {"slug": slug, "topic": topic, "source": source, "title": plan.headline,
             "card_paths": card_paths, "reel_path": reel_path,

@@ -104,6 +104,66 @@ def build_from_image(cfg: Config, image_path: str | None, out_dir: Path, slug: s
     return str(out)
 
 
+def build_from_images(cfg: Config, image_paths: list[str], out_dir: Path, slug: str,
+                      mood: str = "") -> str | None:
+    """카드 여러 장(표지+상세)을 한 영상에서 순서대로 보여주는 슬라이드쇼 릴스.
+
+    각 이미지를 duration/N 초씩(최소 2.5초) 보여주고 이어붙인다. 무음 오디오 포함.
+    이미지가 1장이면 build_from_image 로 처리.
+    """
+    image_paths = [p for p in (image_paths or []) if p]
+    if not image_paths:
+        return None
+    if len(image_paths) == 1:
+        return build_from_image(cfg, image_paths[0], out_dir, slug, mood)
+    if not _have_ffmpeg():
+        print("    ! ffmpeg 미설치 — 릴스 영상 생략")
+        return None
+
+    duration = float(cfg.get("reels.duration", 10))
+    fps = int(cfg.get("reels.fps", 30))
+    use_bgm = bool(cfg.get("reels.bgm", False))
+    bgm_volume = float(cfg.get("reels.bgm_volume", 0.18))
+    n = len(image_paths)
+    per = max(2.5, duration / n)                       # 이미지당 노출 시간(초)
+
+    with Image.open(image_paths[0]) as im:
+        w, h = _even(im.width), _even(im.height)
+    out = out_dir / f"{slug}_reel.mp4"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    cmd = ["ffmpeg", "-y"]
+    for p in image_paths:
+        cmd += ["-loop", "1", "-t", str(per), "-i", str(p)]
+
+    bgm = pick_music(cfg, mood) if use_bgm else None
+    if bgm:
+        cmd += ["-stream_loop", "-1", "-i", str(bgm)]
+    else:
+        cmd += ["-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100"]
+    audio_idx = n                                      # 오디오 입력 인덱스
+
+    parts = [f"[{i}:v]scale={w}:{h}:force_original_aspect_ratio=increase,"
+             f"crop={w}:{h},setsar=1,fps={fps}[v{i}]" for i in range(n)]
+    concat_in = "".join(f"[v{i}]" for i in range(n))
+    fg = ";".join(parts) + f";{concat_in}concat=n={n}:v=1:a=0,format=yuv420p[v]"
+    if bgm:
+        fg += f";[{audio_idx}:a]volume={bgm_volume}[a]"
+        amap = "[a]"
+    else:
+        amap = f"{audio_idx}:a"
+
+    cmd += ["-filter_complex", fg, "-map", "[v]", "-map", amap,
+            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k",
+            "-shortest", "-movflags", "+faststart", str(out)]
+    try:
+        _run(cmd)
+    except subprocess.CalledProcessError as e:
+        print(f"    ! ffmpeg 실패: {e.stderr.decode('utf-8', 'ignore')[:300]}")
+        return None
+    return str(out)
+
+
 # ── 하위호환: 기존 진입점 이름 유지 (내부적으로 이미지→영상) ─────────────
 def build(cfg: Config, plan, narration_path, out_dir: Path, slug: str,
           image_path: str | None = None) -> str | None:
