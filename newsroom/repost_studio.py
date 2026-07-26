@@ -24,6 +24,22 @@ from newsroom.config import load_config
 from newsroom import pipeline
 
 
+def _open_file(path: str):
+    """파일(또는 URL)을 OS 기본 앱으로 연다 — 릴스 영상 재생 확인용."""
+    import os
+    import subprocess
+    import sys
+    try:
+        if sys.platform.startswith("win"):
+            os.startfile(path)                         # type: ignore[attr-defined]
+        elif sys.platform == "darwin":
+            subprocess.Popen(["open", path])
+        else:
+            subprocess.Popen(["xdg-open", path])
+    except Exception as e:
+        print(f"파일 열기 실패: {e}")
+
+
 class _Tee:
     def __init__(self, orig, q):
         self.orig, self.q = orig, q
@@ -210,8 +226,17 @@ class Studio:
         cap.pack(fill="both", expand=True, padx=12, pady=4)
         cap.insert(END, prepared["caption"])
         tp = {"money": "💰 돈/경제", "general": "🌐 이슈"}.get(prepared["topic"], prepared["topic"])
-        Label(top, text=f"스트림: {tp}    릴스: {'있음' if prepared.get('reel_path') else '없음'}",
-              fg="#555").pack(anchor="w", padx=12)
+        cuts = len(paths)
+        reel_path = prepared.get("reel_path")
+        rl = Frame(top)
+        rl.pack(fill="x", padx=12)
+        if cuts > 1:
+            Label(rl, text=f"스트림: {tp}   |   릴스: {cuts}컷 슬라이드쇼 ✅", fg="#1565C0").pack(side="left")
+        else:
+            Label(rl, text=f"스트림: {tp}   |   릴스: 1컷(단일) — 여러 컷 원하면 '② 상세 이미지'를 추가하세요",
+                  fg="#C62828").pack(side="left")
+        if reel_path:
+            Button(rl, text="▶ 릴스 영상 재생(확인)", command=lambda: _open_file(reel_path)).pack(side="right")
         bar = Frame(top)
         bar.pack(fill="x", padx=12, pady=10)
         Button(bar, text="📥 이대로 대기열에 추가", bg="#2E7D32", fg="white",
@@ -349,6 +374,16 @@ class Studio:
                     Label(strip, text=f"표시 오류: {e}", fg="red").pack(side="left")
         else:
             Label(strip, text="이미지를 불러오지 못했습니다(로컬 파일 없음/네트워크).", fg="red").pack()
+        import os
+        reel_local = item.get("reel_path")
+        reel_url = item.get("reel_url")
+        rl = Frame(top)
+        rl.pack(fill="x", padx=12)
+        Label(rl, text=f"릴스: {'있음' if (reel_local or reel_url) else '없음'}", fg="#555").pack(side="left")
+        if reel_local and os.path.exists(reel_local):
+            Button(rl, text="▶ 릴스 영상 재생", command=lambda: _open_file(reel_local)).pack(side="right")
+        elif reel_url:
+            Button(rl, text="▶ 릴스 영상 재생(브라우저)", command=lambda: _open_file(reel_url)).pack(side="right")
         Label(top, text="인스타 캡션 (수정 후 '캡션 저장')", font=("", 10, "bold")).pack(anchor="w", padx=12)
         cap = Text(top, height=8, wrap=WORD)
         cap.pack(fill="both", expand=True, padx=12, pady=4)
