@@ -360,11 +360,24 @@ class Studio:
             self.status.config(text="지금 발행할 항목 하나를 표에서 선택하세요.", fg="red")
             return
         qid = self.row_map.get(sel[0])
-        from tkinter import messagebox
-        if not messagebox.askyesno("지금 발행", "선택한 항목을 지금 바로 인스타그램에 발행할까요?"):
+        item = pipeline._queue(self.cfg).get_item(qid)
+        if not item:
+            self.status.config(text="항목을 찾을 수 없습니다(새로고침).", fg="red")
             return
-        self.status.config(text="발행 중… (인스타 업로드, 최대 1분)", fg="#555")
-        self._bg_refresh(lambda: pipeline.publish_item(self.cfg, qid))
+        from tkinter import messagebox
+        if item.get("status") == "queued":
+            if not messagebox.askyesno("지금 발행", "선택한 항목을 지금 바로 인스타그램에 발행할까요?"):
+                return
+            self.status.config(text="발행 중… (인스타 업로드, 최대 1분)", fg="#555")
+            self._bg_refresh(lambda: pipeline.publish_item(self.cfg, qid))
+        else:
+            st = self._STATUS.get(item.get("status"), item.get("status"))
+            if not messagebox.askyesno("다시 발행",
+                                       f"이 항목은 이미 '{st}' 상태입니다.\n"
+                                       "지금 다시 발행하면 인스타에 '중복 게시물'이 하나 더 올라갑니다.\n계속할까요?"):
+                return
+            self.status.config(text="다시 발행 중… (인스타 업로드)", fg="#555")
+            self._bg_refresh(lambda: pipeline.republish_item(self.cfg, qid))
 
     def set_item_time(self):
         sel = self.tree.selection()

@@ -504,6 +504,28 @@ def publish_item(cfg: Config, item_id: str) -> bool:
         return False
 
 
+def republish_item(cfg: Config, item_id: str) -> bool:
+    """이미 발행된(또는 어떤 상태든) 항목을 다시 발행한다 — 인스타에 중복 게시물 생성.
+
+    큐 상태는 바꾸지 않는다(이미 저장된 card_urls/캡션으로 재게시).
+    """
+    item = _queue(cfg).get_item(item_id)
+    if not item:
+        return False
+    title = item.get("title", "")
+    label = {"money": "💰 돈/경제", "general": "🌐 이슈"}.get(item.get("topic"), item.get("topic"))
+    print(f"STEP 4 · 다시 발행 [{item.get('topic')}] {title[:40]}")
+    try:
+        errs = _publish_to_ig(cfg, item.get("card_urls", []), item.get("reel_url"), item.get("caption", ""))
+        tail = f"\n실패: {'; '.join(errs)[:200]}" if errs else ""
+        _notify(cfg, f"📤 <b>다시 발행</b> · {label}\n{title}{tail}")
+        return True
+    except Exception as e:
+        print(f"  ❌ 다시 발행 실패: {e}")
+        _notify(cfg, f"❌ <b>다시 발행 실패</b> · {label}\n{title}\n{str(e)[:200]}")
+        return False
+
+
 def publish_due(cfg: Config, now: datetime | None = None) -> int:
     """항목별 예약시각(publish_at)이 도래한 대기 항목들을 발행한다."""
     now = now or datetime.now()
