@@ -116,9 +116,11 @@ class Studio:
             lambda: pipeline.requeue_failed(self.cfg))).pack(side="left", expand=True, fill="x", padx=2)
         rb2 = Frame(right)
         rb2.pack(fill="x", pady=(4, 0))
-        Button(rb2, text="▶ 선택 지금 발행", command=self.publish_selected,
+        Button(rb2, text="👁 미리보기", command=self.preview_selected,
+               bg="#1565C0", fg="white").pack(side="left", expand=True, fill="x", padx=2)
+        Button(rb2, text="▶ 지금 발행", command=self.publish_selected,
                bg="#2E7D32", fg="white").pack(side="left", expand=True, fill="x", padx=2)
-        Button(rb2, text="🕒 발행시각 지정", command=self.set_item_time).pack(
+        Button(rb2, text="🕒 시각지정", command=self.set_item_time).pack(
             side="left", expand=True, fill="x", padx=2)
         Button(rb2, text="🗑 삭제", command=self.delete_selected, fg="#C62828").pack(
             side="left", expand=True, fill="x", padx=2)
@@ -269,6 +271,88 @@ class Studio:
             iid = str(idx)
             self.row_map[iid] = row["id"]
             self.tree.insert("", END, iid=iid, values=(row["seq"], tp, kd, row["title"][:36], st, when))
+
+    def preview_selected(self):
+        sel = self.tree.selection()
+        if len(sel) != 1:
+            self.status.config(text="미리보기할 항목 하나를 표에서 선택하세요.", fg="red")
+            return
+        qid = self.row_map.get(sel[0])
+        item = pipeline._queue(self.cfg).get_item(qid)
+        if not item:
+            self.status.config(text="항목을 찾을 수 없습니다(새로고침).", fg="red")
+            return
+        self.status.config(text="미리보기 불러오는 중…", fg="#555")
+
+        def work():
+            imgs = self._load_item_images(item)
+            self.root.after(0, lambda: self._open_queue_preview(qid, item, imgs))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _load_item_images(self, item: dict):
+        """대기열 항목의 카드 이미지를 로컬 파일(우선) 또는 R2 URL 다운로드로 가져온다."""
+        import os
+        out = []
+        for p in (item.get("card_paths") or []):
+            if p and os.path.exists(p):
+                try:
+                    out.append(Image.open(p).copy())
+                except Exception:
+                    pass
+        if not out:                                   # 로컬 없으면 URL 다운로드
+            import io
+            import requests
+            for u in (item.get("card_urls") or []):
+                try:
+                    r = requests.get(u, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+                    r.raise_for_status()
+                    out.append(Image.open(io.BytesIO(r.content)).copy())
+                except Exception as e:
+                    print(f"[미리보기] 이미지 로드 실패: {e}")
+        return out
+
+    def _open_queue_preview(self, qid: str, item: dict, imgs: list):
+        self.status.config(text="", fg="#555")
+        top = Toplevel(self.root)
+        top.title(f"대기열 미리보기 · {item.get('title', '')[:30]}")
+        top.geometry("860x760")
+        n = len(item.get("card_urls") or imgs or [1])
+        Label(top, text=f"카드 {n}장" + ("  (캐러셀)" if n > 1 else ""),
+              font=("", 10, "bold")).pack(anchor="w", padx=12, pady=(8, 0))
+        strip = Frame(top)
+        strip.pack(pady=6)
+        top._imgs = []
+        if imgs:
+            for i, im in enumerate(imgs, 1):
+                try:
+                    r = 340 / im.height
+                    disp = im.resize((int(im.width * r), 340), Image.LANCZOS)
+                    ph = ImageTk.PhotoImage(disp)
+                    top._imgs.append(ph)
+                    cell = Frame(strip)
+                    cell.pack(side="left", padx=6)
+                    Label(cell, image=ph, bd=1, relief="solid").pack()
+                    Label(cell, text=f"{i}장{' (표지)' if i == 1 else ''}").pack()
+                except Exception as e:
+                    Label(strip, text=f"표시 오류: {e}", fg="red").pack(side="left")
+        else:
+            Label(strip, text="이미지를 불러오지 못했습니다(로컬 파일 없음/네트워크).", fg="red").pack()
+        Label(top, text="인스타 캡션 (수정 후 '캡션 저장')", font=("", 10, "bold")).pack(anchor="w", padx=12)
+        cap = Text(top, height=8, wrap=WORD)
+        cap.pack(fill="both", expand=True, padx=12, pady=4)
+        cap.insert(END, item.get("caption", ""))
+        bar = Frame(top)
+        bar.pack(fill="x", padx=12, pady=10)
+        Button(bar, text="💾 캡션 저장", bg="#2E7D32", fg="white",
+               command=lambda: self._save_caption(top, qid, cap.get("1.0", END).strip())
+               ).pack(side="left", expand=True, fill="x", padx=3)
+        Button(bar, text="닫기", command=top.destroy).pack(side="left", expand=True, fill="x", padx=3)
+
+    def _save_caption(self, top, qid: str, caption: str):
+        pipeline._queue(self.cfg).set_field(qid, "caption", caption)
+        self.status.config(text="✅ 캡션 저장됨", fg="#2E7D32")
+        top.destroy()
 
     def publish_selected(self):
         sel = self.tree.selection()

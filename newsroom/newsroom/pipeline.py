@@ -263,6 +263,7 @@ def stage_for_publish(cfg: Config, cand: Candidate) -> Bundle:
         "topic": cand.topic,
         "title": cand.article.title,
         "card_urls": card_urls,
+        "card_paths": bundle.card_paths,      # 로컬 미리보기용
         "reel_url": reel_url,
         "caption": _caption(cfg, cand, bundle.plan),
     })
@@ -383,7 +384,7 @@ def repost_commit(cfg: Config, prepared: dict) -> bool:
         return False
     _queue(cfg).enqueue({
         "id": slug, "topic": topic, "title": prepared["title"],
-        "card_urls": card_urls, "reel_url": reel_url,
+        "card_urls": card_urls, "card_paths": card_paths, "reel_url": reel_url,
         "caption": prepared["caption"], "kind": "repost",
     })
     label = {"money": "💰 돈/경제", "general": "🌐 이슈"}.get(topic, topic)

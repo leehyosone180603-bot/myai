@@ -71,6 +71,16 @@ class PublishQueue:
                 return it
         return None
 
+    def set_field(self, item_id: str, key: str, value) -> bool:
+        """항목의 특정 필드를 수정(예: caption)."""
+        data = self._load()
+        for it in data["items"]:
+            if it.get("id") == item_id:
+                it[key] = value
+                self._save(data)
+                return True
+        return False
+
     def set_publish_at(self, item_id: str, iso: str | None) -> bool:
         """항목별 발행 예약시각 지정(iso). None 이면 해제(자동 시간대로 복귀)."""
         data = self._load()
