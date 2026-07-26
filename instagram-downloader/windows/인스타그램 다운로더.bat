@@ -61,8 +61,8 @@ try {
         $out = New-Object System.Collections.Generic.List[string]
         $seen = @{}
         $n = Norm $html
-        # 1) 인스타그램 CDN 이미지 URL 전수 수집 (이스케이프 형태와 무관)
-        foreach ($m in [regex]::Matches($n, 'https://[^"''\s\\<>)]+?(?:cdninstagram\.com|fbcdn\.net)[^"''\s\\<>)]+?\.(?:jpg|jpeg|webp|png)(?:\?[^"''\s\\<>)]*)?')) {
+        # 1) 실제 게시물 이미지만 수집 (scontent/fbcdn 호스트 + t51 미디어 경로, UI 아이콘 제외)
+        foreach ($m in [regex]::Matches($n, 'https://[^"''\s\\<>)]*?(?:scontent|fbcdn)[^"''\s\\<>)]*?t51[^"''\s\\<>)]+?\.(?:jpg|jpeg|webp|png)(?:\?[^"''\s\\<>)]*)?')) {
             $u = $m.Value
             if (IsProfilePic $u) { continue }
             if (-not $seen.ContainsKey($u)) { $seen[$u] = $true; $out.Add($u) | Out-Null }
@@ -85,7 +85,7 @@ try {
         $out = New-Object System.Collections.Generic.List[string]
         $seen = @{}
         $n = Norm $html
-        foreach ($m in [regex]::Matches($n, 'https://[^"''\s\\<>)]+?(?:cdninstagram\.com|fbcdn\.net)[^"''\s\\<>)]+?\.mp4(?:\?[^"''\s\\<>)]*)?')) {
+        foreach ($m in [regex]::Matches($n, 'https://[^"''\s\\<>)]*?(?:scontent|fbcdn)[^"''\s\\<>)]+?\.mp4(?:\?[^"''\s\\<>)]*)?')) {
             $u = $m.Value
             if (-not $seen.ContainsKey($u)) { $seen[$u] = $true; $out.Add($u) | Out-Null }
         }
@@ -144,6 +144,7 @@ try {
     $script:items = @()
     $script:shortcode = ""
     $script:caption = ""
+    $script:diag = $null
 
     # ---------------- GUI ----------------
     $form = New-Object System.Windows.Forms.Form
@@ -225,6 +226,13 @@ try {
     $btnSaveAll.ForeColor = [System.Drawing.Color]::White
     $btnSaveAll.FlatAppearance.BorderSize = 0
     $form.Controls.Add($btnSaveAll)
+
+    $btnDiag = New-Object System.Windows.Forms.Button
+    $btnDiag.Text = "진단 저장"
+    $btnDiag.Location = New-Object System.Drawing.Point(486, 240)
+    $btnDiag.Size = New-Object System.Drawing.Size(140, 28)
+    $btnDiag.Anchor = "Top,Right"
+    $form.Controls.Add($btnDiag)
 
     $flow = New-Object System.Windows.Forms.FlowLayoutPanel
     $flow.Location = New-Object System.Drawing.Point(16, 278)
@@ -319,6 +327,7 @@ try {
         $e2 = Get-Text "https://www.instagram.com/p/$sc/embed/"
         $ph = Get-Text "https://www.instagram.com/p/$sc/"
         $all = "$eh`n$e2`n$ph"
+        $script:diag = @{ embed = $eh; embed2 = $e2; page = $ph }
 
         if ([string]::IsNullOrWhiteSpace($all)) {
             Set-Status "콘텐츠를 불러오지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요." ([System.Drawing.Color]::FromArgb(224, 49, 49))
@@ -398,6 +407,27 @@ try {
             [System.IO.File]::WriteAllText($sfd.FileName, $txtCap.Text, [System.Text.Encoding]::UTF8)
             Set-Status "본문을 저장했습니다." ([System.Drawing.Color]::FromArgb(47, 158, 68))
         }
+    })
+
+    $btnDiag.Add_Click({
+        if ($null -eq $script:diag) {
+            Set-Status "먼저 [가져오기]를 실행한 뒤 눌러 주세요." ([System.Drawing.Color]::FromArgb(224, 49, 49))
+            return
+        }
+        $dir = Join-Path ([Environment]::GetFolderPath("Desktop")) "instagram_debug"
+        if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+        [System.IO.File]::WriteAllText((Join-Path $dir "embed_captioned.html"), [string]$script:diag.embed, [System.Text.Encoding]::UTF8)
+        [System.IO.File]::WriteAllText((Join-Path $dir "embed.html"), [string]$script:diag.embed2, [System.Text.Encoding]::UTF8)
+        [System.IO.File]::WriteAllText((Join-Path $dir "page.html"), [string]$script:diag.page, [System.Text.Encoding]::UTF8)
+        $urls = ($script:items | ForEach-Object { $_.Url }) -join "`n"
+        $info = "shortcode: " + $script:shortcode + "`r`n" +
+                "embed_captioned length: " + $script:diag.embed.Length + "`r`n" +
+                "embed length: " + $script:diag.embed2.Length + "`r`n" +
+                "page length: " + $script:diag.page.Length + "`r`n" +
+                "found media: " + $script:items.Count + "`r`n`r`n" + $urls
+        [System.IO.File]::WriteAllText((Join-Path $dir "info.txt"), $info, [System.Text.Encoding]::UTF8)
+        Set-Status ("진단 파일 저장됨 → " + $dir) ([System.Drawing.Color]::FromArgb(47, 158, 68))
+        try { Start-Process explorer.exe $dir } catch {}
     })
 
     $txtUrl.Add_KeyDown({ if ($_.KeyCode -eq "Enter") { $_.SuppressKeyPress = $true; $btnGo.PerformClick() } })
