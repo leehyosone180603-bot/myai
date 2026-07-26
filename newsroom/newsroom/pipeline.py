@@ -72,21 +72,30 @@ def _slug(cand: Candidate) -> str:
     return f"{date}_{cand.id}_{safe or 'news'}"
 
 
+def _hashtag_line(cfg: Config, plan) -> str:
+    """게시물별 맞춤 해시태그(있으면) 우선, 없으면 config 기본값."""
+    tags = getattr(plan, "hashtags", None) or []
+    if tags:
+        norm = [t if t.startswith("#") else f"#{t}" for t in tags if t.strip()]
+        return " ".join(norm)
+    return cfg.get("content.hashtags", "#海外ニュース #ニュース")
+
+
 def _caption(cfg: Config, cand: Candidate, plan) -> str:
-    tags = cfg.get("content.hashtags", "#海外ニュース #ニュース")
     art = cand.article
-    parts = [plan.headline.strip()]
+    parts = [plan.headline.strip()]               # 첫 줄 훅 = 표지 제목
     if getattr(plan, "body", ""):
-        parts.append(plan.body.strip())          # 자세한 기사 본문
+        parts.append(plan.body.strip())           # 자세한 기사 본문
+    cta = cfg.get("content.cta", "")              # 저장·공유·팔로우 유도
+    if cta:
+        parts.append(cta)
     src = f"source: {art.source}"
-    # 이미지 출처 표기(있으면). 없으면 매체명으로 대체.
-    credit = art.image_credit or art.source
+    credit = art.image_credit or art.source       # 이미지 출처(없으면 매체명)
     img_line = f"Image: {credit}" if credit else ""
     footer = "\n".join(x for x in (src, img_line) if x)
     parts.append(footer)
-    parts.append(tags)
-    caption = "\n\n".join(parts)
-    return caption[:2200]                         # 인스타 캡션 최대 길이 안전선
+    parts.append(_hashtag_line(cfg, plan))        # 게시물별 맞춤 해시태그
+    return "\n\n".join(p for p in parts if p)[:2200]
 
 
 # ── 1) 수집 → 선별 → 검토 요청 ──────────────────────────────────────
@@ -280,8 +289,9 @@ _REPOST_SCHEMA = {
         "headline": {"type": "string"},
         "subtitle": {"type": "string"},
         "body": {"type": "string"},
+        "hashtags": {"type": "array", "items": {"type": "string"}},
     },
-    "required": ["headline", "subtitle", "body"],
+    "required": ["headline", "subtitle", "body", "hashtags"],
     "additionalProperties": False,
 }
 
@@ -299,24 +309,27 @@ def _translate_repost(cfg: Config, caption_text: str) -> ContentPlan:
     user = (
         f"[원문 게시물 캡션]\n{caption_text}\n\n"
         f"요구사항(모두 {lang_name}):\n"
-        f"- headline: 카드 표지 제목. 2줄 이내, 강한 훅.\n"
+        f"- headline: 카드 표지 제목. 2줄 이내, 스크롤 멈추게 하는 강한 훅(사실 기반).\n"
         f"- subtitle: 제목 아래 한 줄(15자 내외).\n"
-        f"- body: 캡션용 상세 본문. 원문 핵심을 살려 3~4문단으로, 문단은 빈 줄로 구분."
+        f"- body: 캡션용 상세 본문. 첫 문장은 훅으로 시작. 원문 핵심을 살려 3~4문단으로, 문단은 빈 줄로 구분.\n"
+        f"- hashtags: 이 내용과 직접 관련된 해시태그 10~15개(각 항목 # 포함, 큰+중간+구체 섞기)."
     )
     r = structured(cfg, system, user, _REPOST_SCHEMA, model=model, max_tokens=3000)
     return ContentPlan(headline=r.get("headline", ""), subtitle=r.get("subtitle", ""),
-                       body=r.get("body", ""), card_slides=[r.get("headline", "")],
-                       category="today", mood="calm")
+                       body=r.get("body", ""), hashtags=r.get("hashtags", []),
+                       card_slides=[r.get("headline", "")], category="today", mood="calm")
 
 
 def _repost_caption(cfg: Config, plan: ContentPlan, source: str = "") -> str:
-    tags = cfg.get("content.hashtags", "")
-    parts = [plan.headline.strip()]
+    parts = [plan.headline.strip()]               # 첫 줄 훅
     if plan.body:
         parts.append(plan.body.strip())
+    cta = cfg.get("content.cta", "")
+    if cta:
+        parts.append(cta)
     if source:
         parts.append(f"via {source}")
-    parts.append(tags)
+    parts.append(_hashtag_line(cfg, plan))        # 게시물별 맞춤 해시태그
     return "\n\n".join(p for p in parts if p)[:2200]
 
 

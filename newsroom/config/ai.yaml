@@ -8,7 +8,9 @@
 content:
   language: ja              # 발행 언어 (ja=일본어). 제목/본문/나레이션/캡션에 적용
   audience: "일본 인스타그램 사용자"
-  hashtags: "#海外ニュース #ニュース #今日のニュース"
+  hashtags: "#海外ニュース #ニュース #今日のニュース"   # AI가 게시물별 태그 못 만들 때 폴백
+  # 캡션 끝 CTA(저장·공유·팔로우 유도) — 도달/저장수 향상. 비우면 미표시.
+  cta: "気になったら保存 📌 & シェア | フォローで毎日、世界のニュースを"
 
 # ── 선별/작가에 쓸 LLM 백엔드 선택 ─────────────────────────────────
 ai:
@@ -150,13 +152,14 @@ schedule:
   general_per_day: 3        # 하루 일반 이슈 발행 수 (합계 5)
   money_review_keep: 4      # 검토 시 보낼 돈/경제 후보 수(2개 승인용 여유)
   general_review_keep: 5    # 검토 시 보낼 일반 이슈 후보 수(3개 승인용 여유)
-  # 다음날 발행 시간대(작업 스케줄러 등록용, HH:MM). 돈 2 + 일반 3.
+  # 발행 시간대(HH:MM). 일본 피크타임(저녁 가중)으로 도달 최적화. 돈 2 + 일반 3.
+  #  ※ 프로그램 내 '발행 시간 설정'으로 언제든 변경 가능(schedule_overrides.ja.yaml).
   slots:
-    - { time: "08:00", topic: money }
-    - { time: "12:00", topic: general }
-    - { time: "15:00", topic: general }
-    - { time: "19:00", topic: money }
-    - { time: "21:00", topic: general }
+    - { time: "08:00", topic: money }      # 아침 출근시간
+    - { time: "12:00", topic: general }    # 점심
+    - { time: "19:00", topic: general }    # 저녁 피크
+    - { time: "21:00", topic: money }      # 밤 피크
+    - { time: "22:00", topic: general }    # 밤 피크
 
 # ── 출력/상태 ──────────────────────────────────────────────────────
 output:

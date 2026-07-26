@@ -24,13 +24,14 @@ _SCHEMA = {
         "headline": {"type": "string"},
         "subtitle": {"type": "string"},
         "body": {"type": "string"},
+        "hashtags": {"type": "array", "items": {"type": "string"}},
         "card_slides": {"type": "array", "items": {"type": "string"}},
         "reels_script": {"type": "array", "items": {"type": "string"}},
         "image_prompts": {"type": "array", "items": {"type": "string"}},
         "mood": {"type": "string", "enum": ["calm", "upbeat", "dramatic", "curious"]},
     },
-    "required": ["headline", "subtitle", "body", "card_slides", "reels_script",
-                 "image_prompts", "mood"],
+    "required": ["headline", "subtitle", "body", "hashtags", "card_slides",
+                 "reels_script", "image_prompts", "mood"],
     "additionalProperties": False,
 }
 
@@ -94,11 +95,15 @@ def write(cfg: Config, cand: Candidate) -> ContentPlan:
 {src_block}
 
 요구사항:
-- headline: 표지 썸네일용 제목. 2줄 이내, 강한 훅. ({lang_name})
+- headline: 표지 썸네일용 제목. 2줄 이내. **스크롤을 멈추게 하는 강한 훅**
+  (의외성·숫자·궁금증 유발). 단, 낚시성 허위·과장은 금지, 사실 기반. ({lang_name})
 - subtitle: 제목 아래 한 줄. 기사 각도/핵심을 짧게(15자 내외). ({lang_name})
-- body: 인스타 캡션에 들어갈 '자세한 뉴스 기사'. 이 글만 읽어도 무슨 일인지 명확히 알 수 있게
-  배경·핵심 사실·관련 수치·의미/전망을 3~4개 문단으로 충실히 서술. 문단은 빈 줄로 구분.
+- body: 인스타 캡션에 들어갈 '자세한 뉴스 기사'. **첫 문장은 궁금증을 끄는 훅**으로 시작.
+  이 글만 읽어도 무슨 일인지 명확히 알 수 있게 배경·핵심 사실·관련 수치·의미/전망을
+  3~4개 문단으로 충실히 서술. 문단은 빈 줄로 구분.
   자연스러운 {lang_name} 뉴스 문체(です・ます調). 원문에 있는 사실만 사용하고 지어내지 마세요. ({lang_name})
+- hashtags: 이 기사와 '직접 관련된' 해시태그 10~15개(각 항목에 # 포함).
+  큰 태그 + 중간 태그 + 구체적 태그를 섞고, 발행 언어({lang_name}) 위주로.
 - card_slides: 정확히 {slides}개. 1번은 표지(headline 확장), 이후는 핵심 내용 전개. ({lang_name})
 - reels_script: 4~6문장. 릴스 나레이션용 자연스러운 구어체. 각 문장이 한 장면(클립). ({lang_name})
 - image_prompts: card_slides 와 같은 개수. 각 슬라이드 배경 이미지 생성용 '영문' 프롬프트.
@@ -118,6 +123,7 @@ def write(cfg: Config, cand: Candidate) -> ContentPlan:
         headline=result.get("headline", art.title),
         subtitle=result.get("subtitle", ""),
         body=result.get("body", ""),
+        hashtags=result.get("hashtags", []),
         card_slides=card_slides,
         reels_script=result.get("reels_script", []),
         image_prompts=image_prompts[:len(card_slides)],
