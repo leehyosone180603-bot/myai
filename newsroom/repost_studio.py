@@ -116,11 +116,13 @@ class Studio:
             lambda: pipeline.requeue_failed(self.cfg))).pack(side="left", expand=True, fill="x", padx=2)
         rb2 = Frame(right)
         rb2.pack(fill="x", pady=(4, 0))
-        Button(rb2, text="🕒 이 항목 발행시각 지정", command=self.set_item_time).pack(
+        Button(rb2, text="▶ 선택 지금 발행", command=self.publish_selected,
+               bg="#2E7D32", fg="white").pack(side="left", expand=True, fill="x", padx=2)
+        Button(rb2, text="🕒 발행시각 지정", command=self.set_item_time).pack(
             side="left", expand=True, fill="x", padx=2)
-        Button(rb2, text="🗑 선택 삭제", command=self.delete_selected, fg="#C62828").pack(
+        Button(rb2, text="🗑 삭제", command=self.delete_selected, fg="#C62828").pack(
             side="left", expand=True, fill="x", padx=2)
-        Button(rb2, text="🧹 발행완료 정리", command=lambda: self._bg_refresh(
+        Button(rb2, text="🧹 정리", command=lambda: self._bg_refresh(
             lambda: pipeline._queue(self.cfg).clear("published"))).pack(side="left", expand=True, fill="x", padx=2)
         Label(right, text="※ 표에서 항목 선택 → '발행시각 지정'(개별 시각) 또는 '선택 삭제'. "
                           "전체 반복 시간대는 '⏰ 발행 시간 설정'.",
@@ -267,6 +269,18 @@ class Studio:
             iid = str(idx)
             self.row_map[iid] = row["id"]
             self.tree.insert("", END, iid=iid, values=(row["seq"], tp, kd, row["title"][:36], st, when))
+
+    def publish_selected(self):
+        sel = self.tree.selection()
+        if len(sel) != 1:
+            self.status.config(text="지금 발행할 항목 하나를 표에서 선택하세요.", fg="red")
+            return
+        qid = self.row_map.get(sel[0])
+        from tkinter import messagebox
+        if not messagebox.askyesno("지금 발행", "선택한 항목을 지금 바로 인스타그램에 발행할까요?"):
+            return
+        self.status.config(text="발행 중… (인스타 업로드, 최대 1분)", fg="#555")
+        self._bg_refresh(lambda: pipeline.publish_item(self.cfg, qid))
 
     def set_item_time(self):
         sel = self.tree.selection()
