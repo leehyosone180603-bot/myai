@@ -2,4 +2,5 @@ ig-session.json
 node_modules/
 report.csv
 report.html
+saved/
 server.log

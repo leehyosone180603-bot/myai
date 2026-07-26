@@ -92,6 +92,32 @@
   .banner.err{display:block;background:#fff0f0;border:1px solid #ffc9c9;color:#c92a2a}
   .banner.info{display:block;background:#eef6ff;border:1px solid #b6d8ff;color:#1565c0}
 
+  /* 저장된 목록 */
+  .saved-head{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+  .saved-head h2{font-size:1.02rem;margin:0}
+  .saved-head .arrow{transition:transform .2s;color:var(--muted)}
+  .saved-head.open .arrow{transform:rotate(90deg)}
+  .saved-head .cnt{background:#f1e3ee;color:#bc1888;border-radius:999px;font-size:.75rem;font-weight:800;padding:2px 9px}
+  #savedBody{display:none;margin-top:12px}
+  #savedBody.open{display:block}
+  .saved-empty{color:var(--muted);font-size:.88rem;padding:6px 2px}
+  .saved-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--bd);border-radius:11px;margin-bottom:8px;background:#fcfcfe}
+  .saved-item:hover{background:#f7f8ff}
+  .saved-item .si-main{flex:1;min-width:0}
+  .saved-item .si-title{font-weight:700;font-size:.95rem}
+  .saved-item .si-sub{color:var(--muted);font-size:.8rem;margin-top:2px}
+  .saved-item button{border:1px solid #d7d9e0;background:#fff;border-radius:8px;padding:7px 13px;cursor:pointer;font-size:.85rem;font-weight:600;white-space:nowrap}
+  .saved-item button.open-btn{background:var(--ig3);border-color:var(--ig3);color:#fff}
+  .saved-item button.del-btn{color:#c92a2a;border-color:#f1c7c7}
+  .controls .save{border:1px solid #37b24d;background:#ebfbee;color:#2b8a3e;border-radius:9px;padding:8px 15px;cursor:pointer;font-size:.88rem;font-weight:700}
+  .controls .save:disabled{opacity:.6;cursor:default}
+
+  /* 토스트 */
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);opacity:0;
+    background:#22242b;color:#fff;padding:12px 20px;border-radius:12px;font-size:.9rem;font-weight:600;
+    box-shadow:0 8px 24px rgba(0,0,0,.25);transition:opacity .25s,transform .25s;pointer-events:none;z-index:50}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
   .foot{color:var(--muted);font-size:.8rem;line-height:1.7;margin-top:18px}
 </style>
 </head>
@@ -143,6 +169,18 @@
     </div>
   </div>
 
+  <!-- 저장된 분석 결과 -->
+  <div class="panel" id="savedPanel" style="display:none">
+    <div class="saved-head" id="savedHead" onclick="toggleSaved()">
+      <span class="arrow">▶</span>
+      <h2>📁 저장된 분석 결과</h2>
+      <span class="cnt" id="savedCount">0</span>
+    </div>
+    <div id="savedBody">
+      <div id="savedList"></div>
+    </div>
+  </div>
+
   <!-- 진행 -->
   <div class="panel" id="progress">
     <div style="font-weight:700;margin-bottom:10px"><span class="spinner" id="spin"></span><span id="progTitle">분석 중...</span></div>
@@ -158,6 +196,7 @@
         <button id="btnLikes" onclick="setSort('likes')">❤️ 좋아요순</button>
         <button id="btnViews" onclick="setSort('views')">▶️ 조회수순</button>
       </div>
+      <button class="save" id="saveBtn" onclick="saveCurrent()">💾 이 결과 저장</button>
       <button class="dl" onclick="downloadCsv()">⬇️ CSV 저장</button>
     </div>
     <div class="tablewrap">
@@ -174,6 +213,7 @@
 
   <p class="foot">이 프로그램은 내 컴퓨터에서만 동작하는 로컬 도구입니다. 인스타그램 이용약관과 관련 법규를 지켜 개인적·정당한 범위에서 사용하세요.</p>
 </div>
+<div id="toast"></div>
 
 <script>
   var STATE = { posts: [], meta: null, sort: "likes" };
@@ -325,6 +365,83 @@
     a.click();
     URL.revokeObjectURL(a.href);
   }
+
+  // ===== 저장 / 불러오기 =====
+  var toastTimer=null;
+  function toast(msg){
+    var t=el('toast'); t.textContent=msg; t.className='show';
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){ t.className=''; }, 2200);
+  }
+
+  function saveCurrent(){
+    if(!STATE.posts || !STATE.posts.length){ toast('저장할 결과가 없습니다.'); return; }
+    var btn=el('saveBtn'); btn.disabled=true; var old=btn.textContent; btn.textContent='저장 중...';
+    fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({meta:STATE.meta, sortBy:STATE.sort, posts:STATE.posts})})
+      .then(function(r){return r.json();})
+      .then(function(j){
+        if(j && j.ok){ toast('💾 저장되었습니다. 아래 "저장된 분석 결과"에서 다시 볼 수 있어요.'); loadSavedList(true); }
+        else { toast('저장 실패: '+((j&&j.error)||'')); }
+      })
+      .catch(function(){ toast('저장 중 오류가 발생했습니다.'); })
+      .then(function(){ btn.disabled=false; btn.textContent=old; });
+  }
+
+  function toggleSaved(){
+    el('savedHead').classList.toggle('open');
+    el('savedBody').classList.toggle('open');
+  }
+
+  function fmtSavedAt(iso){
+    if(!iso) return '';
+    var d=new Date(iso); if(isNaN(d)) return iso;
+    var p=function(x){return String(x).padStart(2,'0');};
+    return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+  }
+
+  function loadSavedList(openIt){
+    fetch('/api/saved').then(function(r){return r.json();}).then(function(j){
+      var items=(j&&j.items)||[];
+      el('savedPanel').style.display = items.length ? 'block' : 'none';
+      el('savedCount').textContent = items.length;
+      if(openIt && items.length){ el('savedHead').classList.add('open'); el('savedBody').classList.add('open'); }
+      if(!items.length){ el('savedList').innerHTML='<div class="saved-empty">아직 저장된 결과가 없습니다.</div>'; return; }
+      el('savedList').innerHTML=items.map(function(it){
+        var sortLabel = it.sortBy==='views' ? '조회수순' : '좋아요순';
+        return '<div class="saved-item">'+
+          '<div class="si-main">'+
+            '<div class="si-title">@'+esc(it.username)+(it.fullName?' <span class="muted" style="font-weight:400">('+esc(it.fullName)+')</span>':'')+'</div>'+
+            '<div class="si-sub">'+fmtSavedAt(it.savedAt)+' 저장 · 게시물 '+it.count+'개 · '+sortLabel+'</div>'+
+          '</div>'+
+          '<button class="open-btn" onclick="openSaved(\''+esc(it.id)+'\')">보기</button>'+
+          '<button class="del-btn" onclick="deleteSaved(\''+esc(it.id)+'\',event)">삭제</button>'+
+        '</div>';
+      }).join('');
+    }).catch(function(){});
+  }
+
+  function openSaved(id){
+    fetch('/api/saved/get?id='+encodeURIComponent(id)).then(function(r){return r.json();}).then(function(d){
+      if(!d || !d.posts){ toast('불러오지 못했습니다.'); return; }
+      STATE.posts=d.posts; STATE.meta=d.meta||{}; STATE.sort=d.sortBy||'likes';
+      el('progress').style.display='none';
+      renderResults();
+      showBanner('info', '📁 저장된 결과입니다 — '+fmtSavedAt(d.savedAt)+' 저장');
+      el('results').scrollIntoView({behavior:'smooth', block:'start'});
+    }).catch(function(){ toast('불러오는 중 오류가 발생했습니다.'); });
+  }
+
+  function deleteSaved(id, ev){
+    if(ev) ev.stopPropagation();
+    if(!confirm('이 저장 결과를 삭제할까요?')) return;
+    fetch('/api/saved/delete?id='+encodeURIComponent(id),{method:'POST'})
+      .then(function(r){return r.json();})
+      .then(function(){ toast('삭제되었습니다.'); loadSavedList(true); })
+      .catch(function(){ toast('삭제 중 오류가 발생했습니다.'); });
+  }
+
+  loadSavedList(false); // 시작 시 저장 목록 불러오기
 
   // 엔터로 시작
   el('profile').addEventListener('keydown', function(e){ if(e.key==='Enter') start(); });
