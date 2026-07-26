@@ -136,12 +136,14 @@
     </div>
     <div class="row">
       <div class="field">
-        <label>가져올 게시물 수</label>
+        <label>가져올 게시물 수 <span class="hint">— 많을수록 오래 걸려요</span></label>
         <select id="max">
-          <option value="30">최근 30개</option>
           <option value="60" selected>최근 60개</option>
           <option value="100">최근 100개</option>
-          <option value="200">최근 200개</option>
+          <option value="300">최근 300개</option>
+          <option value="1000">최근 1,000개</option>
+          <option value="3000">최근 3,000개</option>
+          <option value="all">전체 (모두 가져오기)</option>
         </select>
       </div>
       <div class="field">

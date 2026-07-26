@@ -38,7 +38,7 @@ function readBody(req) {
     let size = 0;
     req.on("data", (c) => {
       size += c.length;
-      if (size > 20 * 1024 * 1024) { reject(new Error("본문이 너무 큽니다.")); req.destroy(); return; }
+      if (size > 128 * 1024 * 1024) { reject(new Error("본문이 너무 큽니다.")); req.destroy(); return; }
       data += c;
     });
     req.on("end", () => { try { resolve(data ? JSON.parse(data) : {}); } catch (e) { reject(new Error("JSON 파싱 실패")); } });

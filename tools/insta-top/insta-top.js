@@ -172,28 +172,45 @@ function normalizeItem(it) {
 }
 
 async function collectPosts(page, userId, opts) {
-  const { maxPosts, delayMs, onLog } = opts;
+  const { maxPosts, delayMs, onLog, totalPosts } = opts;
   const log = onLog || (() => {});
+  const unlimited = !isFinite(maxPosts);
   const items = [];
   let maxId = "";
-  let guard = 0;
-  while (items.length < maxPosts && guard < 80) {
-    guard++;
+  let pageNo = 0;
+  // 무한 루프 방지용 상한(수만 개까지 허용). 한 페이지 ≈ 33개.
+  const pageCap = unlimited ? 4000 : Math.ceil(maxPosts / 30) + 30;
+  const targetLabel = unlimited ? (totalPosts ? `${totalPosts.toLocaleString("ko-KR")}개(전체)` : "전체") : `${maxPosts.toLocaleString("ko-KR")}개`;
+
+  while (items.length < maxPosts && pageNo < pageCap) {
+    pageNo++;
     const url = `https://www.instagram.com/api/v1/feed/user/${userId}/?count=33` + (maxId ? `&max_id=${encodeURIComponent(maxId)}` : "");
-    let data = await apiGet(page, url);
-    if (!data || data.__error || !data.items) {
-      await sleep(3000);
+
+    // 응답 오류(일시적 제한 등) 시 최대 3회 재시도(백오프)
+    let data = null;
+    for (let attempt = 0; attempt < 4; attempt++) {
       data = await apiGet(page, url);
-      if (!data || data.__error || !data.items) break;
+      if (data && !data.__error && data.items) break;
+      if (attempt < 3) {
+        log(`잠시 응답이 느려요… 재시도 중 (${attempt + 1}/3)`);
+        await sleep(2500 * (attempt + 1));
+      }
     }
+    if (!data || data.__error || !data.items) {
+      if (items.length) { log(`⚠️ 인스타그램 일시 제한으로 여기서 멈춥니다. 지금까지 ${items.length.toLocaleString("ko-KR")}개를 가져왔습니다. (잠시 후 더 큰 개수로 다시 시도하면 이어서 더 받을 수 있어요)`); break; }
+      throw new Error("게시물을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    }
+
     const batch = (data.items || []).map(normalizeItem).filter((x) => x.code);
     items.push(...batch);
-    log(`${items.length}개 게시물 수집됨...`);
-    if (!data.more_available || !data.next_max_id) break;
+    // 진행 로그(과도한 로그 방지: 매 페이지마다 현재 개수 표시)
+    log(`${items.length.toLocaleString("ko-KR")} / ${targetLabel} 수집됨...`);
+
+    if (!data.more_available || !data.next_max_id) { log("계정의 마지막 게시물까지 모두 확인했습니다."); break; }
     maxId = data.next_max_id;
     await sleep(delayMs);
   }
-  return items.slice(0, maxPosts);
+  return unlimited ? items : items.slice(0, maxPosts);
 }
 
 // ----- 포맷/정렬/리포트 -----
@@ -295,7 +312,10 @@ function buildCsv(posts) {
 // ----- 오케스트레이션: GUI(server.js)와 CLI 가 공유 -----
 async function runAnalysis(opts) {
   const profile = opts.profile;
-  const maxPosts = Number(opts.maxPosts) > 0 ? Number(opts.maxPosts) : 60;
+  // maxPosts: "all"/"전체"/0/음수 → 전체(무제한), 그 외 숫자
+  const rawMax = opts.maxPosts;
+  const isAll = rawMax === "all" || rawMax === "전체" || Number(rawMax) === 0 || Number(rawMax) < 0;
+  const maxPosts = isAll ? Infinity : (Number(rawMax) > 0 ? Number(rawMax) : 60);
   const sortBy = (opts.sortBy || "likes").toLowerCase() === "views" ? "views" : "likes";
   const delayMs = Number(opts.delayMs) >= 0 ? Number(opts.delayMs) : 1200;
   const onLog = opts.onLog || (() => {});
@@ -338,9 +358,11 @@ async function runAnalysis(opts) {
     onLog(`@${username} 계정 정보를 가져오는 중...`);
     const info = await fetchUserId(page, username);
     if (info.isPrivate) onLog("🔒 비공개 계정입니다. 로그인 계정이 팔로우 중이어야 게시물을 볼 수 있습니다.");
-    onLog(`전체 게시물 ${info.postCount}개 · 최대 ${maxPosts}개 수집을 시작합니다.`);
+    const targetTxt = isFinite(maxPosts) ? `최대 ${maxPosts.toLocaleString("ko-KR")}개` : "전체";
+    onLog(`전체 게시물 ${info.postCount.toLocaleString("ko-KR")}개 · ${targetTxt} 수집을 시작합니다.`);
+    if (!isFinite(maxPosts) || maxPosts >= 1000) onLog("※ 게시물이 많으면 수 분 이상 걸릴 수 있어요. 창을 닫지 말고 기다려 주세요.");
 
-    const posts = await collectPosts(page, info.id, { maxPosts, delayMs, onLog });
+    const posts = await collectPosts(page, info.id, { maxPosts, delayMs, onLog, totalPosts: info.postCount });
     if (!posts.length) throw new Error("게시물을 하나도 가져오지 못했습니다. (비공개/팔로우 여부 또는 일시적 제한일 수 있습니다. 잠시 후 다시 시도하세요.)");
 
     const sorted = sortPosts(posts, sortBy);
@@ -381,5 +403,5 @@ if (require.main === module) main();
 
 module.exports = {
   parseUsername, normalizeItem, sortPosts, buildHtml, buildCsv, fmtNum, fmtDate,
-  runAnalysis, hasSession, clearSession, PROFILE_DIR,
+  runAnalysis, collectPosts, hasSession, clearSession, PROFILE_DIR,
 };
