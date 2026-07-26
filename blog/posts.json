@@ -282,9 +282,9 @@
   {
     "slug": "rrn-age-decode",
     "title": "주민등록번호로 나이·출생연도·성별 알아내는 법 (뒷자리 첫 숫자 해석)",
-    "date": "",
+    "date": "2026.07.26",
     "excerpt": "주민번호 뒷자리 첫 숫자로 세기·성별, 앞 6자리로 생일 확인",
-    "published": false
+    "published": true
   },
   {
     "slug": "age-table-2026",
