@@ -573,7 +573,7 @@ input[type="text"]:focus {
 }
 
 /* ===== 블로그: 추천 글(피처드) + 목록 ===== */
-.blog-featured-wrap { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 14px; }
+.blog-featured-wrap { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 14px; align-items: start; }
 .blog-featured {
   display: flex; flex-direction: column; gap: 8px;
   background: linear-gradient(160deg, #eef2ff, #ffffff);
@@ -589,7 +589,7 @@ input[type="text"]:focus {
 .blog-list {
   display: flex; flex-direction: column;
   background: var(--card); border: 1px solid var(--border); border-radius: 14px;
-  box-shadow: var(--shadow); padding: 14px 16px; max-height: 340px; overflow-y: auto;
+  box-shadow: var(--shadow); padding: 14px 16px;
 }
 .bl-head { font-weight: 800; font-size: .95rem; margin: 2px 0 8px; }
 .blog-list a {
@@ -600,5 +600,4 @@ input[type="text"]:focus {
 .blog-list a.bl-all { color: var(--primary); font-weight: 700; border-bottom: none; margin-top: 4px; }
 @media (max-width: 560px) {
   .blog-featured-wrap { grid-template-columns: 1fr; }
-  .blog-list { max-height: 320px; }
 }
