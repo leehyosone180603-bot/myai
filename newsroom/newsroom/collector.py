@@ -26,6 +26,39 @@ def _clean_html(text: str) -> str:
     return text.strip()
 
 
+def search_news(cfg: Config, query: str, limit: int = 8, lang: str = "en") -> list[Article]:
+    """주제/키워드로 실제 뉴스 기사를 검색(구글 뉴스 RSS). 오리지널 콘텐츠의 '소스'로 사용.
+
+    벤치마킹으로 정한 '주제'를 넣으면, 그 주제의 실제 보도 기사를 후보로 돌려준다.
+    (이후 작가가 사실을 바탕으로 일본어 오리지널로 재작성 + 출처 표기)
+    """
+    if feedparser is None or not query.strip():
+        return []
+    from urllib.parse import quote
+    hl = {"en": ("en-US", "US", "US:en"), "ja": ("ja", "JP", "JP:ja"),
+          "ko": ("ko", "KR", "KR:ko")}.get(lang, ("en-US", "US", "US:en"))
+    url = (f"https://news.google.com/rss/search?q={quote(query)}"
+           f"&hl={hl[0]}&gl={hl[1]}&ceid={hl[2]}")
+    try:
+        feed = feedparser.parse(url)
+    except Exception as e:
+        print(f"  ! 뉴스 검색 실패: {e}")
+        return []
+    out: list[Article] = []
+    for e in feed.entries[:limit]:
+        title = _clean_html(e.get("title", ""))
+        src = ""
+        s = e.get("source")
+        if isinstance(s, dict):
+            src = s.get("title", "")
+        summary = _clean_html(e.get("summary", "") or e.get("description", ""))
+        if not title:
+            continue
+        out.append(Article(source=src or "News", title=title, url=e.get("link", ""),
+                            summary=summary[:1200], lang=lang))
+    return out
+
+
 def _entry_time(entry) -> datetime | None:
     for key in ("published_parsed", "updated_parsed"):
         t = getattr(entry, key, None) or entry.get(key)

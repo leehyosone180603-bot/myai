@@ -398,7 +398,7 @@ def repost_commit(cfg: Config, prepared: dict) -> bool:
     _queue(cfg).enqueue({
         "id": slug, "topic": topic, "title": prepared["title"],
         "card_urls": card_urls, "card_paths": card_paths, "reel_url": reel_url,
-        "caption": prepared["caption"], "kind": "repost",
+        "caption": prepared["caption"], "kind": prepared.get("kind", "repost"),
     })
     label = {"money": "💰 돈/경제", "general": "🌐 이슈"}.get(topic, topic)
     print(f"  📥 리포스트 대기열 적재: [{topic}] {prepared['title'][:36]}  "
