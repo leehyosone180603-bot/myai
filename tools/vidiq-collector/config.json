@@ -1,0 +1,10 @@
+{
+  "apiKey": "여기에_YouTube_Data_API_키를_붙여넣으세요",
+  "topic": "첫사랑 잊는 법",
+  "searchResults": 30,
+  "minMultiplier": 5,
+  "channelSampleSize": 15,
+  "topComments": 5,
+  "regionCode": "KR",
+  "relevanceLanguage": "ko"
+}
