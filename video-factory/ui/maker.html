@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>🎬 간편 영상 제작기</title>
+<style>
+  :root{ --bg:#0f1115; --card:#171a21; --line:#272b35; --txt:#e8eaed; --sub:#9aa0aa; --accent:#7c5cff; --accent2:#00c2a8; --bad:#ff5d5d; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--txt); font-family:"Pretendard",system-ui,-apple-system,"Malgun Gothic",sans-serif; line-height:1.6; }
+  header{ padding:20px 24px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:12px; }
+  header h1{ font-size:18px; margin:0; }
+  main{ max-width:900px; margin:0 auto; padding:24px 18px 80px; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; margin-bottom:18px; }
+  h2{ font-size:15px; margin:0 0 12px; }
+  label{ display:block; font-size:13px; color:var(--sub); margin:12px 0 5px; }
+  input,textarea{ width:100%; background:#0d0f14; border:1px solid var(--line); color:var(--txt); border-radius:9px; padding:10px 12px; font-size:14px; font-family:inherit; }
+  textarea{ resize:vertical; min-height:180px; line-height:1.7; }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; } .row>*{ flex:1; min-width:120px; }
+  button{ background:var(--accent); color:#fff; border:none; border-radius:9px; padding:11px 16px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
+  button:hover{ filter:brightness(1.1); } button:disabled{ opacity:.5; cursor:not-allowed; }
+  .btn-primary{ width:100%; padding:15px; font-size:16px; background:linear-gradient(90deg,var(--accent),#9a7bff); margin-top:10px; }
+  a.link{ color:var(--accent2); text-decoration:none; font-size:13px; }
+  .hint{ font-size:12.5px; color:var(--sub); }
+  .ghost{ background:transparent; border:1px solid var(--line); color:var(--txt); } .sm{ padding:6px 10px; font-size:12px; }
+  #log{ background:#0a0c10; border:1px solid var(--line); border-radius:9px; padding:12px; font-family:ui-monospace,Consolas,monospace; font-size:12.5px; color:#bcd; white-space:pre-wrap; max-height:300px; overflow:auto; display:none; margin-top:10px; }
+  .err{ color:var(--bad); font-size:13px; margin-top:8px; }
+  video{ width:100%; border-radius:9px; background:#000; margin-top:10px; }
+  .toast{ position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--accent2); color:#03110e; padding:10px 18px; border-radius:999px; font-weight:700; font-size:13px; opacity:0; transition:.25s; }
+  .toast.show{ opacity:1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎬 간편 영상 제작기</h1>
+  <span class="hint">대본 → 사실적 이미지 + 음성 + 자막 → 최종 영상(mp4) 자동 조립</span>
+  <span style="flex:1"></span>
+  <a class="link" href="/">← 메인(기획·채널) 프로그램</a>
+</header>
+<main>
+  <section class="card">
+    <div class="hint" style="margin-bottom:8px">⚙️ 음성/API 키는 <a class="link" href="/">메인 화면 설정</a>에서 먼저 등록하세요(공유됩니다). 영상 합치기에는 <b>ffmpeg</b> 설치가 필요합니다.</div>
+    <h2>📝 대본 넣기</h2>
+    <textarea id="script" placeholder="여기에 대본(내레이션 전체)을 붙여넣으세요"></textarea>
+    <div class="row" style="margin-top:12px">
+      <div><label>저장 폴더 이름</label><input id="slug" placeholder="예: my-video-1"></div>
+      <div><label>이미지 장수</label><input id="imageCount" type="number" min="1" max="30" value="10"></div>
+      <div><label>음성 속도 (0.7~1.2)</label><input id="speed" type="number" min="0.7" max="1.2" step="0.05" value="1.1"></div>
+    </div>
+    <button class="btn-primary" id="runBtn" onclick="run()">🎬 영상 만들기 (이미지+음성+자막+합치기)</button>
+    <div class="hint" style="margin-top:6px">이미지는 영상 길이를 장수로 나눠 1장당 균등하게 배치됩니다. 실제 생성이라 비용·시간이 듭니다.</div>
+    <div id="err" class="err"></div>
+    <pre id="log"></pre>
+    <div id="out"></div>
+  </section>
+</main>
+<div id="toast" class="toast"></div>
+<script>
+const $=(id)=>document.getElementById(id);
+function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),1600); }
+async function stream(path, body, onEvent){
+  const r=await fetch(path,{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const reader=r.body.getReader(); const dec=new TextDecoder(); let buf="";
+  while(true){ const {value,done}=await reader.read(); if(done) break; buf+=dec.decode(value,{stream:true});
+    let i; while((i=buf.indexOf("\n"))>=0){ const line=buf.slice(0,i); buf=buf.slice(i+1); if(line.trim()) onEvent(JSON.parse(line)); } }
+  if(buf.trim()) onEvent(JSON.parse(buf));
+}
+async function run(){
+  const text=$("script").value.trim();
+  if(!text) return toast("대본을 넣어주세요");
+  $("err").textContent=""; const log=$("log"); log.style.display="block"; log.textContent=""; $("out").innerHTML="";
+  const btn=$("runBtn"); btn.disabled=true;
+  try{
+    await stream("/api/maker/run",{ text, slug:$("slug").value.trim(), imageCount:Number($("imageCount").value)||10, speed:Number($("speed").value)||1.1 }, (ev)=>{
+      if(ev.type==="log") log.textContent+=ev.msg+"\n";
+      else if(ev.type==="error") $("err").textContent="❌ "+ev.msg;
+      else if(ev.type==="done") showResult(ev.result);
+      log.scrollTop=log.scrollHeight;
+    });
+  }catch(e){ $("err").textContent="❌ "+e.message; }
+  btn.disabled=false;
+}
+function showResult(r){
+  const base="/output/"+r.slug+"/";
+  $("out").innerHTML=`<h2 style="margin-top:16px">✅ 완성 (길이 ${Math.round(r.duration)}초, 이미지 ${r.images}장)</h2>
+    <video src="${base}${r.video}?t=${Date.now()}" controls></video>
+    <div style="margin-top:8px">
+      <a href="${base}${r.video}" download><button class="ghost sm">⬇️ 영상 mp4</button></a>
+      <a href="${base}${r.audio}" download><button class="ghost sm">⬇️ 음성 mp3</button></a>
+      <a href="${base}${r.srt}" download><button class="ghost sm">⬇️ 자막 srt</button></a>
+      <button class="ghost sm" onclick="openFolder('${r.slug}')">📂 폴더 열기</button>
+    </div>`;
+  toast("영상 완성!");
+}
+async function openFolder(slug){ await fetch("/api/open-folder",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({slug})}); toast("📂 폴더 열림"); }
+</script>
+</body>
+</html>

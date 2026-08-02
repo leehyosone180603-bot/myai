@@ -22,6 +22,7 @@ import {
 } from "./pipeline.js";
 import { fetchTranscript, toBenchmarkMd, youtubeId } from "./transcript.js";
 import { listModels, listVoices } from "./clients.js";
+import { makerRun } from "./maker.js";
 import { parseSrt } from "./srt.js";
 
 // SRT 파일을 넣어도 되게: 타임코드/번호 제거하고 대사 텍스트만 추출(아니면 원문 그대로)
@@ -124,6 +125,31 @@ const server = createServer(async (req, res) => {
     // ── 정적: UI ──
     if (req.method === "GET" && (path === "/" || path === "/index.html")) {
       return serveStatic(res, join(UI_DIR, "index.html"));
+    }
+    // 간편 영상 제작기 페이지 (대본 → 이미지+음성+자막 → 최종 영상 mp4)
+    if (req.method === "GET" && (path === "/maker" || path === "/maker.html")) {
+      return serveStatic(res, join(UI_DIR, "maker.html"));
+    }
+    // 간편 영상 제작기 실행
+    if (path === "/api/maker/run" && req.method === "POST") {
+      const b = await readBody(req);
+      const emit = startStream(res);
+      try {
+        requireTextProvider();
+        if (!config.elevenlabs.apiKey || !config.elevenlabs.voiceId) throw new Error("⚙️설정에서 ElevenLabs 키·보이스를 먼저 설정하세요.");
+        const text = cleanBenchmark((b.text || "").trim());
+        if (!text) throw new Error("대본을 넣어주세요.");
+        const slug = sanitizeSlug(b.slug?.trim() || "maker-video");
+        const result = await makerRun(slug, text, {
+          speed: b.speed || undefined,
+          imageCount: Math.max(1, Math.min(30, Number(b.imageCount) || 10)),
+          onLog: (msg) => emit({ type: "log", msg }),
+        });
+        emit({ type: "done", result });
+      } catch (e) {
+        emit({ type: "error", msg: e.message });
+      }
+      return res.end();
     }
     // ── 정적: 생성된 미디어 미리보기 ──
     if (req.method === "GET" && path.startsWith("/output/")) {
