@@ -1,11 +1,12 @@
 // 간편 영상 제작기: 대본 → (사실적 이미지 N장 + TTS + 자막) → ffmpeg 로 최종 영상(mp4) 조립.
 // 기존 video-factory 파이프라인과 별개(이대로 두고 추가). 이미지는 영상 길이/ N 로 균등 배치.
-import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, existsSync, readFileSync, copyFileSync } from "node:fs";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { config, ROOT } from "./config.js";
 import { generateJson, generateImage, ttsWithTimestamps } from "./clients.js";
 import { buildSegments, formatSrt } from "./srt.js";
+import { chunkText } from "./textutil.js";
 import { existingImagePath } from "./pipeline.js";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -100,15 +101,35 @@ export async function makerRun(slug, text, { voiceId, speed, imageCount = 10, on
   const script = (text || "").trim();
   if (!script) throw new Error("대본을 넣어주세요.");
 
-  // 1) TTS + 자막
-  emit("음성(TTS) + 자막 생성 중...");
-  const { audioB64, alignment } = await ttsWithTimestamps(script, { voiceId, speed });
-  if (!audioB64) throw new Error("음성 데이터를 못 받았습니다. (⚙️설정에 ElevenLabs 키·보이스 확인)");
-  await writeRetry(join(dir, "audio", "narration.mp3"), Buffer.from(audioB64, "base64"));
-  const lines = buildSegments(alignment);
+  // 1) TTS + 자막 (10000자 한도 → 조각으로 나눠 생성 후 ffmpeg 로 이어붙임)
+  const ffmpeg = process.env.FFMPEG_PATH || "ffmpeg";
+  const chunks = chunkText(script, 9000);
+  emit(`음성(TTS) + 자막 생성 중... (${chunks.length}조각)`);
+  const parts = [];
+  const lines = [];
+  let offset = 0;
+  for (let i = 0; i < chunks.length; i++) {
+    if (chunks.length > 1) emit(`  음성 조각 ${i + 1}/${chunks.length}`);
+    const { audioB64, alignment } = await ttsWithTimestamps(chunks[i], { voiceId, speed });
+    if (!audioB64) throw new Error("음성 데이터를 못 받았습니다. (⚙️설정에 ElevenLabs 키·보이스 확인)");
+    const pf = `part-${String(i + 1).padStart(2, "0")}.mp3`;
+    await writeRetry(join(dir, "audio", pf), Buffer.from(audioB64, "base64"));
+    parts.push(pf);
+    for (const s of buildSegments(alignment)) lines.push({ text: s.text, start: s.start + offset, end: s.end + offset });
+    const ends = alignment?.character_end_times_seconds || [];
+    offset += ends.length ? ends[ends.length - 1] : 0;
+  }
+  // 조각 음성 → narration.mp3
+  if (parts.length === 1) {
+    copyFileSync(join(dir, "audio", parts[0]), join(dir, "audio", "narration.mp3"));
+  } else {
+    if (!hasFfmpeg(ffmpeg)) throw new Error("긴 대본은 음성 조각을 이어붙이려면 ffmpeg 가 필요합니다. (winget install Gyan.FFmpeg 후 재시작)");
+    writeFileSync(join(dir, "parts.txt"), parts.map((p) => `file 'audio/${p}'`).join("\n") + "\n");
+    execFileSync(ffmpeg, ["-y", "-f", "concat", "-safe", "0", "-i", "parts.txt", "-c", "copy", "audio/narration.mp3"], { cwd: dir, stdio: ["ignore", "ignore", "pipe"] });
+  }
   await writeRetry(join(dir, "narration.srt"), formatSrt(lines));
   await writeRetry(join(dir, "narration.txt"), script);
-  const duration = lines.length ? lines[lines.length - 1].end : 0;
+  const duration = offset || (lines.length ? lines[lines.length - 1].end : 0);
   emit(`✓ 음성+자막 완료 (길이 ${Math.round(duration)}초, 자막 ${lines.length}줄)`);
 
   // 2) 사실적 이미지 N장

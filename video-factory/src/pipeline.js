@@ -1,10 +1,35 @@
 // 파이프라인 오케스트레이션: 벤치마크 → 분석 → 콘텐츠 → 이미지/인트로 프롬프트 → (옵션) 렌더링.
-import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { execFileSync } from "node:child_process";
 import { config, ROOT } from "./config.js";
 import { generateJson, generateImage, generateVideo, ttsWithTimestamps } from "./clients.js";
 import { buildSegments, formatSrt, parseSrt } from "./srt.js";
+import { chunkText } from "./textutil.js";
 import * as P from "./prompts.js";
+
+// 여러 mp3 조각을 하나로. ffmpeg 있으면 정확 concat, 없으면 단순 이어붙이기 폴백.
+async function concatMp3(dir, buffers) {
+  if (buffers.length === 1) return buffers[0];
+  const ffmpeg = process.env.FFMPEG_PATH || "ffmpeg";
+  try {
+    execFileSync(ffmpeg, ["-version"], { stdio: "ignore" });
+    const audioDir = join(dir, "audio");
+    const names = [];
+    for (let i = 0; i < buffers.length; i++) {
+      const n = `__part-${i}.mp3`;
+      writeFileSync(join(audioDir, n), buffers[i]);
+      names.push(n);
+    }
+    writeFileSync(join(audioDir, "__parts.txt"), names.map((n) => `file '${n}'`).join("\n") + "\n");
+    execFileSync(ffmpeg, ["-y", "-f", "concat", "-safe", "0", "-i", "__parts.txt", "-c", "copy", "__merged.mp3"], { cwd: audioDir, stdio: ["ignore", "ignore", "pipe"] });
+    const merged = readFileSync(join(audioDir, "__merged.mp3"));
+    [...names, "__parts.txt", "__merged.mp3"].forEach((n) => { try { rmSync(join(audioDir, n)); } catch {} });
+    return merged;
+  } catch {
+    return Buffer.concat(buffers); // ffmpeg 없으면 폴백
+  }
+}
 
 // onLog 가 있으면 UI로, 없으면 콘솔로 진행상황을 보낸다.
 const mkEmit = (onLog) => (msg) => (onLog ? onLog(msg) : console.log("•", msg));
@@ -320,11 +345,22 @@ export async function generateNarration(slug, { voiceId, model, speed, onLog } =
   if (!chunks.length) throw new Error("대본이 없습니다. 먼저 콘텐츠(✨생성)를 만들어 주세요.");
 
   const text = chunks.join("\n\n");
-  emit(`전체 음성 생성 중... (${chunks.length}개 챕터, 총 ${text.length}자 · 한 번에)`);
-  const { audioB64, alignment } = await ttsWithTimestamps(text, { voiceId, model, speed });
-  if (!audioB64) throw new Error("음성 데이터를 받지 못했습니다.");
-  await writeFileRetry(join(dir, "audio", "narration.mp3"), Buffer.from(audioB64, "base64"), emit);
-  const lines = buildSegments(alignment);
+  // ElevenLabs 는 한 번에 10000자 한도 → 조각으로 나눠 생성 후 이어붙임
+  const ttsChunks = chunkText(text, 9000);
+  emit(`전체 음성 생성 중... (총 ${text.length}자, ${ttsChunks.length}조각)`);
+  const buffers = [];
+  const lines = [];
+  let offset = 0;
+  for (let i = 0; i < ttsChunks.length; i++) {
+    if (ttsChunks.length > 1) emit(`  음성 조각 ${i + 1}/${ttsChunks.length}`);
+    const { audioB64, alignment } = await ttsWithTimestamps(ttsChunks[i], { voiceId, model, speed });
+    if (!audioB64) throw new Error("음성 데이터를 받지 못했습니다.");
+    buffers.push(Buffer.from(audioB64, "base64"));
+    for (const s of buildSegments(alignment)) lines.push({ text: s.text, start: s.start + offset, end: s.end + offset });
+    const ends = alignment?.character_end_times_seconds || [];
+    offset += ends.length ? ends[ends.length - 1] : 0;
+  }
+  await writeFileRetry(join(dir, "audio", "narration.mp3"), await concatMp3(dir, buffers), emit);
   await writeFileRetry(join(dir, "narration.srt"), formatSrt(lines), emit);
   await writeFileRetry(join(dir, "narration.txt"), text, emit);
   emit(`✓ 전체 음성(audio/narration.mp3) + 자막(narration.srt, ${lines.length}줄) 완료`);
