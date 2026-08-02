@@ -49,17 +49,31 @@ Object.assign(process.env, {
 rmSync(join(ROOT, "output", SLUG), { recursive: true, force: true });
 
 const { makerRun } = await import("../src/maker.js");
-console.log("\n── maker 실행 (mock) ──");
+console.log("\n── maker 실행: AI 자동 프롬프트 (mock) ──");
 const r = await makerRun(SLUG, "첫 문장입니다. 두 번째 문장이에요. 세 번째.", { imageCount: 10, speed: 1.1, onLog: (m) => console.log("  ·", m) });
 
 const dir = join(ROOT, "output", SLUG);
-console.log("\n── 검증 ──");
-for (const f of ["audio/narration.mp3", "narration.srt", "images/img-01.png", "images/img-10.png", "slides.txt", "final.mp4"]) {
+console.log("\n── 검증(자동) ──");
+for (const f of ["audio/narration.mp3", "narration.srt", "images/img-01.png", "images/img-10.png"]) {
   const ex = existsSync(join(dir, f)) && statSync(join(dir, f)).size > 0;
   ok(ex, `${f} ${ex ? "(" + statSync(join(dir, f)).size + "B)" : "없음"}`);
 }
-ok(r.video === "final.mp4", "결과에 final.mp4 반환");
-ok(r.images === 10, "이미지 10장");
+ok(!existsSync(join(dir, "final.mp4")), "영상 합치기 안 함 (final.mp4 없음)");
+ok(Array.isArray(r.images) && r.images.length === 10, `이미지 10장 (${r.images.length})`);
+ok(r.video === undefined, "결과에 video 없음");
+
+// 사용자 프롬프트 모드: 줄 수 = 이미지 수
+console.log("\n── maker 실행: 사용자 프롬프트 3줄 (mock) ──");
+rmSync(dir, { recursive: true, force: true });
+const r2 = await makerRun(SLUG, "짧은 대본.", { prompts: ["a man walking", "a man at cafe", "  ", "a man at park"], onLog: () => {} });
+ok(r2.images.length === 3, `빈 줄 제외 3장 (${r2.images.length})`);
+ok(existsSync(join(dir, "images/img-03.png")) && !existsSync(join(dir, "images/img-04.png")), "img-03 있고 img-04 없음");
+
+// ZIP 생성 확인
+const { zipStore } = await import("../src/zip.js");
+const zbuf = zipStore([{ name: "a.png", data: Buffer.from("hello") }, { name: "b.png", data: Buffer.from("world!!") }]);
+ok(zbuf.slice(0, 4).toString("hex") === "504b0304", "ZIP 시그니처(PK\\x03\\x04)");
+ok(zbuf.slice(-22, -18).toString("hex") === "504b0506", "ZIP EOCD 시그니처");
 
 rmSync(dir, { recursive: true, force: true });
 rmSync(fake, { force: true });

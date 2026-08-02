@@ -33,22 +33,29 @@
 <body>
 <header>
   <h1>🎬 간편 영상 제작기</h1>
-  <span class="hint">대본 → 사실적 이미지 + 음성 + 자막 → 최종 영상(mp4) 자동 조립</span>
+  <span class="hint">대본 → 음성(mp3) + 자막(srt) + 이미지 — 각각 다운로드해서 브루에서 편집</span>
   <span style="flex:1"></span>
   <a class="link" href="/">← 메인(기획·채널) 프로그램</a>
 </header>
 <main>
   <section class="card">
-    <div class="hint" style="margin-bottom:8px">⚙️ 음성/API 키는 <a class="link" href="/">메인 화면 설정</a>에서 먼저 등록하세요(공유됩니다). 영상 합치기에는 <b>ffmpeg</b> 설치가 필요합니다.</div>
+    <div class="hint" style="margin-bottom:8px">⚙️ 음성/API 키는 <a class="link" href="/">메인 화면 설정</a>에서 먼저 등록하세요(공유됩니다). 영상 합치기는 하지 않고, 음성·자막·이미지 파일만 만들어 드립니다.</div>
     <h2>📝 대본 넣기</h2>
     <textarea id="script" placeholder="여기에 대본(내레이션 전체)을 붙여넣으세요"></textarea>
+
+    <label>🖼️ 이미지 프롬프트 <span class="hint">(한 줄에 1장 — 여기 적은 줄 수만큼 이미지가 만들어집니다. 비워두면 AI가 대본을 보고 자동 생성)</span></label>
+    <textarea id="prompts" style="min-height:120px" placeholder="예)
+30대 한국 남자가 카페 창가에서 커피를 마시며 생각에 잠긴 모습, 따뜻한 자연광
+같은 남자가 노트북 앞에서 미소 짓는 모습, 아침 햇살
+같은 남자가 공원 벤치에 앉아 하늘을 바라보는 뒷모습"></textarea>
+
     <div class="row" style="margin-top:12px">
       <div><label>저장 폴더 이름</label><input id="slug" placeholder="예: my-video-1"></div>
-      <div><label>이미지 장수</label><input id="imageCount" type="number" min="1" max="30" value="10"></div>
+      <div><label>이미지 장수 <span class="hint">(프롬프트 비웠을 때)</span></label><input id="imageCount" type="number" min="1" max="30" value="10"></div>
       <div><label>음성 속도 (0.7~1.2)</label><input id="speed" type="number" min="0.7" max="1.2" step="0.05" value="1.1"></div>
     </div>
-    <button class="btn-primary" id="runBtn" onclick="run()">🎬 영상 만들기 (이미지+음성+자막+합치기)</button>
-    <div class="hint" style="margin-top:6px">이미지는 영상 길이를 장수로 나눠 1장당 균등하게 배치됩니다. 실제 생성이라 비용·시간이 듭니다.</div>
+    <button class="btn-primary" id="runBtn" onclick="run()">🎬 만들기 (음성 + 자막 + 이미지)</button>
+    <div class="hint" style="margin-top:6px">실제 생성이라 비용·시간이 듭니다. 완성되면 음성·자막·이미지를 각각(또는 이미지 전체 ZIP) 다운로드하세요.</div>
     <div id="err" class="err"></div>
     <pre id="log"></pre>
     <div id="out"></div>
@@ -71,7 +78,7 @@ async function run(){
   $("err").textContent=""; const log=$("log"); log.style.display="block"; log.textContent=""; $("out").innerHTML="";
   const btn=$("runBtn"); btn.disabled=true;
   try{
-    await stream("/api/maker/run",{ text, slug:$("slug").value.trim(), imageCount:Number($("imageCount").value)||10, speed:Number($("speed").value)||1.1 }, (ev)=>{
+    await stream("/api/maker/run",{ text, prompts:$("prompts").value, slug:$("slug").value.trim(), imageCount:Number($("imageCount").value)||10, speed:Number($("speed").value)||1.1 }, (ev)=>{
       if(ev.type==="log") log.textContent+=ev.msg+"\n";
       else if(ev.type==="error") $("err").textContent="❌ "+ev.msg;
       else if(ev.type==="done") showResult(ev.result);
@@ -82,15 +89,19 @@ async function run(){
 }
 function showResult(r){
   const base="/output/"+r.slug+"/";
-  $("out").innerHTML=`<h2 style="margin-top:16px">✅ 완성 (길이 ${Math.round(r.duration)}초, 이미지 ${r.images}장)</h2>
-    <video src="${base}${r.video}?t=${Date.now()}" controls></video>
-    <div style="margin-top:8px">
-      <a href="${base}${r.video}" download><button class="ghost sm">⬇️ 영상 mp4</button></a>
+  const imgs=Array.isArray(r.images)?r.images:[];
+  const thumbs=imgs.map((p,i)=>`<a href="${base}${p}" download title="${p}"><img src="${base}${p}?t=${Date.now()}" style="width:96px;height:54px;object-fit:cover;border-radius:6px;border:1px solid var(--line)"></a>`).join(" ");
+  $("out").innerHTML=`<h2 style="margin-top:16px">✅ 완성 (길이 ${Math.round(r.duration)}초, 이미지 ${imgs.length}장)</h2>
+    <div class="hint">브루에서 자막(srt)·음성(mp3)을 불러오고, 이미지를 배치해 편집하세요.</div>
+    <div style="margin-top:10px">
       <a href="${base}${r.audio}" download><button class="ghost sm">⬇️ 음성 mp3</button></a>
       <a href="${base}${r.srt}" download><button class="ghost sm">⬇️ 자막 srt</button></a>
+      <a href="/api/maker/images-zip?slug=${encodeURIComponent(r.slug)}"><button class="ghost sm">🗂️ 이미지 전체 다운로드 (ZIP)</button></a>
       <button class="ghost sm" onclick="openFolder('${r.slug}')">📂 폴더 열기</button>
-    </div>`;
-  toast("영상 완성!");
+    </div>
+    <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:6px">${thumbs}</div>
+    <div class="hint" style="margin-top:6px">개별 이미지는 위 미리보기를 클릭하면 저장됩니다.</div>`;
+  toast("완성! 다운로드하세요");
 }
 async function openFolder(slug){ await fetch("/api/open-folder",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({slug})}); toast("📂 폴더 열림"); }
 </script>

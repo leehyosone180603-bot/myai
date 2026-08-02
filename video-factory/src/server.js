@@ -24,6 +24,7 @@ import { fetchTranscript, toBenchmarkMd, youtubeId } from "./transcript.js";
 import { listModels, listVoices } from "./clients.js";
 import { makerRun } from "./maker.js";
 import { parseSrt } from "./srt.js";
+import { zipStore } from "./zip.js";
 
 // SRT 파일을 넣어도 되게: 타임코드/번호 제거하고 대사 텍스트만 추출(아니면 원문 그대로)
 function cleanBenchmark(text) {
@@ -140,9 +141,13 @@ const server = createServer(async (req, res) => {
         const text = cleanBenchmark((b.text || "").trim());
         if (!text) throw new Error("대본을 넣어주세요.");
         const slug = sanitizeSlug(b.slug?.trim() || "maker-video");
+        const prompts = Array.isArray(b.prompts)
+          ? b.prompts
+          : String(b.prompts || "").split(/\r?\n/); // 줄바꿈 = 이미지 1장씩
         const result = await makerRun(slug, text, {
           speed: b.speed || undefined,
           imageCount: Math.max(1, Math.min(30, Number(b.imageCount) || 10)),
+          prompts,
           onLog: (msg) => emit({ type: "log", msg }),
         });
         emit({ type: "done", result });
@@ -150,6 +155,22 @@ const server = createServer(async (req, res) => {
         emit({ type: "error", msg: e.message });
       }
       return res.end();
+    }
+    // 생성된 이미지 전체를 ZIP 하나로 다운로드
+    if (path === "/api/maker/images-zip" && req.method === "GET") {
+      const slug = sanitizeSlug(url.searchParams.get("slug"));
+      const imgDir = join(ROOT, "output", slug, "images");
+      if (!slug || !existsSync(imgDir)) return send(res, 404, { error: "이미지 폴더가 없습니다." });
+      const files = readdirSync(imgDir).filter((f) => /\.(png|jpe?g|webp)$/i.test(f)).sort();
+      if (!files.length) return send(res, 404, { error: "이미지가 없습니다." });
+      const entries = files.map((f) => ({ name: f, data: readFileSync(join(imgDir, f)) }));
+      const buf = zipStore(entries);
+      res.writeHead(200, {
+        "Content-Type": "application/zip",
+        "Content-Disposition": `attachment; filename="${slug}-images.zip"`,
+        "Content-Length": buf.length,
+      });
+      return res.end(buf);
     }
     // ── 정적: 생성된 미디어 미리보기 ──
     if (req.method === "GET" && path.startsWith("/output/")) {

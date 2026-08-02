@@ -1,6 +1,6 @@
-// 간편 영상 제작기: 대본 → (사실적 이미지 N장 + TTS + 자막) → ffmpeg 로 최종 영상(mp4) 조립.
-// 기존 video-factory 파이프라인과 별개(이대로 두고 추가). 이미지는 영상 길이/ N 로 균등 배치.
-import { mkdirSync, writeFileSync, existsSync, readFileSync, copyFileSync } from "node:fs";
+// 간편 영상 제작기: 대본 → (사실적 이미지 N장 + TTS + 자막).
+// 영상 합치기(ffmpeg 조립)는 제외 — 브루에서 직접 편집. 이미지/음성/자막을 각각 다운로드해서 사용.
+import { mkdirSync, writeFileSync, existsSync, copyFileSync } from "node:fs";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { config, ROOT } from "./config.js";
@@ -20,12 +20,12 @@ async function writeRetry(path, data) {
   }
 }
 
-// 사실적(포토리얼) 스타일 토큰 — 예시 이미지 같은 시네마틱 실사
+// 사실적(포토리얼) 스타일 토큰 — 자동 생성 시 기본 스타일
 const REAL_STYLE =
   "cinematic photorealistic photograph, realistic Korean person, natural soft golden lighting, shallow depth of field, high detail, film-like color grading, 16:9";
 const NO_TEXT = "no text, no letters, no captions, no subtitles, no watermark, no logo";
 
-// 대본 → 동일 인물 유지 + 다양한 장면의 사실적 이미지 프롬프트 N개
+// 대본 → 동일 인물 유지 + 다양한 장면의 사실적 이미지 프롬프트 N개 (사용자가 프롬프트를 안 넣었을 때만 사용)
 async function makerScenePrompts(text, count) {
   const system = `너는 사실적(포토리얼) 유튜브 영상용 장면 연출가다. 대본을 바탕으로 '사진 같은' 장면 ${count}개의 이미지 프롬프트를 만든다.
 - 한 명의 동일 인물(한국인)을 모든 컷에서 일관되게 유지(같은 얼굴·헤어·분위기). 장면·배경·표정·구도는 다양하게.
@@ -41,58 +41,14 @@ JSON 스키마:
   return generateJson({ system, user });
 }
 
-// ffmpeg 존재 확인
 function hasFfmpeg(ffmpegPath) {
   try { execFileSync(ffmpegPath, ["-version"], { stdio: ["ignore", "ignore", "ignore"] }); return true; }
   catch { return false; }
 }
 
-// 이미지 N장 + 음성 길이 → ffmpeg 로 슬라이드쇼+음성+자막(번인) 합치기 → final.mp4
-function assemble(dir, count, durationSec, emit) {
-  const ffmpeg = process.env.FFMPEG_PATH || "ffmpeg";
-  if (!hasFfmpeg(ffmpeg)) {
-    throw new Error(
-      "ffmpeg 가 설치되어 있지 않습니다. (영상 합치기에 필요)\n" +
-        "설치: https://ffmpeg.org/download.html 또는 PowerShell 에 `winget install Gyan.FFmpeg` 후 재시작.\n" +
-        "설치 전에도 이미지·음성·자막 파일은 이미 만들어졌으니 브루로 합치셔도 됩니다."
-    );
-  }
-  const per = Math.max(0.5, (durationSec || count * 3) / count);
-  // concat 데모서: 각 이미지 duration 초, 마지막 프레임 한 번 더(concat 관례)
-  let list = "";
-  for (let i = 1; i <= count; i++) {
-    const id = `img-${String(i).padStart(2, "0")}.png`;
-    list += `file 'images/${id}'\nduration ${per.toFixed(3)}\n`;
-  }
-  list += `file 'images/img-${String(count).padStart(2, "0")}.png'\n`;
-  writeFileSync(join(dir, "slides.txt"), list);
-
-  const vf =
-    "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080," +
-    "subtitles=narration.srt:force_style='FontName=Malgun Gothic,FontSize=22,PrimaryColour=&H00FFFFFF,BorderStyle=3,Outline=1,Shadow=0,BackColour=&H80000000'";
-  const args = [
-    "-y",
-    "-f", "concat", "-safe", "0", "-i", "slides.txt",
-    "-i", "audio/narration.mp3",
-    "-vf", vf,
-    "-r", "30",
-    "-c:v", "libx264", "-pix_fmt", "yuv420p",
-    "-c:a", "aac", "-b:a", "192k",
-    "-shortest",
-    "final.mp4",
-  ];
-  emit("영상 합치는 중 (ffmpeg)...");
-  try {
-    execFileSync(ffmpeg, args, { cwd: dir, stdio: ["ignore", "ignore", "pipe"] });
-  } catch (e) {
-    const err = (e.stderr || e.message || "").toString().slice(-500);
-    throw new Error(`ffmpeg 합치기 실패:\n${err}`);
-  }
-  return "final.mp4";
-}
-
-// 전체 실행: 대본 → 이미지 N장 + TTS + 자막 → final.mp4
-export async function makerRun(slug, text, { voiceId, speed, imageCount = 10, onLog } = {}) {
+// 전체 실행: 대본 → TTS + 자막 + 이미지 N장 (영상 합치기는 하지 않음)
+// prompts: 사용자가 직접 넣은 이미지 프롬프트 배열(한 줄에 1장). 비어 있으면 AI가 대본으로 자동 생성.
+export async function makerRun(slug, text, { voiceId, speed, imageCount = 10, prompts = [], onLog } = {}) {
   const emit = (m) => (onLog ? onLog(m) : console.log(m));
   const dir = join(ROOT, "output", slug);
   mkdirSync(join(dir, "images"), { recursive: true });
@@ -101,7 +57,14 @@ export async function makerRun(slug, text, { voiceId, speed, imageCount = 10, on
   const script = (text || "").trim();
   if (!script) throw new Error("대본을 넣어주세요.");
 
-  // 1) TTS + 자막 (10000자 한도 → 조각으로 나눠 생성 후 ffmpeg 로 이어붙임)
+  // 사용자 프롬프트 정리(빈 줄 제거). 있으면 그 개수만큼 이미지 생성.
+  const userPrompts = (Array.isArray(prompts) ? prompts : [])
+    .map((s) => String(s || "").trim())
+    .filter(Boolean);
+  const useUserPrompts = userPrompts.length > 0;
+  const count = useUserPrompts ? userPrompts.length : Math.max(1, imageCount);
+
+  // 1) TTS + 자막 (10000자 한도 → 조각으로 나눠 생성 후 이어붙임)
   const ffmpeg = process.env.FFMPEG_PATH || "ffmpeg";
   const chunks = chunkText(script, 9000);
   emit(`음성(TTS) + 자막 생성 중... (${chunks.length}조각)`);
@@ -132,28 +95,41 @@ export async function makerRun(slug, text, { voiceId, speed, imageCount = 10, on
   const duration = offset || (lines.length ? lines[lines.length - 1].end : 0);
   emit(`✓ 음성+자막 완료 (길이 ${Math.round(duration)}초, 자막 ${lines.length}줄)`);
 
-  // 2) 사실적 이미지 N장
-  emit(`사실적 이미지 ${imageCount}장 프롬프트 생성 중...`);
-  const p = await makerScenePrompts(script, imageCount);
-  const character = p.character || "a Korean person in their 30s";
-  const scenes = (p.scenes || []).slice(0, imageCount);
-  for (let i = 0; i < imageCount; i++) {
+  // 2) 이미지 N장
+  let scenes = [];
+  let character = "";
+  if (useUserPrompts) {
+    emit(`직접 입력한 프롬프트로 이미지 ${count}장 생성`);
+  } else {
+    emit(`사실적 이미지 ${count}장 프롬프트 자동 생성 중...`);
+    const p = await makerScenePrompts(script, count);
+    character = p.character || "a Korean person in their 30s";
+    scenes = (p.scenes || []).slice(0, count);
+  }
+
+  const images = [];
+  for (let i = 0; i < count; i++) {
     const id = `img-${String(i + 1).padStart(2, "0")}`;
-    if (existingImagePath(dir, id)) { emit(`↩ 기존 이미지 재사용 ${id}`); continue; }
-    const scene = scenes[i] || scenes[scenes.length - 1] || "a Korean person, natural scene";
-    const prompt = `${scene}. The same recurring person throughout: ${character}. ${REAL_STYLE}. ${NO_TEXT}`;
-    emit(`이미지 생성 ${i + 1}/${imageCount}`);
+    if (existingImagePath(dir, id)) { emit(`↩ 기존 이미지 재사용 ${id}`); images.push(`images/${id}.png`); continue; }
+    let prompt;
+    if (useUserPrompts) {
+      // 사용자 프롬프트는 그대로 존중, 글자만 배제.
+      prompt = `${userPrompts[i]}. ${NO_TEXT}`;
+    } else {
+      const scene = scenes[i] || scenes[scenes.length - 1] || "a Korean person, natural scene";
+      prompt = `${scene}. The same recurring person throughout: ${character}. ${REAL_STYLE}. ${NO_TEXT}`;
+    }
+    emit(`이미지 생성 ${i + 1}/${count}`);
     try {
       const out = await generateImage(prompt);
       if (out.b64) await writeRetry(join(dir, "images", `${id}.png`), Buffer.from(out.b64, "base64"));
       else if (out.url) await writeRetry(join(dir, "images", `${id}.png`), Buffer.from(await (await fetch(out.url)).arrayBuffer()));
+      if (existsSync(join(dir, "images", `${id}.png`))) images.push(`images/${id}.png`);
     } catch (e) {
       emit(`  ⚠ ${id} 실패: ${e.message}`);
     }
   }
 
-  // 3) ffmpeg 조립 (이미지 = 길이/ N 균등)
-  const video = assemble(dir, imageCount, duration, emit);
-  emit(`🎉 완료: output/${slug}/final.mp4`);
-  return { slug, audio: "audio/narration.mp3", srt: "narration.srt", video, duration, images: imageCount };
+  emit(`🎉 완료: 음성·자막·이미지 ${images.length}장 (output/${slug})`);
+  return { slug, audio: "audio/narration.mp3", srt: "narration.srt", duration, images };
 }
