@@ -55,7 +55,8 @@
       <div><label>음성 속도 (0.7~1.2)</label><input id="speed" type="number" min="0.7" max="1.2" step="0.05" value="1.1"></div>
     </div>
     <button class="btn-primary" id="runBtn" onclick="run()">🎬 만들기 (음성 + 자막 + 이미지)</button>
-    <div class="hint" style="margin-top:6px">실제 생성이라 비용·시간이 듭니다. 완성되면 음성·자막·이미지를 각각(또는 이미지 전체 ZIP) 다운로드하세요.</div>
+    <button class="ghost" id="imgBtn" onclick="runImages()" style="width:100%;margin-top:8px;padding:13px">🖼️ 이미지만 생성 (음성·자막 없이)</button>
+    <div class="hint" style="margin-top:6px">실제 생성이라 비용·시간이 듭니다. 완성되면 음성·자막·이미지를 각각(또는 이미지 전체 ZIP) 다운로드하세요. <b>이미지만 생성</b>은 위 프롬프트(비우면 대본)로 이미지만 만듭니다.</div>
     <div id="err" class="err"></div>
     <pre id="log"></pre>
     <div id="out"></div>
@@ -87,15 +88,36 @@ async function run(){
   }catch(e){ $("err").textContent="❌ "+e.message; }
   btn.disabled=false;
 }
+async function runImages(){
+  const prompts=$("prompts").value.trim();
+  const text=$("script").value.trim();
+  if(!prompts && !text) return toast("이미지 프롬프트나 대본을 넣어주세요");
+  $("err").textContent=""; const log=$("log"); log.style.display="block"; log.textContent=""; $("out").innerHTML="";
+  const btn=$("imgBtn"), rb=$("runBtn"); btn.disabled=true; rb.disabled=true;
+  try{
+    await stream("/api/maker/images",{ text, prompts, slug:$("slug").value.trim(), imageCount:Number($("imageCount").value)||10 }, (ev)=>{
+      if(ev.type==="log") log.textContent+=ev.msg+"\n";
+      else if(ev.type==="error") $("err").textContent="❌ "+ev.msg;
+      else if(ev.type==="done") showResult({ ...ev.result, imagesOnly:true });
+      log.scrollTop=log.scrollHeight;
+    });
+  }catch(e){ $("err").textContent="❌ "+e.message; }
+  btn.disabled=false; rb.disabled=false;
+}
 function showResult(r){
   const base="/output/"+r.slug+"/";
   const imgs=Array.isArray(r.images)?r.images:[];
   const thumbs=imgs.map((p,i)=>`<a href="${base}${p}" download title="${p}"><img src="${base}${p}?t=${Date.now()}" style="width:96px;height:54px;object-fit:cover;border-radius:6px;border:1px solid var(--line)"></a>`).join(" ");
-  $("out").innerHTML=`<h2 style="margin-top:16px">✅ 완성 (길이 ${Math.round(r.duration)}초, 이미지 ${imgs.length}장)</h2>
-    <div class="hint">브루에서 자막(srt)·음성(mp3)을 불러오고, 이미지를 배치해 편집하세요.</div>
+  const head=r.imagesOnly ? `✅ 이미지 ${imgs.length}장 완성` : `✅ 완성 (길이 ${Math.round(r.duration||0)}초, 이미지 ${imgs.length}장)`;
+  const av=r.imagesOnly ? "" :
+    `<a href="${base}${r.audio}" download><button class="ghost sm">⬇️ 음성 mp3</button></a>
+     <a href="${base}${r.srt}" download><button class="ghost sm">⬇️ 자막 srt</button></a>`;
+  const tip=r.imagesOnly ? "이미지를 확인하고, 필요하면 위에서 ‘만들기(음성+자막+이미지)’로 음성·자막까지 만드세요."
+                         : "브루에서 자막(srt)·음성(mp3)을 불러오고, 이미지를 배치해 편집하세요.";
+  $("out").innerHTML=`<h2 style="margin-top:16px">${head}</h2>
+    <div class="hint">${tip}</div>
     <div style="margin-top:10px">
-      <a href="${base}${r.audio}" download><button class="ghost sm">⬇️ 음성 mp3</button></a>
-      <a href="${base}${r.srt}" download><button class="ghost sm">⬇️ 자막 srt</button></a>
+      ${av}
       <a href="/api/maker/images-zip?slug=${encodeURIComponent(r.slug)}"><button class="ghost sm">🗂️ 이미지 전체 다운로드 (ZIP)</button></a>
       <button class="ghost sm" onclick="openFolder('${r.slug}')">📂 폴더 열기</button>
     </div>

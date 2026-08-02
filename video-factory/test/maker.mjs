@@ -69,6 +69,20 @@ const r2 = await makerRun(SLUG, "짧은 대본.", { prompts: ["a man walking", "
 ok(r2.images.length === 3, `빈 줄 제외 3장 (${r2.images.length})`);
 ok(existsSync(join(dir, "images/img-03.png")) && !existsSync(join(dir, "images/img-04.png")), "img-03 있고 img-04 없음");
 
+// 이미지만 생성 (음성/자막 없이)
+console.log("\n── makerImagesOnly: 프롬프트 2줄 (mock) ──");
+rmSync(dir, { recursive: true, force: true });
+const { makerImagesOnly } = await import("../src/maker.js");
+const r3 = await makerImagesOnly(SLUG, { prompts: ["a man walking", "a man at cafe"], onLog: () => {} });
+ok(r3.images.length === 2, `이미지 2장 (${r3.images.length})`);
+ok(existsSync(join(dir, "images/img-02.png")), "img-02.png 생성");
+ok(!existsSync(join(dir, "audio/narration.mp3")) && !existsSync(join(dir, "narration.srt")), "음성·자막 안 만듦");
+// 프롬프트도 대본도 없으면 에러
+let threw = false;
+try { await makerImagesOnly(SLUG + "x", { prompts: [], script: "", onLog: () => {} }); } catch { threw = true; }
+ok(threw, "프롬프트·대본 둘 다 없으면 에러");
+rmSync(join(ROOT, "output", SLUG + "x"), { recursive: true, force: true });
+
 // ZIP 생성 확인
 const { zipStore } = await import("../src/zip.js");
 const zbuf = zipStore([{ name: "a.png", data: Buffer.from("hello") }, { name: "b.png", data: Buffer.from("world!!") }]);

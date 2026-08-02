@@ -22,7 +22,7 @@ import {
 } from "./pipeline.js";
 import { fetchTranscript, toBenchmarkMd, youtubeId } from "./transcript.js";
 import { listModels, listVoices } from "./clients.js";
-import { makerRun } from "./maker.js";
+import { makerRun, makerImagesOnly } from "./maker.js";
 import { parseSrt } from "./srt.js";
 import { zipStore } from "./zip.js";
 
@@ -148,6 +148,27 @@ const server = createServer(async (req, res) => {
           speed: b.speed || undefined,
           imageCount: Math.max(1, Math.min(30, Number(b.imageCount) || 10)),
           prompts,
+          onLog: (msg) => emit({ type: "log", msg }),
+        });
+        emit({ type: "done", result });
+      } catch (e) {
+        emit({ type: "error", msg: e.message });
+      }
+      return res.end();
+    }
+    // 이미지만 생성 (음성/자막 없이)
+    if (path === "/api/maker/images" && req.method === "POST") {
+      const b = await readBody(req);
+      const emit = startStream(res);
+      try {
+        requireTextProvider();
+        const slug = sanitizeSlug(b.slug?.trim() || "maker-video");
+        const prompts = Array.isArray(b.prompts) ? b.prompts : String(b.prompts || "").split(/\r?\n/);
+        const script = cleanBenchmark((b.text || "").trim());
+        const result = await makerImagesOnly(slug, {
+          prompts,
+          script,
+          imageCount: Math.max(1, Math.min(30, Number(b.imageCount) || 10)),
           onLog: (msg) => emit({ type: "log", msg }),
         });
         emit({ type: "done", result });

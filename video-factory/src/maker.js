@@ -46,6 +46,60 @@ function hasFfmpeg(ffmpegPath) {
   catch { return false; }
 }
 
+// 이미지 N장만 생성 (음성/자막과 분리해서 재사용). prompts 있으면 그대로, 없으면 script 로 AI 자동 생성.
+async function makeImages(dir, { prompts = [], imageCount = 10, script = "", emit }) {
+  const userPrompts = (Array.isArray(prompts) ? prompts : [])
+    .map((s) => String(s || "").trim())
+    .filter(Boolean);
+  const useUserPrompts = userPrompts.length > 0;
+  const count = useUserPrompts ? userPrompts.length : Math.max(1, imageCount);
+
+  let scenes = [];
+  let character = "";
+  if (useUserPrompts) {
+    emit(`직접 입력한 프롬프트로 이미지 ${count}장 생성`);
+  } else {
+    if (!String(script || "").trim()) throw new Error("이미지 프롬프트를 넣거나, 대본을 넣어주세요. (프롬프트가 비면 대본으로 자동 생성)");
+    emit(`사실적 이미지 ${count}장 프롬프트 자동 생성 중...`);
+    const p = await makerScenePrompts(script, count);
+    character = p.character || "a Korean person in their 30s";
+    scenes = (p.scenes || []).slice(0, count);
+  }
+
+  const images = [];
+  for (let i = 0; i < count; i++) {
+    const id = `img-${String(i + 1).padStart(2, "0")}`;
+    if (existingImagePath(dir, id)) { emit(`↩ 기존 이미지 재사용 ${id}`); images.push(`images/${id}.png`); continue; }
+    let prompt;
+    if (useUserPrompts) {
+      prompt = `${userPrompts[i]}. ${NO_TEXT}`;
+    } else {
+      const scene = scenes[i] || scenes[scenes.length - 1] || "a Korean person, natural scene";
+      prompt = `${scene}. The same recurring person throughout: ${character}. ${REAL_STYLE}. ${NO_TEXT}`;
+    }
+    emit(`이미지 생성 ${i + 1}/${count}`);
+    try {
+      const out = await generateImage(prompt);
+      if (out.b64) await writeRetry(join(dir, "images", `${id}.png`), Buffer.from(out.b64, "base64"));
+      else if (out.url) await writeRetry(join(dir, "images", `${id}.png`), Buffer.from(await (await fetch(out.url)).arrayBuffer()));
+      if (existsSync(join(dir, "images", `${id}.png`))) images.push(`images/${id}.png`);
+    } catch (e) {
+      emit(`  ⚠ ${id} 실패: ${e.message}`);
+    }
+  }
+  return images;
+}
+
+// 이미지만 생성 (음성/자막 없이). "이미지만 생성" 버튼 전용.
+export async function makerImagesOnly(slug, { prompts = [], imageCount = 10, script = "", onLog } = {}) {
+  const emit = (m) => (onLog ? onLog(m) : console.log(m));
+  const dir = join(ROOT, "output", slug);
+  mkdirSync(join(dir, "images"), { recursive: true });
+  const images = await makeImages(dir, { prompts, imageCount, script, emit });
+  emit(`🎉 이미지 ${images.length}장 완료 (output/${slug})`);
+  return { slug, images };
+}
+
 // 전체 실행: 대본 → TTS + 자막 + 이미지 N장 (영상 합치기는 하지 않음)
 // prompts: 사용자가 직접 넣은 이미지 프롬프트 배열(한 줄에 1장). 비어 있으면 AI가 대본으로 자동 생성.
 export async function makerRun(slug, text, { voiceId, speed, imageCount = 10, prompts = [], onLog } = {}) {
@@ -56,13 +110,6 @@ export async function makerRun(slug, text, { voiceId, speed, imageCount = 10, pr
 
   const script = (text || "").trim();
   if (!script) throw new Error("대본을 넣어주세요.");
-
-  // 사용자 프롬프트 정리(빈 줄 제거). 있으면 그 개수만큼 이미지 생성.
-  const userPrompts = (Array.isArray(prompts) ? prompts : [])
-    .map((s) => String(s || "").trim())
-    .filter(Boolean);
-  const useUserPrompts = userPrompts.length > 0;
-  const count = useUserPrompts ? userPrompts.length : Math.max(1, imageCount);
 
   // 1) TTS + 자막 (10000자 한도 → 조각으로 나눠 생성 후 이어붙임)
   const ffmpeg = process.env.FFMPEG_PATH || "ffmpeg";
@@ -96,39 +143,7 @@ export async function makerRun(slug, text, { voiceId, speed, imageCount = 10, pr
   emit(`✓ 음성+자막 완료 (길이 ${Math.round(duration)}초, 자막 ${lines.length}줄)`);
 
   // 2) 이미지 N장
-  let scenes = [];
-  let character = "";
-  if (useUserPrompts) {
-    emit(`직접 입력한 프롬프트로 이미지 ${count}장 생성`);
-  } else {
-    emit(`사실적 이미지 ${count}장 프롬프트 자동 생성 중...`);
-    const p = await makerScenePrompts(script, count);
-    character = p.character || "a Korean person in their 30s";
-    scenes = (p.scenes || []).slice(0, count);
-  }
-
-  const images = [];
-  for (let i = 0; i < count; i++) {
-    const id = `img-${String(i + 1).padStart(2, "0")}`;
-    if (existingImagePath(dir, id)) { emit(`↩ 기존 이미지 재사용 ${id}`); images.push(`images/${id}.png`); continue; }
-    let prompt;
-    if (useUserPrompts) {
-      // 사용자 프롬프트는 그대로 존중, 글자만 배제.
-      prompt = `${userPrompts[i]}. ${NO_TEXT}`;
-    } else {
-      const scene = scenes[i] || scenes[scenes.length - 1] || "a Korean person, natural scene";
-      prompt = `${scene}. The same recurring person throughout: ${character}. ${REAL_STYLE}. ${NO_TEXT}`;
-    }
-    emit(`이미지 생성 ${i + 1}/${count}`);
-    try {
-      const out = await generateImage(prompt);
-      if (out.b64) await writeRetry(join(dir, "images", `${id}.png`), Buffer.from(out.b64, "base64"));
-      else if (out.url) await writeRetry(join(dir, "images", `${id}.png`), Buffer.from(await (await fetch(out.url)).arrayBuffer()));
-      if (existsSync(join(dir, "images", `${id}.png`))) images.push(`images/${id}.png`);
-    } catch (e) {
-      emit(`  ⚠ ${id} 실패: ${e.message}`);
-    }
-  }
+  const images = await makeImages(dir, { prompts, imageCount, script, emit });
 
   emit(`🎉 완료: 음성·자막·이미지 ${images.length}장 (output/${slug})`);
   return { slug, audio: "audio/narration.mp3", srt: "narration.srt", duration, images };
