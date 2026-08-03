@@ -10,15 +10,19 @@ import { chunkText } from "./textutil.js";
 import { existingImagePath } from "./pipeline.js";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-async function writeRetry(path, data) {
+const LOCKED = (e) => e.code === "EBUSY" || e.code === "EPERM" || e.code === "EACCES";
+async function retry(fn, tries = 8) {
   for (let i = 0; ; i++) {
-    try { writeFileSync(path, data); return; }
+    try { return fn(); }
     catch (e) {
-      if ((e.code === "EBUSY" || e.code === "EPERM" || e.code === "EACCES") && i < 8) { await sleep(700); continue; }
+      if (LOCKED(e) && i < tries) { await sleep(700); continue; }
+      if (LOCKED(e)) throw new Error(`파일이 다른 프로그램에서 열려 있어 저장하지 못했습니다.\n브루·미디어 플레이어·탐색기 미리보기 등에서 열려 있으면 닫고 다시 시도하세요.\n(원인: ${e.message})`);
       throw e;
     }
   }
 }
+async function writeRetry(path, data) { return retry(() => writeFileSync(path, data)); }
+async function copyRetry(src, dst) { return retry(() => copyFileSync(src, dst)); }
 
 // 사실적(포토리얼) 스타일 토큰 — 자동 생성 시 기본 스타일
 const REAL_STYLE =
@@ -129,13 +133,15 @@ export async function makerRun(slug, text, { voiceId, speed, imageCount = 10, pr
     const ends = alignment?.character_end_times_seconds || [];
     offset += ends.length ? ends[ends.length - 1] : 0;
   }
-  // 조각 음성 → narration.mp3
+  // 조각 음성 → narration.mp3 (파일이 잠겨 있으면 재시도)
   if (parts.length === 1) {
-    copyFileSync(join(dir, "audio", parts[0]), join(dir, "audio", "narration.mp3"));
+    await copyRetry(join(dir, "audio", parts[0]), join(dir, "audio", "narration.mp3"));
   } else {
     if (!hasFfmpeg(ffmpeg)) throw new Error("긴 대본은 음성 조각을 이어붙이려면 ffmpeg 가 필요합니다. (winget install Gyan.FFmpeg 후 재시작)");
     writeFileSync(join(dir, "parts.txt"), parts.map((p) => `file 'audio/${p}'`).join("\n") + "\n");
-    execFileSync(ffmpeg, ["-y", "-f", "concat", "-safe", "0", "-i", "parts.txt", "-c", "copy", "audio/narration.mp3"], { cwd: dir, stdio: ["ignore", "ignore", "pipe"] });
+    await retry(() =>
+      execFileSync(ffmpeg, ["-y", "-f", "concat", "-safe", "0", "-i", "parts.txt", "-c", "copy", "audio/narration.mp3"], { cwd: dir, stdio: ["ignore", "ignore", "pipe"] })
+    );
   }
   await writeRetry(join(dir, "narration.srt"), formatSrt(lines));
   await writeRetry(join(dir, "narration.txt"), script);
