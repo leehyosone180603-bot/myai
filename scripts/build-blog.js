@@ -15,28 +15,14 @@ const path = require("path");
 const ROOT = path.resolve(__dirname, "..");
 const POSTS_FILE = path.join(ROOT, "blog", "posts.json");
 
-// 사이트맵에 항상 포함되는 정적 URL
+// 사이트맵에 항상 포함되는 정적 URL (나이·날짜 전문 페이지만)
+// 그 외 페이지(급여세금·로또·공학용·게임·사주)는 살아 있으나 사이트맵에서 제외 → docs/homepage-archive.md 기록
 const STATIC_URLS = [
   { loc: "https://calcbox.kr/", freq: "weekly", pri: "1.0" },
-  { loc: "https://calcbox.kr/scientific/", freq: "monthly", pri: "0.9" },
-  { loc: "https://calcbox.kr/salary/", freq: "monthly", pri: "0.9" },
   { loc: "https://calcbox.kr/age/", freq: "monthly", pri: "0.9" },
   { loc: "https://calcbox.kr/birth-year/", freq: "monthly", pri: "0.9" },
   { loc: "https://calcbox.kr/business-days/", freq: "monthly", pri: "0.8" },
-  { loc: "https://calcbox.kr/vat/", freq: "monthly", pri: "0.8" },
-  { loc: "https://calcbox.kr/severance/", freq: "monthly", pri: "0.8" },
-  { loc: "https://calcbox.kr/freelancer/", freq: "monthly", pri: "0.8" },
-  { loc: "https://calcbox.kr/lotto-prize/", freq: "monthly", pri: "0.8" },
   { loc: "https://calcbox.kr/military/", freq: "monthly", pri: "0.8" },
-  { loc: "https://calcbox.kr/lotto/", freq: "weekly", pri: "0.8" },
-  { loc: "https://calcbox.kr/spy-game/", freq: "monthly", pri: "0.6" },
-  { loc: "https://calcbox.kr/duck-octopus-game/", freq: "monthly", pri: "0.6" },
-  { loc: "https://calcbox.kr/saju/", freq: "weekly", pri: "0.9" },
-  { loc: "https://calcbox.kr/saju/ask/", freq: "weekly", pri: "0.8" },
-  { loc: "https://calcbox.kr/gunghap/", freq: "monthly", pri: "0.9" },
-  { loc: "https://calcbox.kr/saju/terms/", freq: "yearly", pri: "0.3" },
-  { loc: "https://calcbox.kr/saju/privacy/", freq: "yearly", pri: "0.3" },
-  { loc: "https://calcbox.kr/saju/refund/", freq: "yearly", pri: "0.3" },
   { loc: "https://calcbox.kr/blog/", freq: "weekly", pri: "0.7" },
   { loc: "https://calcbox.kr/about/", freq: "yearly", pri: "0.3" },
   { loc: "https://calcbox.kr/privacy/", freq: "yearly", pri: "0.3" },
@@ -52,13 +38,24 @@ function readPosts() {
   return JSON.parse(fs.readFileSync(POSTS_FILE, "utf8"));
 }
 
+// 전문 주제(나이·날짜 계산) 글만 색인/목록/사이트맵에 노출한다.
+// 그 외 발행 글(사주·급여세금·로또 등)은 페이지는 남기되 noindex + 목록/사이트맵 제외.
+const ONTOPIC = new Set([
+  // 나이·날짜 계산기 사용법·가이드
+  "age-calculator", "birth-year-guide", "business-days-guide", "military-discharge",
+  // 나이 클러스터 스포크
+  "age-types-korean", "fast-year-birth", "birthyear-to-hakbeon", "pension-start-age",
+  "senior-benefits-age", "milestone-ages", "rrn-age-decode", "age-table-2026", "zodiac-year-age"
+]);
+function isLive(p) { return p.published && ONTOPIC.has(p.slug); }
+
 // 각 글 HTML의 robots 메타를 published 상태에 맞게 설정
 function syncRobots(posts) {
   posts.forEach(function (p) {
     const file = path.join(ROOT, "blog", p.slug, "index.html");
     if (!fs.existsSync(file)) return;
     let html = fs.readFileSync(file, "utf8");
-    const want = p.published ? "index, follow" : "noindex, follow";
+    const want = isLive(p) ? "index, follow" : "noindex, follow";
     const next = html.replace(/(<meta name="robots" content=")[^"]*(">)/, "$1" + want + "$2");
     if (next !== html) fs.writeFileSync(file, next);
   });
@@ -66,7 +63,7 @@ function syncRobots(posts) {
 
 // 블로그 목록 페이지 생성 (발행된 글만, 최신 발행 순)
 function buildBlogIndex(posts) {
-  const live = posts.filter(function (p) { return p.published; });
+  const live = posts.filter(function (p) { return isLive(p); });
   live.reverse(); // 배열 뒤쪽일수록 나중에 발행 → 최신이 위로
   const items = live.map(function (p) {
     return '      <li>\n' +
@@ -146,7 +143,7 @@ function buildSitemap(posts) {
   const urls = STATIC_URLS.map(function (u) {
     return '  <url><loc>' + u.loc + '</loc><lastmod>' + today + '</lastmod><changefreq>' + u.freq + '</changefreq><priority>' + u.pri + '</priority></url>';
   });
-  posts.filter(function (p) { return p.published; }).forEach(function (p) {
+  posts.filter(function (p) { return isLive(p); }).forEach(function (p) {
     urls.push('  <url><loc>https://calcbox.kr/blog/' + p.slug + '/</loc><lastmod>' + today + '</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>');
   });
   return '<?xml version="1.0" encoding="UTF-8"?>\n' +

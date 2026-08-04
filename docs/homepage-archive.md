@@ -108,3 +108,20 @@ AdSense 승인을 위해 홈페이지(index.html)를 **"나이·날짜 계산 �
 - 블로그: `age-calculator`, `birth-year-guide`, `age-types-korean`, `fast-year-birth`,
   `birthyear-to-hakbeon`, `pension-start-age`, `senior-benefits-age`, `milestone-ages`,
   `rrn-age-decode`, `age-table-2026`, `zodiac-year-age`(대기)
+
+---
+
+## [업데이트 2026-07] 블로그·사이트맵도 나이·날짜 전문으로 정리
+
+- **건강 thin 3편 완전 삭제**: `omega3-benefits`, `magnesium-benefits`, `milk-thistle-benefits`
+  - `blog/` 디렉토리 삭제 + `posts.json`에서 제거. (원문 데이터는 `scripts/data/benefit.js`에 보존)
+- **오프토픽 블로그 글 noindex + 목록/사이트맵 제외**: 사주 20편·급여세금 5편·로또 2편 등
+  - `scripts/build-blog.js`의 `ONTOPIC` 허용목록에 없는 발행 글은 자동으로 noindex 처리되고 `/blog/` 목록·`sitemap.xml`에서 빠집니다.
+  - 페이지 URL 자체는 살아 있습니다(삭제 아님).
+- **오프토픽 정적 페이지 사이트맵 제외**: `scientific/salary/vat/severance/freelancer/lotto-prize/lotto/spy-game/duck-octopus-game/saju*/gunghap`
+  - `scripts/build-blog.js`의 `STATIC_URLS`에서 제외. 페이지는 유지.
+
+### 되돌리는 법
+- 블로그 글 복원: `scripts/build-blog.js`의 `ONTOPIC` Set에 해당 slug 추가 → `node scripts/build-blog.js`
+- 정적 페이지 복원: `STATIC_URLS`에 해당 URL 다시 추가
+- 홈페이지 링크 복원: 위 `tool-card` 조각을 `index.html`에 붙여넣기
