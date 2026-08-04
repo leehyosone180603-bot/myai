@@ -217,6 +217,7 @@ input[type="text"]:focus {
 
 /* 카테고리 섹션 */
 .category-section { margin-bottom: 28px; scroll-margin-top: 12px; }
+.cat-desc { color: var(--muted); font-size: 0.94rem; margin: 2px 0 14px; }
 .category-section > h2 {
   font-size: 1.25rem;
   margin: 0 0 12px;
