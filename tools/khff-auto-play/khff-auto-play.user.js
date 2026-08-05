@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         KHFF 위생교육 자동 다음 재생
 // @namespace    https://leehyosone180603-bot.github.io/
-// @version      2.0.0
+// @version      2.1.0
 // @description  한국건강기능식품협회(edu.khff.or.kr) 위생교육에서 한 차시가 끝나면 "확인" 팝업을 자동으로 누르고, 다음 영상의 가운데 재생버튼을 눌러 자동 재생합니다.
 // @author       leehyosone
 // @match        *://edu.khff.or.kr/*
@@ -18,9 +18,11 @@
   const CONFIG = {
     // "안내" 팝업이 뜬 뒤 "확인"을 누르기까지 대기 시간(ms).
     delayBeforeConfirmMs: 800,
-    // 새 영상 로딩 후 재생 시도 반복 간격(ms)과 최대 시도 횟수.
-    playRetryIntervalMs: 700,
-    playRetryMax: 20,
+    // 멈춘 영상을 다시 재생시키려 감시하는 주기(ms).
+    playWatchdogMs: 1200,
+    // 자동재생 정책을 통과하기 위해 새 영상을 "음소거"로 시작할지 여부.
+    // (true 권장: 소리가 필요하면 재생 후 플레이어 음소거 버튼을 직접 해제하세요.)
+    startMuted: true,
     // "확인"(다음으로 이동)으로 인식할 팝업 버튼 문구.
     confirmButtonTexts: ['확인'],
     // 절대 누르면 안 되는 문구(취소 등).
@@ -105,10 +107,11 @@
     log('완료 팝업 감지 → "확인" 클릭', btn);
     setTimeout(() => {
       try { btn.click(); } catch (e) { log('확인 클릭 실패', e); }
-      // 다음 영상 로딩 대기 후 재생 시도, 잠금 해제.
+      // 다음 영상 로딩 대기 후 잠금 해제(재생은 상시 감시가 담당).
       setTimeout(() => {
         busy = false;
-        startPlaybackLoop();
+        loggedPlaying = false;
+        ensurePlaying();
       }, 2500);
     }, CONFIG.delayBeforeConfirmMs);
   }
@@ -120,13 +123,11 @@
   function getVjsPlayer() {
     try {
       if (window.videojs && typeof window.videojs.getAllPlayers === 'function') {
-        const players = window.videojs.getAllPlayers();
-        if (players && players.length) return players[0];
-      }
-      if (window.videojs && typeof window.videojs.getPlayers === 'function') {
-        const map = window.videojs.getPlayers();
-        const key = Object.keys(map || {})[0];
-        if (key) return map[key];
+        // 폐기(disposed)된 플레이어는 제외하고, 가장 최근(=현재) 플레이어를 사용.
+        const players = (window.videojs.getAllPlayers() || []).filter(
+          (p) => p && (typeof p.isDisposed !== 'function' || !p.isDisposed())
+        );
+        if (players.length) return players[players.length - 1];
       }
     } catch (e) {}
     return null;
@@ -188,36 +189,40 @@
 
   function isPlaying(video) {
     const vp = getVjsPlayer();
-    if (vp && typeof vp.paused === 'function') return !vp.paused();
+    if (vp && typeof vp.paused === 'function') {
+      try { return !vp.paused(); } catch (e) {}
+    }
     return video && !video.paused && !video.ended;
   }
 
-  function startPlaybackLoop() {
-    let tries = 0;
-    const timer = setInterval(() => {
-      tries += 1;
-      const video = document.querySelector('video');
+  let loggedPlaying = false;
 
-      if (!video && !getVjsPlayer()) {
-        if (tries >= CONFIG.playRetryMax) clearInterval(timer);
-        return;
-      }
-      if (isPlaying(video)) {
-        log('영상 재생 중');
-        clearInterval(timer);
-        return;
-      }
-      // 1) 직접 재생 시도(Video.js → HTML5 순)
-      tryPlayDirect(video).catch(() => {});
-      // 2) 여전히 멈춰 있으면 Video.js 재생버튼 → 가운데 좌표 클릭
-      setTimeout(() => {
-        if (!isPlaying(video)) {
-          if (!clickBigPlay() && video) clickCenterPlay(video);
-        }
-      }, 250);
+  // 상시 감시: 영상이 멈춰 있으면 "음소거로" 재생시켜 자동재생 정책을 통과한다.
+  //  - 이미 재생 중이면 아무 것도 하지 않으므로, 사용자가 소리를 켜도 다시 음소거되지 않는다.
+  function ensurePlaying() {
+    const video = document.querySelector('video');
+    const vp = getVjsPlayer();
+    if (!video && !vp) return;
 
-      if (tries >= CONFIG.playRetryMax) clearInterval(timer);
-    }, CONFIG.playRetryIntervalMs);
+    if (isPlaying(video)) {
+      if (!loggedPlaying) { log('영상 재생 중'); loggedPlaying = true; }
+      return;
+    }
+    loggedPlaying = false;
+
+    // 자동재생 차단을 피하려면 먼저 음소거해야 한다(음소거 재생은 항상 허용).
+    if (CONFIG.startMuted) {
+      try { if (vp && typeof vp.muted === 'function') vp.muted(true); } catch (e) {}
+      if (video) video.muted = true;
+    }
+
+    tryPlayDirect(video).catch(() => {});
+    // 그래도 멈춰 있으면 Video.js 재생버튼 → (없으면) 가운데 좌표 클릭.
+    setTimeout(() => {
+      if (!isPlaying(video)) {
+        if (!clickBigPlay() && video) clickCenterPlay(video);
+      }
+    }, 300);
   }
 
   // ────────────────────────────────────────────────────────────────
@@ -229,10 +234,11 @@
     log('영상 감지');
     video.addEventListener('ended', () => {
       log('영상 종료 → 확인 팝업 대기');
+      loggedPlaying = false;
       setTimeout(clickConfirmIfPresent, 500);
     });
     // 페이지에 이미 있는(방금 넘어온) 영상은 바로 재생 시도.
-    startPlaybackLoop();
+    ensurePlaying();
   }
 
   // ────────────────────────────────────────────────────────────────
@@ -248,6 +254,8 @@
 
   // 팝업이 애니메이션으로 늦게 뜨는 경우 대비해 주기적으로도 확인.
   setInterval(clickConfirmIfPresent, 1500);
+  // 멈춘 영상을 상시 감시하며 다시 재생(음소거 자동재생으로 정책 통과).
+  setInterval(ensurePlaying, CONFIG.playWatchdogMs);
 
   scan();
   log('활성화 완료. 영상이 끝나면 "확인"을 자동으로 누르고 다음 영상을 재생합니다.');
