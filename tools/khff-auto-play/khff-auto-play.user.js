@@ -116,21 +116,64 @@
   // ────────────────────────────────────────────────────────────────
   // 영상 재생: video.play() → 실패 시 가운데 재생버튼 클릭
   // ────────────────────────────────────────────────────────────────
+  // Video.js 플레이어 객체 가져오기(있으면 가장 확실한 재생 경로)
+  function getVjsPlayer() {
+    try {
+      if (window.videojs && typeof window.videojs.getAllPlayers === 'function') {
+        const players = window.videojs.getAllPlayers();
+        if (players && players.length) return players[0];
+      }
+      if (window.videojs && typeof window.videojs.getPlayers === 'function') {
+        const map = window.videojs.getPlayers();
+        const key = Object.keys(map || {})[0];
+        if (key) return map[key];
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function dispatchClick(el, x, y) {
+    ['mouseover', 'mousedown', 'mouseup', 'click'].forEach((type) => {
+      el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window, clientX: x || 0, clientY: y || 0 }));
+    });
+  }
+
+  // Video.js 큰 재생버튼(.vjs-big-play-button)을 정확히 클릭
+  function clickBigPlay() {
+    const big = document.querySelector('.vjs-big-play-button');
+    if (big && isVisible(big)) {
+      log('Video.js 재생버튼(.vjs-big-play-button) 클릭');
+      dispatchClick(big);
+      return true;
+    }
+    return false;
+  }
+
   function clickCenterPlay(video) {
-    // 영상 위 중앙의 커스텀 재생(▶) 오버레이 버튼을 좌표로 눌러 준다.
+    // 영상 위 중앙의 재생(▶) 오버레이를 좌표로 눌러 준다.
     const rect = video.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return false;
     const x = Math.round(rect.left + rect.width / 2);
     const y = Math.round(rect.top + rect.height / 2);
     const target = document.elementFromPoint(x, y) || video;
     log('가운데 재생버튼 클릭 시도', target);
-    ['mousedown', 'mouseup', 'click'].forEach((type) => {
-      target.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y }));
-    });
+    dispatchClick(target, x, y);
     return true;
   }
 
   function tryPlayDirect(video) {
+    // Video.js 플레이어가 있으면 그쪽 API로 재생(가장 확실).
+    const vp = getVjsPlayer();
+    if (vp && typeof vp.play === 'function') {
+      try {
+        const r = vp.play();
+        if (r && typeof r.catch === 'function') {
+          return r.catch(() => { try { vp.muted(true); return vp.play(); } catch (e) {} });
+        }
+        return Promise.resolve();
+      } catch (e) {}
+    }
+    if (!video) return Promise.reject('no video');
     const p = video.play();
     if (p && typeof p.then === 'function') {
       return p.catch((err) => {
@@ -143,29 +186,36 @@
     return Promise.resolve();
   }
 
+  function isPlaying(video) {
+    const vp = getVjsPlayer();
+    if (vp && typeof vp.paused === 'function') return !vp.paused();
+    return video && !video.paused && !video.ended;
+  }
+
   function startPlaybackLoop() {
     let tries = 0;
     const timer = setInterval(() => {
       tries += 1;
       const video = document.querySelector('video');
 
-      if (!video) {
+      if (!video && !getVjsPlayer()) {
         if (tries >= CONFIG.playRetryMax) clearInterval(timer);
         return;
       }
-      if (!video.paused && !video.ended) {
+      if (isPlaying(video)) {
         log('영상 재생 중');
         clearInterval(timer);
         return;
       }
-      if (video.readyState >= 1 && video.paused) {
-        // 1) 직접 재생 시도
-        tryPlayDirect(video).catch(() => {});
-        // 2) 여전히 멈춰 있으면 가운데 재생버튼 클릭
-        setTimeout(() => {
-          if (video.paused) clickCenterPlay(video);
-        }, 250);
-      }
+      // 1) 직접 재생 시도(Video.js → HTML5 순)
+      tryPlayDirect(video).catch(() => {});
+      // 2) 여전히 멈춰 있으면 Video.js 재생버튼 → 가운데 좌표 클릭
+      setTimeout(() => {
+        if (!isPlaying(video)) {
+          if (!clickBigPlay() && video) clickCenterPlay(video);
+        }
+      }, 250);
+
       if (tries >= CONFIG.playRetryMax) clearInterval(timer);
     }, CONFIG.playRetryIntervalMs);
   }
