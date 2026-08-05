@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         KHFF 위생교육 자동 다음 재생
 // @namespace    https://leehyosone180603-bot.github.io/
-// @version      1.0.0
-// @description  한국건강기능식품협회(edu.khff.or.kr) 위생교육에서 한 차시 영상이 끝나면 자동으로 "다음" 영상으로 넘어가 재생합니다.
+// @version      2.0.0
+// @description  한국건강기능식품협회(edu.khff.or.kr) 위생교육에서 한 차시가 끝나면 "확인" 팝업을 자동으로 누르고, 다음 영상의 가운데 재생버튼을 눌러 자동 재생합니다.
 // @author       leehyosone
 // @match        *://edu.khff.or.kr/*
 // @run-at       document-idle
@@ -16,13 +16,17 @@
   // 설정 값
   // ────────────────────────────────────────────────────────────────
   const CONFIG = {
-    // 영상이 끝난 뒤 "다음"을 누르기까지 대기 시간(ms). 서버 진도 저장 여유.
-    delayAfterEndMs: 1500,
-    // 새 페이지/영상 로딩 후 재생 시도 반복 간격(ms)과 최대 시도 횟수.
-    playRetryIntervalMs: 800,
-    playRetryMax: 15,
-    // "다음"으로 인식할 버튼 텍스트(우선순위 순).
-    nextButtonTexts: ['다음', '다음강의', '다음 강의', 'NEXT', 'Next'],
+    // "안내" 팝업이 뜬 뒤 "확인"을 누르기까지 대기 시간(ms).
+    delayBeforeConfirmMs: 800,
+    // 새 영상 로딩 후 재생 시도 반복 간격(ms)과 최대 시도 횟수.
+    playRetryIntervalMs: 700,
+    playRetryMax: 20,
+    // "확인"(다음으로 이동)으로 인식할 팝업 버튼 문구.
+    confirmButtonTexts: ['확인'],
+    // 절대 누르면 안 되는 문구(취소 등).
+    denyButtonTexts: ['취소', '닫기', '이전'],
+    // 팝업으로 인식할 문맥 키워드(오작동 방지용).
+    confirmContextKeywords: ['완료', '이동', '다음 학습', '학습이'],
     // 콘솔 로그 표시 여부.
     debug: true,
   };
@@ -30,21 +34,19 @@
   const TAG = '[KHFF-AUTO]';
   const log = (...a) => CONFIG.debug && console.log(TAG, ...a);
 
-  // 중복 초기화 방지 플래그(같은 video 요소에 리스너 중복 부착 방지).
-  const WATCHED = new WeakSet();
-  let advancing = false; // "다음" 진행 중 중복 클릭 방지.
+  const WATCHED = new WeakSet(); // video 중복 감시 방지
+  const CLICKED_CONFIRM = new WeakSet(); // 같은 확인 버튼 중복 클릭 방지
+  let busy = false; // 확인 클릭 직후 잠깐 잠금
 
   // ────────────────────────────────────────────────────────────────
-  // 유틸: 화면에 보이는 요소인지 확인
+  // 유틸
   // ────────────────────────────────────────────────────────────────
   function isVisible(el) {
     if (!el) return false;
     const rect = el.getBoundingClientRect();
     if (rect.width === 0 && rect.height === 0) return false;
     const style = window.getComputedStyle(el);
-    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
-      return false;
-    }
+    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
     return true;
   }
 
@@ -53,134 +55,150 @@
     if (el.disabled) return true;
     if (el.getAttribute && el.getAttribute('aria-disabled') === 'true') return true;
     const cls = (el.className || '') + '';
-    if (/\b(disabled|disable|off|inactive)\b/i.test(cls)) return true;
+    if (/\b(disabled|disable|inactive)\b/i.test(cls)) return true;
     return false;
   }
 
+  function labelOf(el) {
+    return (el.innerText || el.textContent || el.value || '').replace(/\s+/g, ' ').trim();
+  }
+
   // ────────────────────────────────────────────────────────────────
-  // "다음" 버튼 찾기 (button / a / 그 외 클릭 가능한 요소 텍스트 매칭)
+  // "안내" 팝업의 "확인" 버튼 찾아 누르기
+  //  - 영상이 끝나면 사이트가 "…학습이 완료되었습니다 / 확인 버튼을 클릭하면
+  //    다음 학습으로 이동합니다" 팝업을 띄운다. 그 "확인"을 눌러야 넘어간다.
   // ────────────────────────────────────────────────────────────────
-  function findNextButton() {
+  function findConfirmButton() {
     const candidates = Array.from(
       document.querySelectorAll('button, a, [role="button"], input[type="button"], input[type="submit"], .btn, span, div')
     );
 
-    for (const text of CONFIG.nextButtonTexts) {
-      for (const el of candidates) {
-        const label = (el.innerText || el.textContent || el.value || '').trim();
-        // 정확히 일치하거나, 짧은 라벨(예: "다음")을 포함하는 요소 우선.
-        if (!label) continue;
-        const normalized = label.replace(/\s+/g, ' ');
-        if (normalized === text || (normalized.length <= 6 && normalized.includes(text))) {
-          if (isVisible(el) && !isDisabled(el)) {
-            return el;
-          }
-        }
+    for (const el of candidates) {
+      const label = labelOf(el);
+      if (!label) continue;
+      // 정확히 "확인"인 짧은 버튼만.
+      const isConfirm = CONFIG.confirmButtonTexts.some((t) => label === t || (label.length <= 4 && label.includes(t)));
+      if (!isConfirm) continue;
+      if (CONFIG.denyButtonTexts.some((t) => label === t)) continue;
+      if (!isVisible(el) || isDisabled(el)) continue;
+      if (CLICKED_CONFIRM.has(el)) continue;
+
+      // 팝업 문맥 확인: 조상 요소 텍스트에 완료/이동 등 키워드가 있는지.
+      let ctx = '';
+      let node = el;
+      for (let i = 0; i < 6 && node; i++) {
+        ctx += ' ' + (node.textContent || '');
+        node = node.parentElement;
       }
+      const hasContext = CONFIG.confirmContextKeywords.some((k) => ctx.includes(k));
+      if (hasContext) return el;
     }
     return null;
   }
 
-  // ────────────────────────────────────────────────────────────────
-  // 다음 강의로 이동
-  // ────────────────────────────────────────────────────────────────
-  function goNext() {
-    if (advancing) return;
-    const btn = findNextButton();
-    if (!btn) {
-      log('다음 버튼을 찾지 못했습니다. (마지막 차시이거나 아직 활성화 전)');
-      return;
-    }
-    advancing = true;
-    log('다음 강의로 이동합니다 →', btn);
-    btn.click();
-
-    // 클릭 후 페이지가 갱신되면 MutationObserver/폴링이 새 영상을 잡습니다.
-    // AJAX 방식이면 같은 문서에서 새 video가 생기므로 잠시 뒤 플래그 해제.
+  function clickConfirmIfPresent() {
+    if (busy) return;
+    const btn = findConfirmButton();
+    if (!btn) return;
+    busy = true;
+    CLICKED_CONFIRM.add(btn);
+    log('완료 팝업 감지 → "확인" 클릭', btn);
     setTimeout(() => {
-      advancing = false;
-      tryAutoPlayLoop();
-    }, 2500);
+      try { btn.click(); } catch (e) { log('확인 클릭 실패', e); }
+      // 다음 영상 로딩 대기 후 재생 시도, 잠금 해제.
+      setTimeout(() => {
+        busy = false;
+        startPlaybackLoop();
+      }, 2500);
+    }, CONFIG.delayBeforeConfirmMs);
   }
 
   // ────────────────────────────────────────────────────────────────
-  // 현재 영상 자동 재생 (브라우저 자동재생 정책 우회: 필요시 음소거)
+  // 영상 재생: video.play() → 실패 시 가운데 재생버튼 클릭
   // ────────────────────────────────────────────────────────────────
-  function tryPlay(video) {
-    if (!video) return Promise.reject('no video');
+  function clickCenterPlay(video) {
+    // 영상 위 중앙의 커스텀 재생(▶) 오버레이 버튼을 좌표로 눌러 준다.
+    const rect = video.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return false;
+    const x = Math.round(rect.left + rect.width / 2);
+    const y = Math.round(rect.top + rect.height / 2);
+    const target = document.elementFromPoint(x, y) || video;
+    log('가운데 재생버튼 클릭 시도', target);
+    ['mousedown', 'mouseup', 'click'].forEach((type) => {
+      target.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y }));
+    });
+    return true;
+  }
+
+  function tryPlayDirect(video) {
     const p = video.play();
     if (p && typeof p.then === 'function') {
       return p.catch((err) => {
-        // 자동재생 차단 시 음소거 후 재시도 → 성공하면 소리 복원.
-        log('자동재생 차단, 음소거 후 재시도:', err && err.name);
+        // 자동재생 차단 → 음소거로 재생 후 소리 복원.
         const wasMuted = video.muted;
         video.muted = true;
-        return video.play().then(() => {
-          setTimeout(() => { video.muted = wasMuted; }, 500);
-        });
+        return video.play().then(() => setTimeout(() => { video.muted = wasMuted; }, 600)).catch(() => Promise.reject(err));
       });
     }
     return Promise.resolve();
   }
 
-  function tryAutoPlayLoop() {
+  function startPlaybackLoop() {
     let tries = 0;
     const timer = setInterval(() => {
       tries += 1;
       const video = document.querySelector('video');
-      if (video && video.readyState >= 2 && video.paused && !video.ended) {
-        tryPlay(video).then(() => log('영상 재생 시작')).catch(() => {});
-        clearInterval(timer);
-      } else if (video && !video.paused) {
-        clearInterval(timer); // 이미 재생 중
-      } else if (tries >= CONFIG.playRetryMax) {
-        clearInterval(timer);
+
+      if (!video) {
+        if (tries >= CONFIG.playRetryMax) clearInterval(timer);
+        return;
       }
+      if (!video.paused && !video.ended) {
+        log('영상 재생 중');
+        clearInterval(timer);
+        return;
+      }
+      if (video.readyState >= 1 && video.paused) {
+        // 1) 직접 재생 시도
+        tryPlayDirect(video).catch(() => {});
+        // 2) 여전히 멈춰 있으면 가운데 재생버튼 클릭
+        setTimeout(() => {
+          if (video.paused) clickCenterPlay(video);
+        }, 250);
+      }
+      if (tries >= CONFIG.playRetryMax) clearInterval(timer);
     }, CONFIG.playRetryIntervalMs);
   }
 
   // ────────────────────────────────────────────────────────────────
-  // video 요소에 "끝남" 감지 부착
+  // video 요소 감시(끝남 감지는 보조 수단; 실제 이동은 확인 팝업이 담당)
   // ────────────────────────────────────────────────────────────────
   function watchVideo(video) {
     if (!video || WATCHED.has(video)) return;
     WATCHED.add(video);
-    log('영상 감지, 종료 이벤트 부착');
-
-    const onEnded = () => {
-      log('영상 종료 감지 → ' + CONFIG.delayAfterEndMs + 'ms 후 다음으로');
-      setTimeout(goNext, CONFIG.delayAfterEndMs);
-    };
-    video.addEventListener('ended', onEnded);
-
-    // 일부 플레이어는 'ended'가 안 뜨기도 함 → 시간 기반 보조 감지.
-    let firedByTime = false;
-    const onTime = () => {
-      if (firedByTime) return;
-      if (video.duration && video.currentTime >= video.duration - 0.4 && video.duration > 1) {
-        firedByTime = true;
-        log('종료 시점 근접(시간 기반) → 다음 준비');
-        setTimeout(() => {
-          if (video.ended || video.paused) onEnded();
-        }, 800);
-      }
-    };
-    video.addEventListener('timeupdate', onTime);
-
-    // 페이지 진입 시 이미 있는 영상은 바로 재생 시도.
-    tryAutoPlayLoop();
+    log('영상 감지');
+    video.addEventListener('ended', () => {
+      log('영상 종료 → 확인 팝업 대기');
+      setTimeout(clickConfirmIfPresent, 500);
+    });
+    // 페이지에 이미 있는(방금 넘어온) 영상은 바로 재생 시도.
+    startPlaybackLoop();
   }
 
   // ────────────────────────────────────────────────────────────────
-  // 초기 스캔 + DOM 변화 감시 (SPA/AJAX 대응)
+  // 초기 스캔 + DOM 변화 감시(팝업 등장/영상 교체 모두 대응)
   // ────────────────────────────────────────────────────────────────
   function scan() {
     document.querySelectorAll('video').forEach(watchVideo);
+    clickConfirmIfPresent(); // 완료 팝업이 떠 있으면 즉시 확인
   }
 
   const observer = new MutationObserver(() => scan());
   observer.observe(document.documentElement, { childList: true, subtree: true });
 
+  // 팝업이 애니메이션으로 늦게 뜨는 경우 대비해 주기적으로도 확인.
+  setInterval(clickConfirmIfPresent, 1500);
+
   scan();
-  log('활성화 완료. 영상이 끝나면 자동으로 다음 강의로 넘어갑니다.');
+  log('활성화 완료. 영상이 끝나면 "확인"을 자동으로 누르고 다음 영상을 재생합니다.');
 })();
