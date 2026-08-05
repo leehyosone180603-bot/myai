@@ -45,7 +45,8 @@ const ONTOPIC = new Set([
   "age-calculator", "birth-year-guide", "business-days-guide", "military-discharge",
   // 나이 클러스터 스포크
   "age-types-korean", "fast-year-birth", "birthyear-to-hakbeon", "pension-start-age",
-  "senior-benefits-age", "milestone-ages", "rrn-age-decode", "age-table-2026", "zodiac-year-age"
+  "senior-benefits-age", "milestone-ages", "rrn-age-decode", "age-table-2026", "zodiac-year-age",
+  "elementary-school-age"
 ]);
 function isLive(p) { return p.published && ONTOPIC.has(p.slug); }
 
