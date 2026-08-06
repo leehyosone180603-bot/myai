@@ -175,7 +175,7 @@ faqJsonLd(entry.faq) + '\n' +
 '  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADS + '"\n' +
 '     crossorigin="anonymous"></script>\n' +
 '\n' +
-'  <link rel="stylesheet" href="../../style.css?v=8">\n' +
+'  <link rel="stylesheet" href="../../style.css?v=12">\n' +
 '</head>\n' +
 '<body>\n' +
 '  <nav class="back-nav"><a href="/">← 한국인계산기 홈</a> · <a href="/blog/">블로그 목록</a></nav>\n' +
@@ -207,6 +207,8 @@ relatedHtml(entry.related) + '\n' +
 '  </main>\n' +
 '\n' +
 '  <footer class="site-footer">\n' +
+'    <div class="footer-biz">상호명 굿윌스토어 · 사업자등록번호 631-03-03874 · 대표 이효선 · 주소 부산 사하구 오작로 34<br>연락처 010-2934-1351 · 제휴문의 <a href="mailto:leehyosone180603@gmail.com">leehyosone180603@gmail.com</a></div>\n' +
+'    <p class="footer-notice">한국인계산기의 모든 콘텐츠는 저작권법의 보호를 받으며, 무단 전재·복사·배포를 금합니다.</p>\n' +
 '    <nav class="footer-links"><a href="/about/">운영자 소개</a> · <a href="/contact/">문의하기</a> · <a href="/guide/">사이트 안내</a> · <a href="/privacy/">개인정보처리방침</a> · <a href="/terms/">이용약관</a> · <a href="mailto:leehyosone180603@gmail.com">이메일</a></nav>\n' +
 '    <p>© <span id="year"></span> 한국인계산기 (calcbox.kr) · 본 글은 일반적인 정보 제공을 목적으로 하며 최신 정보는 공식 출처를 확인하세요.</p>\n' +
 '  </footer>\n' +
