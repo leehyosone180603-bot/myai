@@ -52,6 +52,14 @@ const ONTOPIC = new Set([
 ]);
 function isLive(p) { return p.published && ONTOPIC.has(p.slug); }
 
+// 블로그 세부 카테고리 (나이·날짜 전문). 새 글은 해당 slug를 아래 목록에 추가하면 자동 분류됨.
+const CATEGORIES = [
+  { label: "🎂 만 나이·나이 계산", slugs: ["age-types-korean", "age-calculator", "age-table-2026", "rrn-age-decode"] },
+  { label: "🗓️ 몇년생·띠·학번", slugs: ["birth-year-guide", "zodiac-year-age", "fast-year-birth", "birthyear-to-hakbeon", "elementary-school-age"] },
+  { label: "📋 나이 기준 제도·혜택", slugs: ["pension-start-age", "senior-benefits-age", "milestone-ages"] },
+  { label: "📅 날짜 계산", slugs: ["business-days-guide", "military-discharge"] }
+];
+
 // 각 글 HTML의 robots 메타를 published 상태에 맞게 설정
 function syncRobots(posts) {
   posts.forEach(function (p) {
@@ -66,16 +74,38 @@ function syncRobots(posts) {
 
 // 블로그 목록 페이지 생성 (발행된 글만, 최신 발행 순)
 function buildBlogIndex(posts) {
-  const live = posts.filter(function (p) { return isLive(p); });
-  live.reverse(); // 배열 뒤쪽일수록 나중에 발행 → 최신이 위로
-  const items = live.map(function (p) {
-    return '      <li>\n' +
-      '        <a href="/blog/' + p.slug + '/">\n' +
-      '          <strong>' + p.title + '</strong>\n' +
-      '          <small>' + p.date + ' · ' + p.excerpt + '</small>\n' +
-      '        </a>\n' +
-      '      </li>';
-  }).join("\n");
+  const liveMap = {};
+  posts.forEach(function (p) { if (isLive(p)) liveMap[p.slug] = p; });
+
+  function li(p) {
+    return '        <li>\n' +
+      '          <a href="/blog/' + p.slug + '/">\n' +
+      '            <strong>' + p.title + '</strong>\n' +
+      '            <small>' + p.date + ' · ' + p.excerpt + '</small>\n' +
+      '          </a>\n' +
+      '        </li>';
+  }
+
+  const used = {};
+  const sectionList = CATEGORIES.map(function (cat) {
+    const lis = cat.slugs.filter(function (s) { return liveMap[s]; }).map(function (s) { used[s] = true; return li(liveMap[s]); });
+    if (!lis.length) return "";
+    return '    <section class="blog-cat">\n' +
+      '      <h2 class="blog-cat-title">' + cat.label + '</h2>\n' +
+      '      <ul class="post-list">\n' + lis.join("\n") + '\n      </ul>\n' +
+      '    </section>';
+  }).filter(Boolean);
+
+  // 카테고리에 없는 발행 글은 '그 밖의 글'로 (최신 발행 순)
+  const rest = posts.filter(function (p) { return isLive(p) && !used[p.slug]; });
+  rest.reverse();
+  if (rest.length) {
+    sectionList.push('    <section class="blog-cat">\n' +
+      '      <h2 class="blog-cat-title">📌 그 밖의 글</h2>\n' +
+      '      <ul class="post-list">\n' + rest.map(li).join("\n") + '\n      </ul>\n' +
+      '    </section>');
+  }
+  const items = sectionList.join("\n");
 
   return '<!DOCTYPE html>\n' +
 '<html lang="ko">\n' +
@@ -91,12 +121,12 @@ function buildBlogIndex(posts) {
 '  </script>\n' +
 '  <link rel="icon" type="image/svg+xml" href="/favicon.svg">\n' +
 '  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
-'  <title>블로그 - 계산기 사용법과 생활 정보 | 한국인계산기</title>\n' +
-'  <meta name="description" content="연봉 실수령액, 세금, 날짜 계산 등 한국인계산기의 계산기 사용법과 알아두면 좋은 생활·금융 정보를 정리한 블로그입니다.">\n' +
-'  <meta name="keywords" content="한국인계산기, 계산기 블로그, 연봉 실수령액, 세금 정보, 계산기 사용법">\n' +
+'  <title>블로그 - 나이·날짜 계산 가이드 | 한국인계산기</title>\n' +
+'  <meta name="description" content="만 나이·몇년생·띠·출생연도와 영업일·전역일 등 한국인의 나이·날짜 계산 가이드를 카테고리별로 정리한 블로그입니다.">\n' +
+'  <meta name="keywords" content="나이 계산, 만 나이, 몇년생, 띠, 출생연도, 나이표, 영업일, 전역일, 나이 날짜 블로그">\n' +
 '  <meta name="robots" content="index, follow">\n' +
-'  <meta property="og:title" content="블로그 - 계산기 사용법과 생활 정보 | 한국인계산기">\n' +
-'  <meta property="og:description" content="계산기 사용법과 알아두면 좋은 생활·금융 정보 모음.">\n' +
+'  <meta property="og:title" content="블로그 - 나이·날짜 계산 가이드 | 한국인계산기">\n' +
+'  <meta property="og:description" content="만 나이·몇년생·띠와 날짜 계산 가이드 모음.">\n' +
 '  <meta property="og:type" content="website">\n' +
 '  <meta property="og:url" content="https://calcbox.kr/blog/">\n' +
 '  <meta property="og:site_name" content="한국인계산기">\n' +
@@ -106,14 +136,14 @@ function buildBlogIndex(posts) {
 '  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885"\n' +
 '     crossorigin="anonymous"></script>\n' +
 '\n' +
-'  <link rel="stylesheet" href="../style.css?v=12">\n' +
+'  <link rel="stylesheet" href="../style.css?v=13">\n' +
 '</head>\n' +
 '<body>\n' +
 '  <nav class="back-nav"><a href="/">← 한국인계산기 홈</a></nav>\n' +
 '\n' +
 '  <header class="site-header">\n' +
 '    <h1>📝 한국인계산기 블로그</h1>\n' +
-'    <p class="subtitle">계산기 사용법과 알아두면 좋은 생활·금융 정보</p>\n' +
+'    <p class="subtitle">만 나이·몇년생·띠와 날짜 계산 가이드</p>\n' +
 '  </header>\n' +
 '\n' +
 '  <div class="ad-container" aria-label="광고">\n' +
@@ -122,9 +152,7 @@ function buildBlogIndex(posts) {
 '  </div>\n' +
 '\n' +
 '  <main class="container">\n' +
-'    <ul class="post-list">\n' +
 items + '\n' +
-'    </ul>\n' +
 '  </main>\n' +
 '\n' +
 '  <footer class="site-footer">\n' +

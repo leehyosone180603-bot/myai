@@ -637,3 +637,8 @@ input[type="text"]:focus {
 .footer-biz { color: var(--muted); font-size: .8rem; line-height: 1.7; margin-bottom: 6px; }
 .footer-biz a { color: var(--muted); text-decoration: underline; }
 .footer-notice { color: var(--muted); font-size: .8rem; margin: 0 0 12px; }
+
+/* 블로그 세부 카테고리 */
+.blog-cat { margin-bottom: 4px; }
+.blog-cat-title { font-size: 1.15rem; margin: 26px 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--border); }
+.blog-cat:first-child .blog-cat-title { margin-top: 4px; }
