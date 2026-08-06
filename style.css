@@ -632,3 +632,8 @@ input[type="text"]:focus {
   .home-layout { grid-template-columns: 1fr; }
   .home-aside { position: static; }
 }
+
+/* 하단 사업자 정보·저작권 고지 */
+.footer-biz { color: var(--muted); font-size: .8rem; line-height: 1.7; margin-bottom: 6px; }
+.footer-biz a { color: var(--muted); text-decoration: underline; }
+.footer-notice { color: var(--muted); font-size: .8rem; margin: 0 0 12px; }
