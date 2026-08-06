@@ -13,7 +13,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>영업일 계산기 사용법 - 주말·공휴일 제외 영업일 수 구하는 법 | 한국인계산기</title>
-  <meta name="description" content="두 날짜 사이의 영업일(평일) 수를 주말과 공휴일을 제외하고 구하는 방법을 정리했습니다. 납기일·정산일·배송 예정일 계산에 유용한 영업일 계산법을 알려드립니다.">
+  <meta name="description" content="두 날짜 사이의 영업일(평일) 수를 주말·공휴일을 제외하고 구하는 방법과, 은행 '5영업일'을 대체공휴일 낀 대출 이자 예시로 세는 법까지 정리했습니다. 납기일·정산일·배송 예정일 계산에 유용합니다.">
   <meta name="keywords" content="영업일 계산기, 영업일 계산, 평일 계산기, 근무일수, 주말 제외, 공휴일 제외, 납기일">
   <meta name="robots" content="index, follow">
   <meta name="author" content="한국인계산기">
@@ -41,7 +41,8 @@
     "@context": "https://schema.org", "@type": "FAQPage",
     "mainEntity": [
       { "@type": "Question", "name": "영업일이란 무엇인가요?", "acceptedAnswer": { "@type": "Answer", "text": "영업일은 토·일요일과 공휴일을 제외한 평일을 말합니다. 은행·관공서·기업이 정상적으로 업무를 보는 날입니다." } },
-      { "@type": "Question", "name": "영업일은 어떻게 계산하나요?", "acceptedAnswer": { "@type": "Answer", "text": "시작일부터 종료일까지의 날 중에서 토·일요일과 공휴일을 빼면 영업일 수가 됩니다." } }
+      { "@type": "Question", "name": "영업일은 어떻게 계산하나요?", "acceptedAnswer": { "@type": "Answer", "text": "시작일부터 종료일까지의 날 중에서 토·일요일과 공휴일을 빼면 영업일 수가 됩니다." } },
+      { "@type": "Question", "name": "은행에서 말하는 5영업일은 어떻게 세나요?", "acceptedAnswer": { "@type": "Answer", "text": "기준일(납입일이 공휴일이면 다음 영업일)부터 토·일·공휴일을 뺀 영업일만 5일을 셉니다. 다섯 번째 영업일이 마지막 날이며, 그날 은행 영업 마감 시각 전에 납부해야 인정됩니다." } }
     ]
   }
   </script>
@@ -97,9 +98,30 @@
       </ul>
       <div class="callout">💡 <a href="/business-days/">영업일 계산기</a>는 주말과 공휴일을 자동으로 반영합니다. 시작일 포함 여부만 상황에 맞게 맞추면 됩니다.</div>
 
+      <h2>금융권 '5영업일'은 이렇게 셉니다 (대출 이자 예시)</h2>
+      <p>은행·카드사 안내에서 <strong>"영업일 기준 5일"</strong>(예: 연체 5영업일)이라는 표현이 자주 나오는데, 세는 방식에 오해가 많습니다. 실제 사례로 보겠습니다.</p>
+      <p><strong>상황:</strong> 매월 25일이 대출 이자 납입일인데, 2026년 5월 25일이 대체공휴일이라 26일이 결제일이 된 경우, '5영업일'은 언제까지일까요?</p>
+      <table class="calc-table">
+        <thead><tr><th>날짜</th><td>처리</td></tr></thead>
+        <tbody>
+          <tr><th>5/25(월)</th><td>납입 예정일 — 대체공휴일이라 이월</td></tr>
+          <tr><th>5/26(화)</th><td>실제 결제일(기준일)</td></tr>
+          <tr><th>5/27(수)</th><td>영업 1일째</td></tr>
+          <tr><th>5/28(목)</th><td>영업 2일째</td></tr>
+          <tr><th>5/29(금)</th><td>영업 3일째</td></tr>
+          <tr><th>5/30~31(토·일)</th><td>세지 않음(제외)</td></tr>
+          <tr><th>6/1(월)</th><td>영업 4일째</td></tr>
+          <tr><th>6/2(화)</th><td>영업 5일째 — 마지막 날</td></tr>
+        </tbody>
+      </table>
+      <p>즉 이 경우 <strong>6월 2일</strong>이 5영업일째입니다. 다만 그날 <strong>은행 영업 마감 시각(보통 오후 4시)</strong> 전에 납부해야 그 영업일로 인정됩니다.</p>
+      <div class="callout">⚠️ <strong>가장 많이 하는 착각</strong> — "중간에 공휴일이 껴 있으니 하루쯤 미뤄지겠지"라고 생각하는 것입니다. 공휴일은 <strong>애초에 세지 않으므로</strong>, 정해진 5영업일째(위 예시의 6/2)를 넘기면 다음 날부터는 단기 연체로 잡혀 신용정보에 공유될 수 있습니다. 정확한 마감 시각·처리 기준은 해당 금융기관에서 꼭 확인하세요.</div>
+
       <h2>자주 묻는 질문</h2>
       <h3>Q. 시작일과 종료일도 포함되나요?</h3>
       <p>본 계산기는 시작일과 종료일을 모두 포함해서 영업일을 셉니다. 기준에 따라 다를 수 있으니 안내문을 확인하세요.</p>
+      <h3>Q. 은행에서 말하는 '5영업일'은 어떻게 세나요?</h3>
+      <p>기준일(납입일이 공휴일이면 다음 영업일)부터 토·일·공휴일을 뺀 영업일만 5일을 셉니다. 다섯 번째 영업일이 마지막 날이며, 그날 은행 영업 마감 시각(보통 오후 4시) 전에 납부해야 인정됩니다.</p>
 
       <div class="callout">✅ <strong>관련 계산기</strong> — <a href="/business-days/">영업일 계산기</a> · <a href="/age/">만 나이 계산기</a> · <a href="/military/">전역일 계산기</a></div>
     </article>
