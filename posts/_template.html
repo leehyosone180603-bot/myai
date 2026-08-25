@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<!--
+  ============================================================
+  글 작성 템플릿 — 이 파일을 복사해 /posts/<슬러그>.html 로 저장하세요.
+  체크리스트
+   1) 아래 {{ }} 표시를 모두 실제 값으로 교체
+   2) <title>, description, keywords, canonical, og:*, JSON-LD 를 글 내용에 맞게 수정
+   3) 대표 이미지는 실제 사진 사용 권장 (/img/ 에 넣고 /img/<파일> 로 참조)
+   4) 본문은 h2/h3, 목록, 표(.calc-table), 이미지(figure.post-shot)로 구성
+   5) 작성 후 /js/posts.js 의 POSTS 배열 "맨 위"에 한 줄 추가:
+      { id:"<슬러그>", title:"...", summary:"...", category:"<카테고리slug>",
+        date:"YYYY.MM.DD", url:"/posts/<슬러그>.html", image:"/img/<파일>" }
+  ============================================================
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Google tag (gtag.js) - GA4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JMGXSV1PJ2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-JMGXSV1PJ2');
+  </script>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>{{글 제목}} | 한국인계산기</title>
+  <meta name="description" content="{{한 줄 요약 설명(검색결과에 노출)}}">
+  <meta name="keywords" content="{{키워드, 쉼표로}}">
+  <meta name="robots" content="index, follow">
+  <meta name="author" content="한국인계산기">
+  <meta property="og:title" content="{{글 제목}}">
+  <meta property="og:description" content="{{한 줄 요약}}">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://calcbox.kr/posts/{{슬러그}}.html">
+  <meta property="og:image" content="https://calcbox.kr/img/{{대표이미지 파일}}">
+  <meta property="og:site_name" content="한국인계산기">
+  <link rel="canonical" href="https://calcbox.kr/posts/{{슬러그}}.html">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org", "@type": "Article",
+    "headline": "{{글 제목}}",
+    "description": "{{한 줄 요약}}",
+    "datePublished": "{{YYYY-MM-DD}}", "dateModified": "{{YYYY-MM-DD}}", "inLanguage": "ko",
+    "image": "https://calcbox.kr/img/{{대표이미지 파일}}",
+    "author": { "@type": "Organization", "name": "한국인계산기" },
+    "publisher": { "@type": "Organization", "name": "한국인계산기", "url": "https://calcbox.kr/" },
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://calcbox.kr/posts/{{슬러그}}.html" }
+  }
+  </script>
+
+  <!-- Google AdSense: ca-pub-7143828779500885 -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885" crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main class="post-wrap">
+    <nav class="crumbs"><a href="/">홈</a> · <a href="/category.html?cat={{카테고리slug}}">{{카테고리 이름}}</a></nav>
+    <article class="post">
+      <h1>{{글 제목}}</h1>
+      <p class="post-meta">{{YYYY년 M월 D일}} · 한국인계산기</p>
+
+      <p class="lead">{{도입부 — 이 글이 답하는 질문을 한두 문장으로}}</p>
+
+      <figure class="post-shot">
+        <img src="/img/{{대표이미지 파일}}" alt="{{이미지 설명}}" loading="lazy">
+        <figcaption>▲ {{이미지 캡션}}</figcaption>
+      </figure>
+
+      <h2>{{소제목}}</h2>
+      <p>{{본문}}</p>
+
+      <div class="callout">💡 {{강조하고 싶은 팁이나 주의사항}}</div>
+
+      <div class="related"><strong>함께 보면 좋은 글</strong> — <a href="/posts/{{관련슬러그}}.html">{{관련 글}}</a></div>
+    </article>
+  </main>
+
+  <footer id="site-footer"></footer>
+
+  <script src="/js/posts.js"></script>
+  <script src="/js/site.js"></script>
+</body>
+</html>

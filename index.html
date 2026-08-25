@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Google tag (gtag.js) - GA4 -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JMGXSV1PJ2"></script>
   <script>
@@ -11,14 +12,13 @@
     gtag('config', 'G-JMGXSV1PJ2');
   </script>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>만 나이·몇년생·띠·출생연도 계산 | 한국 나이·날짜 계산기 - 한국인계산기</title>
-  <meta name="description" content="만 나이, 몇년생, 띠, 출생연도, 영업일, 전역일 등 한국인의 나이·날짜 계산만 전문으로 다루는 사이트입니다. 만 나이 계산기·몇년생 계산기와 나이·날짜 계산 가이드를 무료로 제공합니다.">
-  <meta name="keywords" content="나이 계산기, 만 나이 계산기, 몇년생 계산기, 띠 계산, 출생연도 계산, 나이표, 세는 나이, 연 나이, 영업일 계산기, 전역일 계산기, 나이 날짜 계산">
+  <title>한국인계산기 — 만 나이·몇년생·띠·날짜 계산 매거진 | calcbox.kr</title>
+  <meta name="description" content="만 나이·몇년생·띠·출생연도부터 국민연금·경로우대 나이, 영업일·전역일까지. 한국인이 자주 헷갈리는 나이와 날짜 계산을 실제 검색 질문을 반영해 정리한 매거진입니다.">
+  <meta name="keywords" content="나이 계산기, 만 나이 계산기, 몇년생 계산기, 띠 계산, 출생연도, 나이표, 세는 나이, 국민연금 수급 나이, 영업일 계산, 전역일 계산">
   <meta name="robots" content="index, follow">
   <meta name="author" content="한국인계산기">
-  <meta property="og:title" content="만 나이·몇년생·띠 계산 | 한국 나이·날짜 계산기">
-  <meta property="og:description" content="만 나이·몇년생·띠·출생연도부터 영업일·전역일까지, 한국인의 나이와 날짜 계산 전문.">
+  <meta property="og:title" content="한국인계산기 — 나이·날짜 계산 매거진">
+  <meta property="og:description" content="만 나이·몇년생·띠·출생연도부터 영업일·전역일까지, 한국인의 나이와 날짜 계산 전문 매거진.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://calcbox.kr/">
   <meta property="og:site_name" content="한국인계산기">
@@ -28,349 +28,37 @@
   <meta name="google-site-verification" content="TRVoYNUTZlKvUouO9Ivt6AtnmkL8eIrpXNIF9vN3-xQ">
   <meta name="naver-site-verification" content="ee1670e4315101894d8680574f5cd2443b0a976a">
 
-  <!-- 구조화 데이터 -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "name": "한국인계산기 — 나이·날짜 계산 전문",
-    "alternateName": ["calcbox.kr", "나이 계산기", "만 나이 계산기", "몇년생 계산기"],
+    "name": "한국인계산기 — 나이·날짜 계산 매거진",
+    "alternateName": ["calcbox.kr", "나이 계산기", "만 나이 계산기"],
     "url": "https://calcbox.kr/",
-    "description": "만 나이·몇년생·띠·출생연도·영업일·전역일 등 한국인의 나이와 날짜 계산만 전문으로 다루는 사이트.",
     "inLanguage": "ko",
-    "publisher": {
-      "@type": "Organization",
-      "name": "한국인계산기",
-      "url": "https://calcbox.kr/"
-    }
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://calcbox.kr/?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    },
+    "publisher": { "@type": "Organization", "name": "한국인계산기", "url": "https://calcbox.kr/" }
   }
   </script>
 
-  <!-- Google AdSense 게시자 ID: ca-pub-7143828779500885 -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885"
-     crossorigin="anonymous"></script>
+  <!-- Google AdSense: ca-pub-7143828779500885 -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885" crossorigin="anonymous"></script>
 
-  <link rel="stylesheet" href="style.css?v=15">
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <!-- 상단 네비게이션 바 -->
-  <header class="topbar">
-    <div class="topbar-inner">
-      <a class="topbar-brand" href="/"><span class="tb-logo">🗓️</span> 한국인계산기</a>
-      <nav class="topbar-menu" aria-label="주요 메뉴">
-        <a href="#cat-blog">블로그</a>
-        <a href="#cat-age">나이 계산</a>
-        <a href="#cat-date">날짜 계산</a>
-        <a href="/guide/">사이트 안내</a>
-      </nav>
-      <div class="topbar-search">
-        <button type="button" class="topbar-search-btn" id="searchToggle" aria-label="사이트 검색 열기" aria-expanded="false">🔍</button>
-      </div>
-    </div>
-    <div class="topbar-searchbar" id="searchBar">
-      <form id="searchForm" action="https://www.google.com/search" method="get" target="_blank" rel="noopener" role="search">
-        <input type="text" name="q" id="searchInput" placeholder="사이트 내 검색 (예: 만 나이, 국민연금 수급 나이)" aria-label="사이트 검색어">
-        <button type="submit">검색</button>
-      </form>
-    </div>
-  </header>
+  <header id="site-header"></header>
 
-  <!-- 새 글 티커 -->
-  <div class="ticker" aria-label="새 글 안내">
-    <div class="ticker-inner">
-      <span class="ticker-badge">📌 새 글</span>
-      <div class="ticker-track" id="tickerTrack">
-        <a class="ticker-item active" href="/blog/zodiac-year-age/">십이지 띠로 나이·출생연도 찾기 — 내 띠는 몇년생·몇 살?</a>
-        <a class="ticker-item" href="/blog/elementary-school-age/">초등학교 입학 나이 — 몇년생이 몇 년에 입학?</a>
-        <a class="ticker-item" href="/blog/age-table-2026/">2026년 나이표 총정리 — 출생연도별 만 나이·띠</a>
-        <a class="ticker-item" href="/blog/rrn-age-decode/">주민등록번호로 나이·출생연도·성별 알아내는 법</a>
-        <a class="ticker-item" href="/blog/pension-start-age/">국민연금 수급 개시 나이 — 출생연도별 정리</a>
-      </div>
-      <div class="ticker-nav">
-        <button type="button" id="tickerPrev" aria-label="이전 글">‹</button>
-        <button type="button" id="tickerNext" aria-label="다음 글">›</button>
-      </div>
-    </div>
-  </div>
+  <main id="home-root"></main>
 
-  <header class="site-hero">
-    <h1>🗓️ 한국 나이·날짜 계산기</h1>
-    <p class="subtitle">만 나이·몇년생·띠·출생연도부터 영업일·전역일까지 — 한국인의 나이와 날짜 계산만 전문으로 다룹니다 (calcbox.kr)</p>
-  </header>
+  <footer id="site-footer"></footer>
 
-  <!-- 상단 광고 -->
-  <div class="ad-container" aria-label="광고">
-    <ins class="adsbygoogle"
-         style="display:block"
-         data-ad-client="ca-pub-7143828779500885"
-         data-ad-slot="0000000000"
-         data-ad-format="auto"
-         data-full-width-responsive="true"></ins>
-  </div>
-
-  <!-- 블로그 우선 2단 레이아웃 (본문 = 블로그 글 전체 / 우측 = 글 목록) -->
-  <div class="home-wide">
-    <nav class="category-chips" aria-label="카테고리">
-      <a href="#cat-blog"><span class="cc-emoji">📝</span> 나이·날짜 블로그</a>
-      <a href="#cat-age"><span class="cc-emoji">🎂</span> 나이 계산</a>
-      <a href="#cat-date"><span class="cc-emoji">📅</span> 날짜 계산</a>
-      <a href="#cat-about"><span class="cc-emoji">ℹ️</span> 사이트 소개</a>
-    </nav>
-
-    <div class="home-layout">
-      <!-- 본문: 블로그 글 전체 -->
-      <main class="home-main" id="cat-blog">
-        <h2 class="home-h2">📝 나이·날짜 블로그 — 전체 글</h2>
-        <p class="cat-desc">한국인이 자주 헷갈리는 나이·출생연도·띠와 날짜 계산을, 실제 검색 질문을 반영해 하나씩 깊이 있게 정리했습니다.</p>
-
-        <div class="blog-feature-list">
-          <a class="blog-feature-card" href="/blog/zodiac-year-age/">
-            <span class="bf-thumb"><img src="/blog/zodiac-year-age/hero.svg" alt="십이지 띠로 나이·출생연도 찾기" loading="lazy" width="1200" height="480"></span>
-            <span class="bf-title">십이지 띠로 나이·출생연도 찾기 — 내 띠, N띠는 몇년생·몇 살?</span>
-            <span class="bf-excerpt">열두 띠별 출생연도와 2026년 나이를 표로 한눈에. 띠로 나이 가늠할 때 헷갈리는 점까지.</span>
-            <span class="bf-date">2026.08.13</span>
-          </a>
-          <a class="blog-feature-card" href="/blog/elementary-school-age/">
-            <span class="bf-thumb"><img src="/blog/elementary-school-age/hero.svg" alt="초등학교 입학 나이 — 몇년생이 몇 년에 입학?" loading="lazy" width="1200" height="480"></span>
-            <span class="bf-title">초등학교 입학 나이 — 몇년생이 몇 년에 입학? (2026년 기준 표)</span>
-            <span class="bf-excerpt">출생연도별 초등학교 입학연도 표와 2026년 학년별 몇년생, 조기입학·유예까지 정리.</span>
-            <span class="bf-date">2026.08.13</span>
-          </a>
-          <a class="blog-feature-card" href="/blog/age-table-2026/">
-            <span class="bf-thumb"><img src="/blog/age-table-2026/hero.svg" alt="2026년 나이표 총정리" loading="lazy" width="1200" height="480"></span>
-            <span class="bf-title">2026년 나이표 총정리 — 출생연도별 올해 만 나이·띠 한눈에</span>
-            <span class="bf-excerpt">출생연도별 2026 만 나이·띠표. 연말연초에 왜 제일 헷갈리나, 나이로 출생연도 역산까지.</span>
-            <span class="bf-date">2026.07.27</span>
-          </a>
-          <a class="blog-feature-card" href="/blog/rrn-age-decode/">
-            <span class="bf-thumb"><img src="/blog/rrn-age-decode/hero.svg" alt="주민등록번호로 나이·성별 알아내기" loading="lazy" width="1200" height="480"></span>
-            <span class="bf-title">주민등록번호로 나이·출생연도·성별 알아내는 법</span>
-            <span class="bf-excerpt">뒷자리 첫 숫자로 세기·성별·나이 읽기 + 7자리 각 의미(6번째=신고순번), 지역번호 폐지까지.</span>
-            <span class="bf-date">2026.07.26</span>
-          </a>
-          <a class="blog-feature-card" href="/blog/milestone-ages/">
-            <span class="bf-thumb"><img src="/blog/milestone-ages/hero.svg" alt="환갑·칠순·팔순 나이 명칭" loading="lazy" width="1200" height="480"></span>
-            <span class="bf-title">환갑·진갑·칠순·팔순·구순은 몇 살? 나이별 기념 명칭 총정리</span>
-            <span class="bf-excerpt">환갑·칠순·팔순 몇 살? 만나이 통일돼도 칠순·팔순은 그대로 + 여행 대체 트렌드까지.</span>
-            <span class="bf-date">2026.07.25</span>
-          </a>
-          <a class="blog-feature-card" href="/blog/senior-benefits-age/">
-            <span class="bf-thumb"><img src="/blog/senior-benefits-age/hero.svg" alt="지하철 무임승차·경로우대 나이" loading="lazy" width="1200" height="480"></span>
-            <span class="bf-title">지하철 무임승차·경로우대 나이 총정리 (만 65세 혜택)</span>
-            <span class="bf-excerpt">지하철 무임·기초연금 만 65세 혜택. 자동 vs 신청 + 무임 연령 70세 상향 논의까지.</span>
-            <span class="bf-date">2026.07.24</span>
-          </a>
-          <a class="blog-feature-card" href="/blog/pension-start-age/">
-            <span class="bf-thumb"><img src="/blog/pension-start-age/hero.svg" alt="국민연금 수급 개시 나이" loading="lazy" width="1200" height="480"></span>
-            <span class="bf-title">국민연금 수급 개시 나이 — 출생연도별 노령연금 받는 나이 (2026)</span>
-            <span class="bf-excerpt">출생연도별 62~65세부터. 실제 얼마 받나(왜 짠지)·기초연금 구분·조기/연기수급까지.</span>
-            <span class="bf-date">2026.07.23</span>
-          </a>
-          <a class="blog-feature-card" href="/blog/birthyear-to-hakbeon/">
-            <span class="bf-thumb"><img src="/blog/birthyear-to-hakbeon/hero.svg" alt="몇년생 몇 학번 환산표" loading="lazy" width="1200" height="480"></span>
-            <span class="bf-title">몇년생 몇 학번? 출생연도–학번 환산표 (재수·빠른년생 포함)</span>
-            <span class="bf-excerpt">출생연도 + 19 = 학번. 재수·빠른년생·같은 학번 나이차 + 입사동기·후배 족보 꼬임까지.</span>
-            <span class="bf-date">2026.07.22</span>
-          </a>
-          <a class="blog-feature-card" href="/blog/fast-year-birth/">
-            <span class="bf-thumb"><img src="/blog/fast-year-birth/hero.svg" alt="빠른 년생 학년·나이 정리" loading="lazy" width="1200" height="480"></span>
-            <span class="bf-title">빠른 년생이란? 빠른 05·06년생 학년·나이 완전정리</span>
-            <span class="bf-excerpt">빠른 년생은 나이가 아니라 학년만 앞선다. 요즘 사회에선 어떻게 대하나(년도로 끊기·합의)까지.</span>
-            <span class="bf-date">2026.07.21</span>
-          </a>
-          <a class="blog-feature-card" href="/blog/age-types-korean/">
-            <span class="bf-thumb"><img src="/blog/age-types-korean/hero.svg" alt="만 나이·세는 나이·연 나이 차이" loading="lazy" width="1200" height="480"></span>
-            <span class="bf-title">만 나이 vs 세는 나이 vs 연 나이 차이 (2023 개정 후 완전정리)</span>
-            <span class="bf-excerpt">세 나이 차이와 '같은 년생 형·친구?', '몇년생으로 답하기', 통일 오해(연금·정년)까지.</span>
-            <span class="bf-date">2026.07.20</span>
-          </a>
-          <a class="blog-feature-card" href="/blog/birth-year-guide/">
-            <span class="bf-thumb"><img src="/blog/img/birth-year.png" alt="몇년생 계산기 사용법" loading="lazy" width="1280" height="1550"></span>
-            <span class="bf-title">몇년생 계산기 — 나이로 출생연도·띠 찾기 (나이 조견표)</span>
-            <span class="bf-excerpt">이제 나이 대신 '몇년생·띠'로 답하는 시대 — 나이↔출생연도↔띠 변환과 12띠표, 호적나이 주의점.</span>
-            <span class="bf-date">2026.07.06</span>
-          </a>
-          <a class="blog-feature-card" href="/blog/business-days-guide/">
-            <span class="bf-thumb"><img src="/blog/img/business-days.png" alt="영업일 계산기 사용법" loading="lazy" width="1280" height="1550"></span>
-            <span class="bf-title">영업일 계산기 사용법 — 주말·공휴일 제외 영업일 수 구하는 법</span>
-            <span class="bf-excerpt">주말·공휴일 제외 영업일 계산법 + 은행 '5영업일' 세는 법(대출 이자 예시)까지.</span>
-            <span class="bf-date">2026.07.04</span>
-          </a>
-          <a class="blog-feature-card" href="/blog/military-discharge/">
-            <span class="bf-thumb"><img src="/blog/img/military.png" alt="전역일 계산기 사용법" loading="lazy" width="1280" height="1762"></span>
-            <span class="bf-title">전역일 계산기 사용법 — 입대일로 전역일·전역 D-day 구하는 법</span>
-            <span class="bf-excerpt">입대일로 전역일·D-day 구하기. 군별 복무기간 + 미복귀 전역·징계로 당겨지거나 밀리는 경우까지.</span>
-            <span class="bf-date">2026.07.03</span>
-          </a>
-          <a class="blog-feature-card" href="/blog/age-calculator/">
-            <span class="bf-thumb"><img src="/blog/img/age.png" alt="만 나이 계산기 사용법" loading="lazy" width="1280" height="1550"></span>
-            <span class="bf-title">만 나이 계산기 사용법 — 만 나이·세는 나이 차이 한눈에</span>
-            <span class="bf-excerpt">생년월일로 만 나이 1초 계산. 계산에서 가장 많이 틀리는 3가지.</span>
-            <span class="bf-date">2026.06.29</span>
-          </a>
-        </div>
-
-        <a class="aside-more" href="/blog/">블로그 전체 보기 →</a>
-      </main>
-
-      <!-- 우측 사이드바: 전체 글 목록 + 계산기 바로가기 -->
-      <aside class="home-aside" aria-label="블로그 글 목록">
-        <div class="aside-box">
-          <h3 class="aside-title">📚 전체 글 목록</h3>
-          <ul class="aside-list">
-            <li><a href="/blog/zodiac-year-age/">십이지 띠로 나이·출생연도 찾기</a></li>
-            <li><a href="/blog/elementary-school-age/">초등학교 입학 나이 (몇년생)</a></li>
-            <li><a href="/blog/age-table-2026/">2026년 나이표 총정리</a></li>
-            <li><a href="/blog/rrn-age-decode/">주민번호로 나이·성별 알아내기</a></li>
-            <li><a href="/blog/milestone-ages/">환갑·칠순·팔순 나이</a></li>
-            <li><a href="/blog/senior-benefits-age/">경로우대·지하철 무임 나이</a></li>
-            <li><a href="/blog/pension-start-age/">국민연금 수급 개시 나이</a></li>
-            <li><a href="/blog/birthyear-to-hakbeon/">몇년생 몇 학번? 환산표</a></li>
-            <li><a href="/blog/fast-year-birth/">빠른 년생 완전정리</a></li>
-            <li><a href="/blog/age-types-korean/">만·세는·연 나이 차이</a></li>
-            <li><a href="/blog/birth-year-guide/">몇년생 계산기 사용법</a></li>
-            <li><a href="/blog/business-days-guide/">영업일 계산기 사용법</a></li>
-            <li><a href="/blog/military-discharge/">전역일 계산기 사용법</a></li>
-            <li><a href="/blog/age-calculator/">만 나이 계산기 사용법</a></li>
-          </ul>
-          <a class="aside-more" href="/blog/">블로그 전체 보기 →</a>
-        </div>
-
-        <div class="aside-box">
-          <h3 class="aside-title">🧮 계산기 바로가기</h3>
-          <ul class="aside-list">
-            <li><a href="/age/">🎂 만 나이 계산기</a></li>
-            <li><a href="/birth-year/">🗓️ 몇년생 계산기 (나이표)</a></li>
-            <li><a href="/business-days/">📅 영업일 계산기</a></li>
-            <li><a href="/military/">🎖️ 전역일 계산기</a></li>
-          </ul>
-        </div>
-      </aside>
-    </div>
-  </div>
-
-  <main class="container">
-    <!-- 본문 중간 광고 -->
-    <div class="ad-container" aria-label="광고">
-      <ins class="adsbygoogle"
-           style="display:block"
-           data-ad-client="ca-pub-7143828779500885"
-           data-ad-slot="1111111111"
-           data-ad-format="auto"
-           data-full-width-responsive="true"></ins>
-    </div>
-
-    <!-- 나이 계산 -->
-    <section class="category-section" id="cat-age">
-      <h2>🎂 나이 계산기</h2>
-      <p class="cat-desc">생년월일이나 나이만 입력하면 만 나이·세는 나이·출생연도·띠를 바로 계산합니다.</p>
-      <nav class="tool-grid" aria-label="나이 계산기 목록">
-        <a class="tool-card" href="/age/">
-          <span class="tc-icon">🎂</span>
-          <span class="tc-body"><strong>만 나이 계산기</strong><small>생년월일로 만 나이·세는 나이·띠·D-day</small></span>
-          <span class="tc-arrow">→</span>
-        </a>
-        <a class="tool-card" href="/birth-year/">
-          <span class="tc-icon">🗓️</span>
-          <span class="tc-body"><strong>몇년생 계산기 (나이표)</strong><small>나이로 출생연도·띠 찾기, 2026 나이 조견표</small></span>
-          <span class="tc-arrow">→</span>
-        </a>
-      </nav>
-    </section>
-
-    <!-- 날짜 계산 -->
-    <section class="category-section" id="cat-date">
-      <h2>📅 날짜 계산기</h2>
-      <p class="cat-desc">주말·공휴일을 반영한 영업일과, 입대일 기준 전역일·D-day를 계산합니다.</p>
-      <nav class="tool-grid" aria-label="날짜 계산기 목록">
-        <a class="tool-card" href="/business-days/">
-          <span class="tc-icon">📅</span>
-          <span class="tc-body"><strong>영업일 계산기</strong><small>주말·공휴일을 제외한 영업일 수</small></span>
-          <span class="tc-arrow">→</span>
-        </a>
-        <a class="tool-card" href="/military/">
-          <span class="tc-icon">🎖️</span>
-          <span class="tc-body"><strong>전역일 계산기</strong><small>입대일 기준 전역일·전역 D-day</small></span>
-          <span class="tc-arrow">→</span>
-        </a>
-      </nav>
-    </section>
-
-    <!-- 사이트 소개 -->
-    <section class="card info" id="cat-about">
-      <h2>한국인계산기는 '나이·날짜 계산' 전문 사이트입니다</h2>
-      <p><strong>한국인계산기</strong>(calcbox.kr)는 한국인이 가장 자주 헷갈리는 <strong>나이와 날짜 계산</strong>만 집중해서 다룹니다. 2023년 만 나이 통일 이후 만 나이·세는 나이·연 나이가 뒤섞여 혼란스러운 상황에서, 정확한 계산기와 알기 쉬운 가이드를 한 곳에 모았습니다.</p>
-      <h3>이 사이트에서 다루는 주제</h3>
-      <ul>
-        <li><strong>만 나이</strong> — 생년월일로 만 나이 계산, 만·세는·연 나이 차이 (2023 개정)</li>
-        <li><strong>몇년생·출생연도</strong> — 나이로 출생연도 찾기, 2026 나이표, 빠른 년생, 나이–학번 환산</li>
-        <li><strong>띠(십이지)</strong> — 띠로 나이·출생연도 찾기, 띠별 나이표</li>
-        <li><strong>나이 기준·제도</strong> — 국민연금 수급 나이, 경로우대(만 65세), 환갑·칠순·팔순, 주민번호로 나이 판별</li>
-        <li><strong>날짜 계산</strong> — 주말·공휴일 제외 영업일, 입대일 기준 전역일·D-day</li>
-      </ul>
-      <p>모든 글은 <strong>직접 작성한 원본 콘텐츠</strong>이며, 계산 결과는 참고용입니다. 국민연금·경로우대 등 제도 기준의 정확한 내용은 관련 기관에서 확인하시기 바랍니다.</p>
-    </section>
-  </main>
-
-  <!-- 생활정보 스타일 빠른 이동 밴드 -->
-  <section class="footer-quick" aria-label="나이·날짜 계산 바로가기">
-    <div class="footer-quick-inner">
-      <h2 class="footer-quick-title">🧭 나이·날짜 계산 바로가기</h2>
-      <div class="footer-quick-grid">
-        <a href="/age/">🎂 만 나이 계산기</a>
-        <a href="/birth-year/">🗓️ 몇년생 계산기</a>
-        <a href="/business-days/">📅 영업일 계산기</a>
-        <a href="/military/">🎖️ 전역일 계산기</a>
-        <a href="/blog/age-types-korean/">만·세는·연 나이 차이</a>
-        <a href="/blog/age-table-2026/">2026 나이표</a>
-        <a href="/blog/pension-start-age/">국민연금 수급 나이</a>
-        <a href="/blog/senior-benefits-age/">경로우대·지하철 무임</a>
-      </div>
-    </div>
-  </section>
-
-  <footer class="site-footer">
-    <div class="footer-brand"><span class="footer-logo">🗓️</span><span class="footer-brandname">한국인계산기</span></div>
-    <nav class="footer-links"><a href="/">홈</a> · <a href="/about/">운영자 소개</a> · <a href="/contact/">문의하기</a> · <a href="/guide/">사이트 안내</a> · <a href="/privacy/">개인정보처리방침</a> · <a href="/terms/">이용약관</a> · <a href="mailto:leehyosone180603@gmail.com">이메일</a></nav>
-    <div class="footer-biz">상호명 굿윌스토어 · 사업자등록번호 631-03-03874 · 대표 이효선 · 주소 부산 사하구 오작로 34<br>연락처 010-2934-1351 · 제휴문의 <a href="mailto:leehyosone180603@gmail.com">leehyosone180603@gmail.com</a></div>
-    <p class="footer-notice">한국인계산기의 모든 콘텐츠는 저작권법의 보호를 받으며, 무단 전재·복사·배포를 금합니다.</p>
-    <p class="footer-copy">© <span id="year"></span> 한국인계산기 (calcbox.kr) · 나이·날짜 계산 전문</p>
-  </footer>
-
-  <script>
-    document.getElementById("year").textContent = new Date().getFullYear();
-    // 상단 검색: 사이트 내 구글 검색
-    (function () {
-      var t = document.getElementById("searchToggle"), b = document.getElementById("searchBar"),
-          f = document.getElementById("searchForm"), i = document.getElementById("searchInput");
-      if (t && b) t.addEventListener("click", function () {
-        var open = b.classList.toggle("open");
-        t.setAttribute("aria-expanded", open ? "true" : "false");
-        if (open && i) i.focus();
-      });
-      if (f && i) f.addEventListener("submit", function () {
-        i.value = "site:calcbox.kr " + i.value;
-      });
-    })();
-    // 새 글 티커 회전
-    (function () {
-      var items = Array.prototype.slice.call(document.querySelectorAll(".ticker-item"));
-      if (items.length < 2) return;
-      var idx = 0, timer;
-      function show(n) {
-        idx = (n + items.length) % items.length;
-        items.forEach(function (el, k) { el.classList.toggle("active", k === idx); });
-      }
-      function next() { show(idx + 1); }
-      function prev() { show(idx - 1); }
-      function start() { timer = setInterval(next, 4000); }
-      function reset() { clearInterval(timer); start(); }
-      var pn = document.getElementById("tickerPrev"), nx = document.getElementById("tickerNext");
-      if (pn) pn.addEventListener("click", function () { prev(); reset(); });
-      if (nx) nx.addEventListener("click", function () { next(); reset(); });
-      start();
-    })();
-    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
-  </script>
+  <script src="/js/posts.js"></script>
+  <script src="/js/site.js"></script>
+  <script src="/js/home.js"></script>
 </body>
 </html>
