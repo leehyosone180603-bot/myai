@@ -26,7 +26,7 @@ var NAV_ORDER = ["age", "birthyear", "system", "date", "life", "column"];
 /* 글 목록: 최신 글이 배열 맨 위 */
 var POSTS = [
   { id: "zodiac-year-age", title: "십이지 띠로 나이·출생연도 찾기 — 내 띠, N띠는 몇년생·몇 살?", summary: "열두 띠별 출생연도와 2026년 나이를 표로 한눈에. 띠로 나이를 가늠할 때 헷갈리는 점까지 정리했습니다.", category: "birthyear", date: "2026.08.13", url: "/posts/zodiac-year-age.html", image: "/img/zodiac-year-age.jpg" },
-  { id: "elementary-school-age", title: "초등학교 입학 나이 — 몇년생이 몇 년에 입학? (2026년 기준 표)", summary: "출생연도별 초등학교 입학연도 표와 2026년 학년별 몇년생, 조기입학·유예까지 정리했습니다.", category: "birthyear", date: "2026.08.13", url: "/posts/elementary-school-age.html", image: "/img/elementary-school-age.svg" },
+  { id: "elementary-school-age", title: "초등학교 입학 나이 — 몇년생이 몇 년에 입학? (2026년 기준 표)", summary: "출생연도별 초등학교 입학연도 표와 2026년 학년별 몇년생, 조기입학·유예까지 정리했습니다.", category: "birthyear", date: "2026.08.13", url: "/posts/elementary-school-age.html", image: "/img/elementary-school-age.jpg" },
   { id: "age-table-2026", title: "2026년 나이표 총정리 — 출생연도별 올해 만 나이·띠 한눈에", summary: "출생연도별 2026 만 나이·띠표. 연말연초에 왜 제일 헷갈리는지, 나이로 출생연도 역산까지.", category: "age", date: "2026.07.27", url: "/posts/age-table-2026.html", image: "/img/age-table-2026.svg" },
   { id: "rrn-age-decode", title: "주민등록번호로 나이·출생연도·성별 알아내는 법", summary: "뒷자리 첫 숫자로 세기·성별·나이 읽기 + 7자리 각 의미(6번째=신고순번), 지역번호 폐지까지.", category: "age", date: "2026.07.26", url: "/posts/rrn-age-decode.html", image: "/img/rrn-age-decode.svg" },
   { id: "milestone-ages", title: "환갑·진갑·칠순·팔순·구순은 몇 살? 나이별 기념 명칭 총정리", summary: "환갑·칠순·팔순 몇 살? 만나이 통일돼도 칠순·팔순은 그대로 + 여행 대체 트렌드까지.", category: "system", date: "2026.07.25", url: "/posts/milestone-ages.html", image: "/img/milestone-ages.svg" },
