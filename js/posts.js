@@ -35,10 +35,10 @@ var POSTS = [
   { id: "birthyear-to-hakbeon", title: "몇년생 몇 학번? 출생연도–학번 환산표 (재수·빠른년생 포함)", summary: "출생연도 + 19 = 학번. 재수·빠른년생·같은 학번 나이차 + 입사동기·후배 족보 꼬임까지.", category: "birthyear", date: "2026.07.22", url: "/posts/birthyear-to-hakbeon.html", image: "/img/birthyear-to-hakbeon.jpg" },
   { id: "fast-year-birth", title: "빠른 년생이란? 빠른 05·06년생 학년·나이 완전정리", summary: "빠른 년생은 나이가 아니라 학년만 앞선다. 요즘 사회에선 어떻게 대하나(년도로 끊기·합의)까지.", category: "birthyear", date: "2026.07.21", url: "/posts/fast-year-birth.html", image: "/img/fast-year-birth.jpg" },
   { id: "age-types-korean", title: "만 나이 vs 세는 나이 vs 연 나이 차이 (2023 개정 후 완전정리)", summary: "세 나이 차이와 '같은 년생 형·친구?', '몇년생으로 답하기', 통일 오해(연금·정년)까지.", category: "age", date: "2026.07.20", url: "/posts/age-types-korean.html", image: "/img/age-types-korean.jpg" },
-  { id: "birth-year-guide", title: "몇년생 계산기 — 나이로 출생연도·띠 찾기 (나이 조견표)", summary: "이제 나이 대신 '몇년생·띠'로 답하는 시대 — 나이↔출생연도↔띠 변환과 12띠표, 호적나이 주의점.", category: "birthyear", date: "2026.07.06", url: "/posts/birth-year-guide.html", image: "/img/birth-year-guide.png" },
-  { id: "business-days-guide", title: "영업일 계산기 사용법 — 주말·공휴일 제외 영업일 수 구하는 법", summary: "주말·공휴일 제외 영업일 계산법 + 은행 '5영업일' 세는 법(대출 이자 예시)까지.", category: "date", date: "2026.07.04", url: "/posts/business-days-guide.html", image: "/img/business-days-guide.png" },
-  { id: "military-discharge", title: "전역일 계산기 사용법 — 입대일로 전역일·전역 D-day 구하는 법", summary: "입대일로 전역일·D-day 구하기. 군별 복무기간 + 미복귀 전역·징계로 당겨지거나 밀리는 경우까지.", category: "date", date: "2026.07.03", url: "/posts/military-discharge.html", image: "/img/military-discharge.png" },
-  { id: "age-calculator", title: "만 나이 계산기 사용법 — 만 나이·세는 나이 차이 한눈에", summary: "생년월일로 만 나이 1초 계산. 계산에서 가장 많이 틀리는 3가지.", category: "age", date: "2026.06.29", url: "/posts/age-calculator.html", image: "/img/age-calculator.png" }
+  { id: "birth-year-guide", title: "몇년생 계산기 — 나이로 출생연도·띠 찾기 (나이 조견표)", summary: "이제 나이 대신 '몇년생·띠'로 답하는 시대 — 나이↔출생연도↔띠 변환과 12띠표, 호적나이 주의점.", category: "birthyear", date: "2026.07.06", url: "/posts/birth-year-guide.html", image: "/img/birth-year-guide.jpg" },
+  { id: "business-days-guide", title: "영업일 계산기 사용법 — 주말·공휴일 제외 영업일 수 구하는 법", summary: "주말·공휴일 제외 영업일 계산법 + 은행 '5영업일' 세는 법(대출 이자 예시)까지.", category: "date", date: "2026.07.04", url: "/posts/business-days-guide.html", image: "/img/business-days-guide.jpg" },
+  { id: "military-discharge", title: "전역일 계산기 사용법 — 입대일로 전역일·전역 D-day 구하는 법", summary: "입대일로 전역일·D-day 구하기. 군별 복무기간 + 미복귀 전역·징계로 당겨지거나 밀리는 경우까지.", category: "date", date: "2026.07.03", url: "/posts/military-discharge.html", image: "/img/military-discharge.jpg" },
+  { id: "age-calculator", title: "만 나이 계산기 사용법 — 만 나이·세는 나이 차이 한눈에", summary: "생년월일로 만 나이 1초 계산. 계산에서 가장 많이 틀리는 3가지.", category: "age", date: "2026.06.29", url: "/posts/age-calculator.html", image: "/img/age-calculator.jpg" }
 ];
 
 /* 최신순 정렬된 배열 반환 (date 문자열 내림차순, 동일 날짜는 입력 순서 유지) */
