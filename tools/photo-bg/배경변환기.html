@@ -210,6 +210,33 @@
 
     <div>
       <section class="panel">
+        <h2>저장</h2>
+        <div class="row">
+          <div>
+            <h3 style="margin-top:0">파일 형식</h3>
+            <select class="select" id="formatSel">
+              <option value="png">PNG (투명 지원)</option>
+              <option value="jpg">JPG (용량 작음)</option>
+            </select>
+          </div>
+          <div>
+            <h3 style="margin-top:0">크기</h3>
+            <select class="select" id="sizeSel">
+              <option value="orig">원본 크기</option>
+              <option value="1000">1000 × 1000 정사각</option>
+              <option value="1500">1500 × 1500 정사각</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:14px;">
+          <button type="button" class="save" id="saveBtn">💾 내 컴퓨터에 저장</button>
+          <button type="button" class="btn wide" id="saveAllBtn">배경색 8종 한 번에 저장</button>
+          <button type="button" class="btn wide" id="newBtn">다른 사진 올리기</button>
+        </div>
+        <p class="hint">저장을 누르면 브라우저의 <strong>다운로드 폴더</strong>에 파일이 바로 저장됩니다.</p>
+      </section>
+
+      <section class="panel">
         <h2>배경 색상</h2>
         <div class="swatches" id="swatches"></div>
         <div class="customwrap">
@@ -270,33 +297,6 @@
           <button type="button" class="btn" id="compareBtn">원본 보기</button>
           <button type="button" class="btn" id="resetBtn">초기화</button>
         </div>
-      </section>
-
-      <section class="panel">
-        <h2>저장</h2>
-        <div class="row">
-          <div>
-            <h3 style="margin-top:0">파일 형식</h3>
-            <select class="select" id="formatSel">
-              <option value="png">PNG (투명 지원)</option>
-              <option value="jpg">JPG (용량 작음)</option>
-            </select>
-          </div>
-          <div>
-            <h3 style="margin-top:0">크기</h3>
-            <select class="select" id="sizeSel">
-              <option value="orig">원본 크기</option>
-              <option value="1000">1000 × 1000 정사각</option>
-              <option value="1500">1500 × 1500 정사각</option>
-            </select>
-          </div>
-        </div>
-        <div style="margin-top:14px;">
-          <button type="button" class="save" id="saveBtn">💾 내 컴퓨터에 저장</button>
-          <button type="button" class="btn wide" id="saveAllBtn">배경색 8종 한 번에 저장</button>
-          <button type="button" class="btn wide" id="newBtn">다른 사진 올리기</button>
-        </div>
-        <p class="hint">저장을 누르면 브라우저의 <strong>다운로드 폴더</strong>에 파일이 바로 저장됩니다.</p>
       </section>
     </div>
   </div>
