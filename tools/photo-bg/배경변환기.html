@@ -208,7 +208,7 @@
 </header>
 
 <div class="wrap">
-  <p class="privacy">🔒 사진은 인터넷으로 전송되지 않습니다. 열기부터 저장까지 모두 내 컴퓨터 안에서 처리됩니다.</p>
+  <p class="privacy" id="privacyNote">🔒 사진은 인터넷으로 전송되지 않습니다. 열기부터 저장까지 모두 내 컴퓨터 안에서 처리됩니다.</p>
 
   <div class="layout">
     <div>
@@ -261,7 +261,7 @@
           <button type="button" class="btn wide" id="newBtn">다른 사진 올리기</button>
           <button type="button" class="btn wide" id="altSaveBtn">저장이 안 되나요? 이미지로 꺼내기</button>
         </div>
-        <p class="hint">저장을 누르면 브라우저의 <strong>다운로드 폴더</strong>에 파일이 바로 저장됩니다.</p>
+        <p class="hint" id="saveHint">저장을 누르면 브라우저의 <strong>다운로드 폴더</strong>에 파일이 바로 저장됩니다.</p>
       </section>
 
       <section class="panel">
@@ -1278,15 +1278,45 @@
     }
   }
 
-  function download(canvas, filename) {
+  /* 웹(링크) 버전에서 제공되는 파일 저장 기능. 없으면 null 입니다. */
+  var hostSave = null;
+  function noteHostSave() {
+    if (!hostSave) return;
+    var sh = document.getElementById('saveHint');
+    if (sh) sh.innerHTML = '저장을 누르면 확인 창이 뜹니다. 확인하면 브라우저의 <strong>다운로드 폴더</strong>에 저장됩니다.';
+    var pv = document.getElementById('privacyNote');
+    if (pv) pv.textContent = '🔒 사진은 이 페이지(내 브라우저) 안에서 처리됩니다. 저장할 때만 만들어진 이미지가 브라우저로 전달됩니다.';
+  }
+  if (window.claude && typeof window.claude.use === 'function') {
+    try {
+      window.claude.use('downloads').then(function (d) { hostSave = d || null; noteHostSave(); },
+                                          function () { hostSave = null; });
+    } catch (e) {}
+  }
+
+  /* 한 장 저장. 끝나면(또는 실패하면) then 이 호출됩니다. */
+  function download(canvas, filename, then) {
     var isJpg = els.formatSel.value === 'jpg';
-    var a = document.createElement('a');
-    if (typeof a.download === 'undefined' || !window.URL || !URL.createObjectURL) {
-      showSaveFallback(canvas);           // 다운로드를 지원하지 않는 환경
-      return;
-    }
+    var done = function () { if (then) then(); };
+
     canvas.toBlob(function (blob) {
-      if (!blob) { showSaveFallback(canvas); return; }
+      if (!blob) { showSaveFallback(canvas); done(); return; }
+
+      if (hostSave) {                      // 링크로 연 웹 버전
+        hostSave.save({ filename: filename, data: blob }).then(function () {
+          toast('저장했습니다.');
+          done();
+        }, function (err) {
+          if (!err || err.code !== 'declined') showSaveFallback(canvas);
+          done();
+        });
+        return;
+      }
+
+      var a = document.createElement('a');
+      if (typeof a.download === 'undefined' || !window.URL || !URL.createObjectURL) {
+        showSaveFallback(canvas); done(); return;   // 다운로드를 지원하지 않는 환경
+      }
       try {
         var url = URL.createObjectURL(blob);
         a.href = url; a.download = filename;
@@ -1294,8 +1324,9 @@
         a.click();
         document.body.removeChild(a);
         setTimeout(function () { URL.revokeObjectURL(url); }, 8000);
+        setTimeout(done, 400);
       } catch (e) {
-        showSaveFallback(canvas);
+        showSaveFallback(canvas); done();
       }
     }, isJpg ? 'image/jpeg' : 'image/png', isJpg ? 0.92 : undefined);
   }
@@ -1304,7 +1335,7 @@
     if (!state.cut) { toast('먼저 사진을 올려 주세요.', true); return; }
     if (els.formatSel.value === 'jpg' && !state.bg.color) {
       toast('JPG 는 투명을 지원하지 않아 흰 배경으로 저장됩니다.');
-    } else {
+    } else if (!hostSave) {
       toast('저장했습니다. 다운로드 폴더를 확인하세요.');
     }
     download(buildExport(state.bg), fileNameFor(state.bg));
@@ -1312,11 +1343,13 @@
 
   function saveAll() {
     if (!state.cut) { toast('먼저 사진을 올려 주세요.', true); return; }
-    var list = PRESETS.slice(0, 8);
+    var list = PRESETS.slice(0, 8), i = 0;
     toast(list.length + '장을 순서대로 저장합니다.');
-    list.forEach(function (p, i) {
-      setTimeout(function () { download(buildExport(p), fileNameFor(p)); }, i * 600);
-    });
+    (function next() {
+      if (i >= list.length) { toast(list.length + '장 저장을 마쳤습니다.'); return; }
+      var p = list[i++];
+      download(buildExport(p), fileNameFor(p), next);
+    })();
   }
 
   /* ---------- 컨트롤 ---------- */
@@ -1551,6 +1584,7 @@
     });
 
     setBrush('off');
+    noteHostSave();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
