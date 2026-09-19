@@ -96,6 +96,11 @@
     position: absolute; left: 4px; top: 4px; background: rgba(43,45,66,.85); color: #fff;
     padding: 2px 8px; border-radius: 6px; font-size: .74rem; white-space: nowrap; pointer-events: none;
   }
+  .check {
+    display: flex; align-items: center; gap: 8px; margin-top: 10px;
+    font-size: .85rem; color: var(--text); cursor: pointer;
+  }
+  .check input { width: 16px; height: 16px; accent-color: var(--primary); }
   .ratios { display: flex; flex-wrap: wrap; gap: 6px; }
   .btn.small { padding: 6px 10px; font-size: .8rem; flex: 0 0 auto; }
 
@@ -260,6 +265,14 @@
       </section>
 
       <section class="panel">
+        <h2>딱지 지우기</h2>
+        <button type="button" class="btn wide" style="margin-top:0;" id="badgeBtn">✖️ ×2 같은 동그란 딱지 지우기</button>
+        <label class="check"><input type="checkbox" id="badgeAuto" checked> 사진을 올릴 때 자동으로 지우기</label>
+        <p class="hint">상품 사진 모서리에 붙은 검정 동그라미 딱지(×2 등)를 찾아 지웁니다.
+          못 찾거나 모양이 다르면 아래 <strong>지우개 브러시</strong>로 칠해 지우세요. 되돌리기는 Ctrl+Z.</p>
+      </section>
+
+      <section class="panel">
         <h2>배경 색상</h2>
         <div class="swatches" id="swatches"></div>
         <div class="customwrap">
@@ -308,6 +321,8 @@
         (웹페이지 사진 우클릭 → '이미지 복사', 화면 캡처, 탐색기에서 복사한 파일 모두 됩니다.) 올리는 즉시 배경을 자동 인식합니다.</li>
       <li><strong>자르기</strong> — [자르기 시작] 후 사각형을 끌어 범위를 정하고 [잘라내기 적용](Enter).
         비율(1:1·4:3·3:4·16:9) 고정, [제품에 맞춰] 자동 범위도 됩니다. [초기화]로 원래 사진 복구.</li>
+      <li><strong>딱지 지우기</strong> — 상품 사진 모서리의 검정 동그라미 딱지(×2 등)는 사진을 올릴 때 자동으로 지워집니다.
+        (자동 지우기 체크 해제 가능 / [✖️ ×2 같은 동그란 딱지 지우기] 버튼으로 직접 실행 / 되돌리기 Ctrl+Z)</li>
       <li><strong>배경 고르기</strong> — [배경 지우기(투명)], 흰색, 회색, 베이지 등 버튼을 누르면 바로 바뀝니다.</li>
       <li><strong>다듬기</strong> — 배경이 남거나 제품이 잘리면 '배경 인식 강도'를 조절하고, 남는 부분은 지우개·복원 브러시로 칠합니다. (되돌리기 Ctrl+Z)</li>
       <li><strong>저장</strong> — 형식·크기를 고르고 [내 컴퓨터에 저장] (단축키 Ctrl+S). 다운로드 폴더에 저장됩니다.</li>
@@ -510,6 +525,7 @@
     toast(state.fillRatio > 0.97
       ? '배경과 제품 색이 비슷합니다. 강도를 낮춰 보세요.'
       : '배경을 인식했습니다. 색상 버튼으로 바꿔 보세요.');
+    setTimeout(badgePass, 40);
   }
 
   /* ---------- 배경 대표색 (테두리 k-means) ---------- */
@@ -723,6 +739,145 @@
       ctx.drawImage(state.cutCanvas, 0, 0);
     }
     c.classList.toggle('is-transparent', !showSrc && !state.bg.color);
+  }
+
+  /* ---------- 딱지(배지) 지우기 ---------- */
+  /* 상품 사진 위의 '×2' 같은 동그란 딱지(배지)를 찾습니다.
+     어두운 원을 직접 찾아내므로, 딱지가 제품의 어두운 부분과 붙어 있어도 잡힙니다. */
+  function findBadge(data, w, h, alphaSrc) {
+    var DARK = 110;
+
+    // 1) 속도를 위해 400px 이하로 줄인 흑백 이미지를 만듭니다.
+    var scale = Math.min(1, 400 / Math.max(w, h));
+    var sw = Math.max(1, Math.round(w * scale)), sh = Math.max(1, Math.round(h * scale));
+    var g = new Uint8ClampedArray(sw * sh);   // 밝기
+    var c8 = new Uint8ClampedArray(sw * sh);  // 색기(채도) — 검정 딱지는 0 에 가깝습니다
+    var a = new Uint8ClampedArray(sw * sh);
+    for (var y = 0; y < sh; y++) {
+      var sy = Math.min(h - 1, Math.floor(y / scale));
+      for (var x = 0; x < sw; x++) {
+        var sx = Math.min(w - 1, Math.floor(x / scale));
+        var o = (sy * w + sx) * 4;
+        var R = data[o], G = data[o + 1], B = data[o + 2];
+        g[y * sw + x] = 0.299 * R + 0.587 * G + 0.114 * B;
+        c8[y * sw + x] = Math.max(R, G, B) - Math.min(R, G, B);
+        a[y * sw + x] = alphaSrc ? alphaSrc[o + 3] : data[o + 3];
+      }
+    }
+
+    var minDim = Math.min(sw, sh);
+    var rMin = Math.max(4, Math.round(minDim * 0.035));
+    var rMax = Math.round(minDim * 0.14);
+    var COS = [], SIN = [], A = 16, i;
+    for (i = 0; i < A; i++) { COS.push(Math.cos(i * 2 * Math.PI / A)); SIN.push(Math.sin(i * 2 * Math.PI / A)); }
+
+    // 검정 딱지: 어둡고(밝기 낮음) 색이 거의 없는(회색·검정) 픽셀만 인정합니다.
+    // 빨강·남색처럼 어둡지만 색이 있는 제품은 딱지로 보지 않습니다.
+    function isDark(px, py) {
+      if (px < 0 || py < 0 || px >= sw || py >= sh) return -1;       // 바깥
+      var k = py * sw + px;
+      if (a[k] < 40) return -1;
+      return (g[k] < DARK && c8[k] <= 45) ? 1 : 0;
+    }
+
+    function lumAt(px, py) {
+      if (px < 0 || py < 0 || px >= sw || py >= sh) return 255;
+      return g[py * sw + px];
+    }
+
+    /* 원 후보 점수: 안쪽은 어둡고, 바깥 테두리는 어둡지 않아야 합니다. */
+    function scoreAt(cx, cy, r) {
+      var inDark = 0, inAll = 0, sumL = 0, j, t;
+      var rings = [0.25, 0.5, 0.72, 0.88];
+      for (t = 0; t < rings.length; t++) {
+        for (j = 0; j < A; j++) {
+          var qx = Math.round(cx + COS[j] * r * rings[t]), qy = Math.round(cy + SIN[j] * r * rings[t]);
+          var v = isDark(qx, qy);
+          if (v < 0) return null;                                     // 이미지 밖이면 제외
+          inAll++; sumL += lumAt(qx, qy); if (v === 1) inDark++;
+        }
+      }
+      var d0 = isDark(Math.round(cx), Math.round(cy));
+      if (d0 < 0) return null;
+      inAll++; sumL += lumAt(Math.round(cx), Math.round(cy)); if (d0 === 1) inDark++;
+      if (sumL / inAll > 110) return null;                            // 전체적으로 충분히 어두워야 함
+
+      var outLight = 0, outAll = 0;
+      for (t = 0; t < 2; t++) {
+        var rr = r * (t === 0 ? 1.22 : 1.45);
+        for (j = 0; j < A; j++) {
+          var v2 = isDark(Math.round(cx + COS[j] * rr), Math.round(cy + SIN[j] * rr));
+          if (v2 < 0) continue;                                       // 사진 밖은 무시
+          outAll++; if (v2 === 0) outLight++;
+        }
+      }
+      var inner = inDark / inAll;
+      var outer = outAll ? outLight / outAll : 0;
+      if (inner < 0.72 || outer < 0.5) return null;
+      return inner * 0.65 + outer * 0.35;
+    }
+
+    /* 모서리 쪽(가운데 제외)만 훑습니다. 오른쪽 위를 가장 우선합니다. */
+    function cornerBonus(cx, cy) {
+      return (cx / sw) * 0.5 + (1 - cy / sh) * 0.5;
+    }
+
+    var best = null;
+    function scan(step, rStep, x0, x1, y0, y1, rLo, rHi) {
+      for (var cy = y0; cy <= y1; cy += step) {
+        for (var cx = x0; cx <= x1; cx += step) {
+          var ex = Math.min(cx, sw - cx) / sw, ey = Math.min(cy, sh - cy) / sh;
+          if (ex > 0.42 && ey > 0.42) continue;                       // 사진 한가운데는 제외
+          for (var r = rLo; r <= rHi; r += rStep) {
+            var s = scoreAt(cx, cy, r);
+            if (s === null) continue;
+            var total = s + cornerBonus(cx, cy) * 0.25;
+            if (!best || total > best.total) best = { cx: cx, cy: cy, r: r, s: s, total: total };
+          }
+        }
+      }
+    }
+
+    scan(3, 2, rMin, sw - rMin, rMin, sh - rMin, rMin, rMax);
+    if (!best) return null;
+    // 주변을 촘촘히 다시 훑어 중심·반지름을 다듬습니다.
+    var b0 = best; best = null;
+    scan(1, 1, Math.max(rMin, b0.cx - 4), Math.min(sw - rMin, b0.cx + 4),
+         Math.max(rMin, b0.cy - 4), Math.min(sh - rMin, b0.cy + 4),
+         Math.max(rMin, b0.r - 3), Math.min(rMax, b0.r + 3));
+    if (!best) best = b0;
+
+    return {
+      cx: best.cx / scale, cy: best.cy / scale, r: best.r / scale,
+      score: best.s, inner: best.s
+    };
+  }
+
+  /* 찾은 딱지를 지웁니다. 지운 자리는 배경으로 처리됩니다. */
+  function removeBadge(silent) {
+    if (!state.src) { if (!silent) toast('먼저 사진을 올려 주세요.', true); return false; }
+    var b = findBadge(state.src.data, state.w, state.h, state.cut ? state.cut.data : null);
+    if (!b) {
+      if (!silent) toast('동그란 딱지를 찾지 못했습니다. 지우개 브러시로 직접 지워 주세요.', true);
+      return false;
+    }
+    pushUndo();
+    strokeBox = null;
+    stampDisc(b.cx, b.cy, b.r * 1.12 + 2, -1);   // 테두리까지 넉넉히
+    strokeBox = null;
+    buildCutout();
+    if (!silent) toast('딱지를 지웠습니다. 잘못 지웠으면 되돌리기(Ctrl+Z).');
+    return true;
+  }
+
+  /* 사진을 새로 올렸을 때: 자동으로 지우거나, 찾았다고 알려 줍니다. */
+  function badgePass() {
+    if (!state.src) return;
+    if (els.badgeAuto.checked) {
+      if (removeBadge(true)) toast('오른쪽 위 딱지를 자동으로 지웠습니다. 되돌리려면 Ctrl+Z.');
+    } else if (findBadge(state.src.data, state.w, state.h, state.cut ? state.cut.data : null)) {
+      toast('동그란 딱지가 보입니다. [딱지 지우기]를 누르면 지워집니다.');
+    }
   }
 
   /* ---------- 자르기 ---------- */
@@ -1153,7 +1308,7 @@
      'srcInfo', 'toast', 'fileInput', 'dropZone', 'brushCursor', 'view', 'emptyState',
      'tolRange', 'tolVal', 'featherRange', 'featherVal', 'brushSize', 'brushSizeVal', 'pickBtn',
      'pasteBtn', 'cropLayer', 'cropBox', 'cropSize', 'cropTools', 'cropBtn', 'autoCropBtn',
-     'cropCancel', 'cropApply', 'ratioBtns'
+     'cropCancel', 'cropApply', 'ratioBtns', 'badgeBtn', 'badgeAuto'
     ].forEach(function (id) { els[id] = $(id); });
     els.empty = els.emptyState;
     els.canvas = els.view;
@@ -1239,6 +1394,7 @@
       startCrop(autoCropBox());
       toast('제품에 맞춰 범위를 잡았습니다. [잘라내기 적용]을 누르세요.');
     });
+    els.badgeBtn.addEventListener('click', function () { removeBadge(false); });
     els.cropApply.addEventListener('click', applyCrop);
     els.cropCancel.addEventListener('click', cancelCrop);
     els.ratioBtns.addEventListener('click', function (e) {
