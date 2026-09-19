@@ -160,6 +160,28 @@
     background: #fff; font-family: inherit; font-size: .88rem; color: var(--text);
   }
 
+  /* 다운로드가 막힌 환경에서 쓰는 대체 저장 화면 */
+  .modal {
+    position: fixed; inset: 0; z-index: 60; display: flex;
+    align-items: center; justify-content: center; padding: 20px;
+    background: rgba(20, 24, 40, .6);
+  }
+  .modal[hidden] { display: none; }
+  .modal-box {
+    background: #fff; border-radius: 14px; padding: 20px; max-width: 560px; width: 100%;
+    max-height: 90vh; overflow: auto; box-shadow: 0 18px 50px rgba(0,0,0,.3);
+  }
+  .modal-box h3 { margin: 0 0 8px; font-size: 1.05rem; color: var(--text); }
+  .modal-box p { margin: 0 0 12px; font-size: .9rem; color: var(--muted); }
+  .modal-box img {
+    max-width: 100%; display: block; margin: 0 auto 14px; border: 1px solid var(--border);
+    border-radius: 8px;
+    background-image:
+      linear-gradient(45deg, #e6e9ef 25%, transparent 25%, transparent 75%, #e6e9ef 75%),
+      linear-gradient(45deg, #e6e9ef 25%, transparent 25%, transparent 75%, #e6e9ef 75%);
+    background-size: 20px 20px; background-position: 0 0, 10px 10px; background-color: #fff;
+  }
+
   .toast {
     position: fixed; left: 50%; bottom: 28px; transform: translate(-50%,16px);
     background: #2b2d42; color: #fff; padding: 11px 18px; border-radius: 999px;
@@ -237,6 +259,7 @@
           <button type="button" class="save" id="saveBtn">💾 내 컴퓨터에 저장</button>
           <button type="button" class="btn wide" id="saveAllBtn">배경색 8종 한 번에 저장</button>
           <button type="button" class="btn wide" id="newBtn">다른 사진 올리기</button>
+          <button type="button" class="btn wide" id="altSaveBtn">저장이 안 되나요? 이미지로 꺼내기</button>
         </div>
         <p class="hint">저장을 누르면 브라우저의 <strong>다운로드 폴더</strong>에 파일이 바로 저장됩니다.</p>
       </section>
@@ -344,6 +367,16 @@
       <li>매번 같은 폴더에 저장하려면 브라우저 설정에서 다운로드 위치를 지정해 두면 됩니다.</li>
     </ul>
   </section>
+</div>
+
+<div class="modal" id="saveModal" hidden>
+  <div class="modal-box">
+    <h3>이미지로 저장하기</h3>
+    <p>아래 그림을 <strong>마우스 오른쪽 클릭 → '이미지를 다른 이름으로 저장'</strong> 하면 컴퓨터에 저장됩니다.
+      (휴대폰은 그림을 길게 눌러 '이미지 저장')</p>
+    <img id="saveImg" alt="변환 결과 이미지">
+    <button type="button" class="btn wide" id="saveModalClose">닫기</button>
+  </div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -1233,17 +1266,37 @@
     return baseName(state.fileName) + '_배경-' + preset.label.replace(/\s/g, '') + ext;
   }
 
+  /* 결과를 그림으로 띄워 우클릭 저장할 수 있게 합니다.
+     (앱 안의 미리보기처럼 다운로드가 막힌 환경에서도 저장할 수 있게 하는 대비책) */
+  function showSaveFallback(canvas) {
+    var isJpg = els.formatSel.value === 'jpg';
+    try {
+      els.saveImg.src = canvas.toDataURL(isJpg ? 'image/jpeg' : 'image/png', isJpg ? 0.92 : undefined);
+      els.saveModal.hidden = false;
+    } catch (e) {
+      toast('저장에 실패했습니다. 브라우저(크롬·엣지)에서 열어 주세요.', true);
+    }
+  }
+
   function download(canvas, filename) {
     var isJpg = els.formatSel.value === 'jpg';
+    var a = document.createElement('a');
+    if (typeof a.download === 'undefined' || !window.URL || !URL.createObjectURL) {
+      showSaveFallback(canvas);           // 다운로드를 지원하지 않는 환경
+      return;
+    }
     canvas.toBlob(function (blob) {
-      if (!blob) { toast('저장에 실패했습니다.', true); return; }
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url; a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+      if (!blob) { showSaveFallback(canvas); return; }
+      try {
+        var url = URL.createObjectURL(blob);
+        a.href = url; a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 8000);
+      } catch (e) {
+        showSaveFallback(canvas);
+      }
     }, isJpg ? 'image/jpeg' : 'image/png', isJpg ? 0.92 : undefined);
   }
 
@@ -1341,7 +1394,8 @@
      'srcInfo', 'toast', 'fileInput', 'dropZone', 'brushCursor', 'view', 'emptyState',
      'tolRange', 'tolVal', 'featherRange', 'featherVal', 'brushSize', 'brushSizeVal', 'pickBtn',
      'pasteBtn', 'cropLayer', 'cropBox', 'cropSize', 'cropTools', 'cropBtn', 'autoCropBtn',
-     'cropCancel', 'cropApply', 'ratioBtns', 'badgeBtn', 'badgeCropBtn', 'badgeMode'
+     'cropCancel', 'cropApply', 'ratioBtns', 'badgeBtn', 'badgeCropBtn', 'badgeMode',
+     'altSaveBtn', 'saveModal', 'saveImg', 'saveModalClose'
     ].forEach(function (id) { els[id] = $(id); });
     els.empty = els.emptyState;
     els.canvas = els.view;
@@ -1453,6 +1507,14 @@
     els.undoBtn.addEventListener('click', undo);
     els.resetBtn.addEventListener('click', reset);
     els.saveBtn.addEventListener('click', saveCurrent);
+    els.altSaveBtn.addEventListener('click', function () {
+      if (!state.cut) { toast('먼저 사진을 올려 주세요.', true); return; }
+      showSaveFallback(buildExport(state.bg));
+    });
+    els.saveModalClose.addEventListener('click', function () { els.saveModal.hidden = true; });
+    els.saveModal.addEventListener('click', function (e) {
+      if (e.target === els.saveModal) els.saveModal.hidden = true;
+    });
     els.saveAllBtn.addEventListener('click', saveAll);
 
     function compareOn() {
@@ -1479,6 +1541,7 @@
     els.canvas.addEventListener('pointerleave', function () { els.cursor.hidden = true; });
 
     document.addEventListener('keydown', function (e) {
+      if (!els.saveModal.hidden && e.key === 'Escape') { els.saveModal.hidden = true; return; }
       if (crop.on && e.key === 'Escape') { e.preventDefault(); cancelCrop(); return; }
       if (crop.on && e.key === 'Enter') { e.preventDefault(); applyCrop(); return; }
       if (!(e.ctrlKey || e.metaKey)) return;
