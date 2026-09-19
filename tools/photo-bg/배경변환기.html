@@ -265,11 +265,19 @@
       </section>
 
       <section class="panel">
-        <h2>딱지 지우기</h2>
-        <button type="button" class="btn wide" style="margin-top:0;" id="badgeBtn">✖️ ×2 같은 동그란 딱지 지우기</button>
-        <label class="check"><input type="checkbox" id="badgeAuto" checked> 사진을 올릴 때 자동으로 지우기</label>
-        <p class="hint">상품 사진 모서리에 붙은 검정 동그라미 딱지(×2 등)를 찾아 지웁니다.
-          못 찾거나 모양이 다르면 아래 <strong>지우개 브러시</strong>로 칠해 지우세요. 되돌리기는 Ctrl+Z.</p>
+        <h2>딱지(×2) 처리</h2>
+        <button type="button" class="btn wide" style="margin-top:0;" id="badgeBtn">✖️ 딱지만 지우기</button>
+        <button type="button" class="btn wide" id="badgeCropBtn">✂️ 딱지 왼쪽에서 오른쪽 전부 자르기</button>
+        <h3>사진을 올릴 때 자동으로</h3>
+        <select class="select" id="badgeMode">
+          <option value="cropRight">딱지 오른쪽 잘라내기</option>
+          <option value="erase">딱지만 지우기</option>
+          <option value="none">아무것도 안 함</option>
+        </select>
+        <p class="hint">상품 사진 모서리의 검정 동그라미 딱지(×2 등)를 찾습니다.
+          <strong>잘라내기</strong>는 딱지 왼쪽 가장자리부터 오른쪽 전체를 잘라 없애고,
+          <strong>지우기</strong>는 딱지 자리만 배경으로 바꿉니다.
+          자른 사진은 [초기화]로, 지운 딱지는 Ctrl+Z 로 되돌립니다.</p>
       </section>
 
       <section class="panel">
@@ -321,8 +329,10 @@
         (웹페이지 사진 우클릭 → '이미지 복사', 화면 캡처, 탐색기에서 복사한 파일 모두 됩니다.) 올리는 즉시 배경을 자동 인식합니다.</li>
       <li><strong>자르기</strong> — [자르기 시작] 후 사각형을 끌어 범위를 정하고 [잘라내기 적용](Enter).
         비율(1:1·4:3·3:4·16:9) 고정, [제품에 맞춰] 자동 범위도 됩니다. [초기화]로 원래 사진 복구.</li>
-      <li><strong>딱지 지우기</strong> — 상품 사진 모서리의 검정 동그라미 딱지(×2 등)는 사진을 올릴 때 자동으로 지워집니다.
-        (자동 지우기 체크 해제 가능 / [✖️ ×2 같은 동그란 딱지 지우기] 버튼으로 직접 실행 / 되돌리기 Ctrl+Z)</li>
+      <li><strong>딱지(×2) 처리</strong> — 상품 사진 모서리의 검정 동그라미 딱지를 찾아, 사진을 올릴 때 자동으로
+        <strong>딱지 왼쪽부터 오른쪽 전체를 잘라냅니다</strong>. 딱지 자리만 지우거나 아무것도 안 하도록
+        [사진을 올릴 때 자동으로] 에서 바꿀 수 있고, 버튼으로 직접 실행해도 됩니다.
+        자른 것은 [초기화], 지운 것은 Ctrl+Z 로 되돌립니다.</li>
       <li><strong>배경 고르기</strong> — [배경 지우기(투명)], 흰색, 회색, 베이지 등 버튼을 누르면 바로 바뀝니다.</li>
       <li><strong>다듬기</strong> — 배경이 남거나 제품이 잘리면 '배경 인식 강도'를 조절하고, 남는 부분은 지우개·복원 브러시로 칠합니다. (되돌리기 Ctrl+Z)</li>
       <li><strong>저장</strong> — 형식·크기를 고르고 [내 컴퓨터에 저장] (단축키 Ctrl+S). 다운로드 폴더에 저장됩니다.</li>
@@ -870,13 +880,36 @@
     return true;
   }
 
-  /* 사진을 새로 올렸을 때: 자동으로 지우거나, 찾았다고 알려 줍니다. */
+  /* 딱지 왼쪽 가장자리부터 오른쪽 전체를 잘라냅니다. */
+  function cropRightOfBadge(silent) {
+    if (!state.src) { if (!silent) toast('먼저 사진을 올려 주세요.', true); return false; }
+    var b = findBadge(state.src.data, state.w, state.h, state.cut ? state.cut.data : null);
+    if (!b) {
+      if (!silent) toast('동그란 딱지를 찾지 못했습니다. [자르기 시작]으로 직접 잘라 주세요.', true);
+      return false;
+    }
+    var left = Math.round(b.cx - b.r - 2);      // 딱지 원의 왼쪽 가장자리
+    if (left < state.w * 0.2) {
+      if (!silent) toast('딱지가 사진 왼쪽에 치우쳐 있어 자르지 않았습니다.', true);
+      return false;
+    }
+    if (left >= state.w) { if (!silent) toast('자를 부분이 없습니다.'); return false; }
+    crop.x = 0; crop.y = 0; crop.w = left; crop.h = state.h;
+    applyCrop();
+    toast('딱지 왼쪽 기준으로 오른쪽을 잘랐습니다. 되돌리려면 [초기화].');
+    return true;
+  }
+
+  /* 사진을 새로 올렸을 때: 설정한 방식으로 자동 처리합니다. */
   function badgePass() {
     if (!state.src) return;
-    if (els.badgeAuto.checked) {
-      if (removeBadge(true)) toast('오른쪽 위 딱지를 자동으로 지웠습니다. 되돌리려면 Ctrl+Z.');
+    var mode = els.badgeMode.value;
+    if (mode === 'cropRight') {
+      cropRightOfBadge(true) && toast('딱지 오른쪽을 자동으로 잘랐습니다. 되돌리려면 [초기화].');
+    } else if (mode === 'erase') {
+      if (removeBadge(true)) toast('딱지를 자동으로 지웠습니다. 되돌리려면 Ctrl+Z.');
     } else if (findBadge(state.src.data, state.w, state.h, state.cut ? state.cut.data : null)) {
-      toast('동그란 딱지가 보입니다. [딱지 지우기]를 누르면 지워집니다.');
+      toast('동그란 딱지가 보입니다. [딱지] 버튼으로 지우거나 자를 수 있어요.');
     }
   }
 
@@ -1308,7 +1341,7 @@
      'srcInfo', 'toast', 'fileInput', 'dropZone', 'brushCursor', 'view', 'emptyState',
      'tolRange', 'tolVal', 'featherRange', 'featherVal', 'brushSize', 'brushSizeVal', 'pickBtn',
      'pasteBtn', 'cropLayer', 'cropBox', 'cropSize', 'cropTools', 'cropBtn', 'autoCropBtn',
-     'cropCancel', 'cropApply', 'ratioBtns', 'badgeBtn', 'badgeAuto'
+     'cropCancel', 'cropApply', 'ratioBtns', 'badgeBtn', 'badgeCropBtn', 'badgeMode'
     ].forEach(function (id) { els[id] = $(id); });
     els.empty = els.emptyState;
     els.canvas = els.view;
@@ -1395,6 +1428,15 @@
       toast('제품에 맞춰 범위를 잡았습니다. [잘라내기 적용]을 누르세요.');
     });
     els.badgeBtn.addEventListener('click', function () { removeBadge(false); });
+    els.badgeCropBtn.addEventListener('click', function () { cropRightOfBadge(false); });
+    // 고른 자동 처리 방식을 다음에도 기억합니다.
+    try {
+      var saved = localStorage.getItem('photobg.badgeMode');
+      if (saved) els.badgeMode.value = saved;
+    } catch (err) {}
+    els.badgeMode.addEventListener('change', function () {
+      try { localStorage.setItem('photobg.badgeMode', this.value); } catch (err) {}
+    });
     els.cropApply.addEventListener('click', applyCrop);
     els.cropCancel.addEventListener('click', cancelCrop);
     els.ratioBtns.addEventListener('click', function (e) {
