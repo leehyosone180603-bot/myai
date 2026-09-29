@@ -44,7 +44,15 @@ AMOUNT_KEYS = ["결제금액합계", "결제금액", "결제금액합계(원)"]
 SHIP_KEYS = ["결제배송비", "배송비"]
 CATEGORY_KEYS = ["상품카테고리", "카테고리", "상품분류", "분류"]
 ORDER_NO_KEYS = ["주문번호", "마켓주문번호"]
+# 찾기(검색) 대상 열 후보
+SELLER_KEYS = ["판매아이디", "판매자아이디", "마켓아이디", "판매자아이디(이메일)",
+               "판매자계정", "판매자", "주문자아이디", "구매자아이디", "아이디"]
+PRODUCT_KEYS = ["상품명", "상품이름", "상품명(옵션)", "품명", "상품"]
 DEFAULT_BIG_THRESHOLD = 10_000_000                # 1천만원
+
+# 기본으로 찾을 값 (사용자 요청)
+DEFAULT_FIND_SELLER = "tmdgml153@gmail.com"
+DEFAULT_FIND_PRODUCT = "무알콜 맥주맛 음료 하이트 제로 350ml 24개"
 
 
 # ---------------------------------------------------------------------------
@@ -303,6 +311,70 @@ def analyze_sales(headers, rows,
 def rank_by_sales(seq_results):
     """[{number, host, url, sales, normal_count, ...}] 을 매출 내림차순 정렬."""
     return sorted(seq_results, key=lambda r: r.get("sales", 0.0), reverse=True)
+
+
+# ---------------------------------------------------------------------------
+# 찾기(검색): 판매 아이디 / 상품명
+# ---------------------------------------------------------------------------
+
+def _norm(s):
+    """공백 제거 + 소문자화. 이메일/상품명을 느슨하게 비교하기 위함."""
+    return re.sub(r"\s+", "", str(s or "")).lower()
+
+
+def search_terms(headers, rows, seller_query="", product_query="",
+                 seller_keys=None, product_keys=None):
+    """한 순번(엑셀 1개)에서 판매 아이디 / 상품명을 찾는다.
+
+    - 공백/대소문자를 무시하고 '포함(contains)' 방식으로 비교
+    - 지정 열을 찾지 못하면 그 항목은 '모든 열'에서 검색(전체 열 폴백)
+
+    반환 dict:
+        seller_col(str), product_col(str),
+        seller_matches(int), product_matches(int),
+        seller_samples(list[row]), product_samples(list[row])
+    """
+    seller_keys = seller_keys or SELLER_KEYS
+    product_keys = product_keys or PRODUCT_KEYS
+    out = {
+        "seller_col": "", "product_col": "",
+        "seller_matches": 0, "product_matches": 0,
+        "seller_samples": [], "product_samples": [],
+    }
+    if not headers:
+        return out
+
+    i_seller = find_col(headers, seller_keys) if seller_query else -1
+    i_prod = find_col(headers, product_keys) if product_query else -1
+    if seller_query:
+        out["seller_col"] = headers[i_seller] if i_seller >= 0 else "(전체 열 검색)"
+    if product_query:
+        out["product_col"] = headers[i_prod] if i_prod >= 0 else "(전체 열 검색)"
+
+    sq = _norm(seller_query)
+    pq = _norm(product_query)
+
+    def cell(row, idx):
+        return row[idx] if 0 <= idx < len(row) else ""
+
+    for row in rows:
+        if not any((c or "").strip() for c in row):
+            continue
+        if sq:
+            hit = (sq in _norm(cell(row, i_seller))) if i_seller >= 0 \
+                else any(sq in _norm(c) for c in row)
+            if hit:
+                out["seller_matches"] += 1
+                if len(out["seller_samples"]) < 10:
+                    out["seller_samples"].append(row)
+        if pq:
+            hit = (pq in _norm(cell(row, i_prod))) if i_prod >= 0 \
+                else any(pq in _norm(c) for c in row)
+            if hit:
+                out["product_matches"] += 1
+                if len(out["product_samples"]) < 10:
+                    out["product_samples"].append(row)
+    return out
 
 
 def won(n):

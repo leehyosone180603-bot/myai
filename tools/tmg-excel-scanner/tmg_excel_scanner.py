@@ -131,10 +131,13 @@ class App:
         nb.pack(fill="both", expand=True, padx=8, pady=8)
         self.tab_scan = ttk.Frame(nb)
         self.tab_sales = ttk.Frame(nb)
+        self.tab_find = ttk.Frame(nb)
         nb.add(self.tab_scan, text="① 스캔 (데이터 있는 순번 찾기)")
         nb.add(self.tab_sales, text="② 매출 분석")
+        nb.add(self.tab_find, text="③ 찾기 (판매아이디·상품명)")
         self._build_scan_tab()
         self._build_sales_tab()
+        self._build_find_tab()
 
     # ---- 탭 1: 스캔 ----
     def _build_scan_tab(self):
@@ -312,6 +315,64 @@ class App:
         for seq in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
             cat_canvas.bind(seq, _cat_wheel)
 
+    # ---- 탭 3: 찾기 ----
+    def _build_find_tab(self):
+        pad = {"padx": 6, "pady": 4}
+        top = ttk.LabelFrame(self.tab_find, text="찾을 값 (엑셀 상세내역에서 검색)")
+        top.pack(fill="x", padx=8, pady=(8, 6))
+
+        self.find_seller_var = tk.StringVar(value=core.DEFAULT_FIND_SELLER)
+        self.find_product_var = tk.StringVar(value=core.DEFAULT_FIND_PRODUCT)
+        self.col_seller = tk.StringVar(value=core.SELLER_KEYS[0])
+        self.col_product = tk.StringVar(value=core.PRODUCT_KEYS[0])
+
+        ttk.Label(top, text="판매 아이디 찾기:").grid(row=0, column=0, sticky="w", **pad)
+        ttk.Entry(top, textvariable=self.find_seller_var, width=34).grid(row=0, column=1, sticky="we", **pad)
+        ttk.Label(top, text="판매아이디 열:").grid(row=0, column=2, sticky="w", **pad)
+        self.cb_seller = ttk.Combobox(top, textvariable=self.col_seller, width=20)
+        self.cb_seller.grid(row=0, column=3, sticky="w", **pad)
+
+        ttk.Label(top, text="상품명 찾기:").grid(row=1, column=0, sticky="w", **pad)
+        ttk.Entry(top, textvariable=self.find_product_var, width=34).grid(row=1, column=1, sticky="we", **pad)
+        ttk.Label(top, text="상품명 열:").grid(row=1, column=2, sticky="w", **pad)
+        self.cb_product = ttk.Combobox(top, textvariable=self.col_product, width=20)
+        self.cb_product.grid(row=1, column=3, sticky="w", **pad)
+
+        ttk.Label(top, foreground="#666",
+                  text="※ 공백·대소문자 무시하고 '포함'으로 검색합니다. 값을 비워두면 그 항목은 찾지 않습니다. "
+                       "열을 못 찾으면 모든 열에서 검색합니다.",
+                  ).grid(row=2, column=0, columnspan=4, sticky="w", padx=6, pady=(0, 4))
+        top.columnconfigure(1, weight=1)
+
+        btns = ttk.Frame(self.tab_find)
+        btns.pack(fill="x", padx=8)
+        self.find_btn = ttk.Button(btns, text="찾기 실행", command=self.run_search, state="disabled")
+        self.find_btn.pack(side="left", padx=4, pady=4)
+        self.find_export_btn = ttk.Button(btns, text="찾기결과 저장(CSV)",
+                                          command=self.save_find_csv, state="disabled")
+        self.find_export_btn.pack(side="left", padx=4, pady=4)
+        self.find_status = tk.StringVar(value="먼저 ① 스캔을 실행한 뒤 찾기하세요.")
+        ttk.Label(btns, textvariable=self.find_status, foreground="#333").pack(side="left", padx=12)
+
+        res = ttk.LabelFrame(self.tab_find, text="검색 결과 (매칭된 순번)")
+        res.pack(fill="both", expand=True, padx=8, pady=(6, 8))
+        cols = ("number", "host", "seller", "product", "open")
+        self.find_tree = ttk.Treeview(res, columns=cols, show="headings", height=16)
+        for c, t, w, anc in [
+            ("number", "순번", 90, "center"), ("host", "주소(host)", 260, "w"),
+            ("seller", "판매아이디 건수", 130, "e"), ("product", "상품명 건수", 120, "e"),
+            ("open", "엑셀", 90, "center"),
+        ]:
+            self.find_tree.heading(c, text=t)
+            self.find_tree.column(c, width=w, anchor=anc)
+        fvbar = ttk.Scrollbar(res, orient="vertical", command=self.find_tree.yview)
+        self.find_tree.configure(yscrollcommand=fvbar.set)
+        self.find_tree.pack(side="left", fill="both", expand=True)
+        fvbar.pack(side="right", fill="y")
+        self.find_tree.bind("<Double-1>", self._find_open_selected)
+        self.find_tree.bind("<Button-1>", self._find_tree_click)
+        self._find_results = []
+
     # -------------------------------------------------------------- scan
     def start_scan(self):
         try:
@@ -340,6 +401,7 @@ class App:
         self.stop_btn.configure(state="normal")
         self.save_btn.configure(state="disabled")
         self.analyze_btn.configure(state="disabled")
+        self.find_btn.configure(state="disabled")
         self.status_var.set("스캔 준비 중...")
 
         threading.Thread(target=self._scan_worker,
@@ -419,7 +481,8 @@ class App:
         self.status_var.set("주소를 클립보드에 복사했습니다.")
 
     def _fill_column_choices(self, headers):
-        for cb in (self.cb_status, self.cb_amount, self.cb_ship, self.cb_cat):
+        for cb in (self.cb_status, self.cb_amount, self.cb_ship, self.cb_cat,
+                   self.cb_seller, self.cb_product):
             cb["values"] = headers
         # 자동 감지로 기본 선택 채우기
         def pick(keys, default):
@@ -430,6 +493,8 @@ class App:
         i_ship = core.find_col(headers, core.SHIP_KEYS)
         self.col_ship.set(headers[i_ship] if i_ship >= 0 else "")
         self.col_cat.set(pick(core.CATEGORY_KEYS, self.col_cat.get()))
+        self.col_seller.set(pick(core.SELLER_KEYS, self.col_seller.get()))
+        self.col_product.set(pick(core.PRODUCT_KEYS, self.col_product.get()))
 
     def _on_done(self):
         self.start_btn.configure(state="normal")
@@ -437,7 +502,9 @@ class App:
         if self.results:
             self.save_btn.configure(state="normal")
             self.analyze_btn.configure(state="normal")
+            self.find_btn.configure(state="normal")
             self.sales_status.set("스캔 완료. [매출 분석 실행]을 눌러 집계하세요.")
+            self.find_status.set("스캔 완료. [찾기 실행]을 눌러 검색하세요.")
         done = "완료" if not self.stop_flag.is_set() else "중지됨"
         self.status_var.set("{} - 총 {}개 스캔, 데이터 확인 {}개 (빈 몰 {}, 접속실패 {})".format(
             done, self.scanned, self.found, self.empty, self.fail))
@@ -571,6 +638,91 @@ class App:
         for a in self.analysis:
             if str(a["number"]) == sel[0]:
                 webbrowser.open(a["url"]); break
+
+    # -------------------------------------------------------------- search(찾기)
+    def run_search(self):
+        if not self.results:
+            return
+        seller_q = self.find_seller_var.get().strip()
+        product_q = self.find_product_var.get().strip()
+        if not seller_q and not product_q:
+            messagebox.showinfo("찾기", "판매 아이디 또는 상품명 중 하나 이상을 입력하세요.")
+            return
+        seller_keys = ([self.col_seller.get()] if self.col_seller.get().strip() else []) + core.SELLER_KEYS
+        product_keys = ([self.col_product.get()] if self.col_product.get().strip() else []) + core.PRODUCT_KEYS
+
+        results = []
+        for res in self.results:
+            headers, rows = res.get("headers"), res.get("rows")
+            if not headers:
+                continue
+            r = core.search_terms(headers, rows, seller_query=seller_q, product_query=product_q,
+                                  seller_keys=seller_keys, product_keys=product_keys)
+            if r["seller_matches"] or r["product_matches"]:
+                host = urllib.parse.urlsplit(res["url"]).netloc
+                results.append({
+                    "number": res["number"], "host": host, "url": res["url"],
+                    "seller": r["seller_matches"], "product": r["product_matches"],
+                })
+        results.sort(key=lambda x: (-(x["seller"] + x["product"]), x["number"]))
+        self._find_results = results
+        self._render_search(results, seller_q, product_q)
+
+    def _render_search(self, results, seller_q, product_q):
+        for iid in self.find_tree.get_children():
+            self.find_tree.delete(iid)
+        for r in results:
+            self.find_tree.insert("", "end", iid=str(r["number"]), values=(
+                "tmg{}".format(r["number"]), r["host"],
+                "{:,}건".format(r["seller"]) if r["seller"] else "-",
+                "{:,}건".format(r["product"]) if r["product"] else "-",
+                "▶ 열기",
+            ))
+        seller_seqs = [r["number"] for r in results if r["seller"]]
+        product_seqs = [r["number"] for r in results if r["product"]]
+        parts = []
+        if seller_q:
+            parts.append("판매아이디 '{}' → {}개 순번".format(seller_q, len(seller_seqs)))
+        if product_q:
+            parts.append("상품명 → {}개 순번".format(len(product_seqs)))
+        self.find_status.set("찾기 완료 · " + " / ".join(parts) if parts else "찾기 완료")
+        self.find_export_btn.configure(state="normal" if results else "disabled")
+
+    def _find_tree_click(self, event):
+        if self.find_tree.identify("region", event.x, event.y) != "cell":
+            return
+        if self.find_tree.identify_column(event.x) != "#5":  # 'open' 열
+            return
+        iid = self.find_tree.identify_row(event.y)
+        if iid:
+            for r in self._find_results:
+                if str(r["number"]) == iid:
+                    webbrowser.open(r["url"]); break
+
+    def _find_open_selected(self, event):
+        sel = self.find_tree.selection()
+        if not sel:
+            return
+        for r in self._find_results:
+            if str(r["number"]) == sel[0]:
+                webbrowser.open(r["url"]); break
+
+    def save_find_csv(self):
+        if not self._find_results:
+            return
+        p = filedialog.asksaveasfilename(
+            defaultextension=".csv", filetypes=[("CSV 파일", "*.csv")],
+            initialfile="tmg_찾기결과_{}.csv".format(datetime.now().strftime("%Y%m%d_%H%M")))
+        if not p:
+            return
+        with open(p, "w", newline="", encoding="utf-8-sig") as f:
+            w = csv.writer(f)
+            w.writerow(["순번", "host", "판매아이디 건수", "상품명 건수", "주소",
+                        "찾은 판매아이디", "찾은 상품명"])
+            for r in self._find_results:
+                w.writerow([r["number"], r["host"], r["seller"], r["product"], r["url"],
+                            self.find_seller_var.get().strip(), self.find_product_var.get().strip()])
+        messagebox.showinfo("저장 완료", "찾기 결과를 저장했습니다.\n{}".format(p))
 
     # -------------------------------------------------------------- exports
     def save_list_csv(self):
