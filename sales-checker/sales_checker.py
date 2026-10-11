@@ -2,7 +2,7 @@
 """
 매출 확인 프로그램 (Cafe24 / 더망고 주문 엑셀 기반)
 ----------------------------------------------------
-- 지정한 쇼핑몰 번호(377 / 2552 / 2179)의 주문 엑셀을 자동으로 내려받아
+- 지정한 쇼핑몰 번호(4331 / 2552 / 2179)의 주문 엑셀을 자동으로 내려받아
   아래 4가지를 정리해 브라우저 대시보드로 보여줍니다.
 
   1) 엑셀 최상단의 '마지막주문수집일자'
@@ -34,7 +34,7 @@ from urllib.request import Request, urlopen
 
 # 확인할 쇼핑몰 (번호 = tmg<번호>.cafe24.com). 이름은 보기 좋게 바꿔도 됩니다.
 STORES = [
-    {"code": "377",  "name": "어현준"},
+    {"code": "4331", "name": "허지현"},
     {"code": "2552", "name": "이동욱"},
     {"code": "2179", "name": "황민호"},
 ]
@@ -105,7 +105,7 @@ def download_bytes(url: str, timeout: int = 60) -> bytes:
 
 
 def local_file_for(code: str):
-    """data 폴더에 수동으로 넣어둔 파일(예: 377.xls)이 있으면 경로 반환."""
+    """data 폴더에 수동으로 넣어둔 파일(예: 4331.xls)이 있으면 경로 반환."""
     if not os.path.isdir(DATA_DIR):
         return None
     for fn in os.listdir(DATA_DIR):
