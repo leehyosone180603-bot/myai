@@ -48,6 +48,8 @@ ORDER_NO_KEYS = ["주문번호", "마켓주문번호"]
 SELLER_KEYS = ["판매아이디", "판매자아이디", "마켓아이디", "판매자아이디(이메일)",
                "판매자계정", "판매자", "주문자아이디", "구매자아이디", "아이디"]
 PRODUCT_KEYS = ["상품명", "상품이름", "상품명(옵션)", "품명", "상품"]
+# 상품URL / 마켓상품URL 열 후보 (두 열 모두 검색 대상)
+URL_KEYS = ["상품URL", "마켓상품URL", "상품url", "마켓상품url", "상품링크", "마켓상품링크", "URL", "링크"]
 DEFAULT_BIG_THRESHOLD = 10_000_000                # 1천만원
 
 # 기본으로 찾을 값 (사용자 요청)
@@ -215,6 +217,21 @@ def find_col(headers, keys):
     return -1
 
 
+def find_all_cols(headers, keys):
+    """keys(후보)에 맞는 '모든' 열 번호를 반환(상품URL·마켓상품URL처럼 여러 열 대상).
+    완전일치 열을 먼저, 그다음 포함일치 열을 추가하며 중복은 제거한다. 없으면 []."""
+    norm = [(h or "").replace(" ", "") for h in headers]
+    found = []
+    nk = [k.replace(" ", "") for k in keys]
+    for i, h in enumerate(norm):          # 완전일치 우선
+        if any(h == kk for kk in nk) and i not in found:
+            found.append(i)
+    for i, h in enumerate(norm):          # 포함일치 보강
+        if any(kk and kk in h for kk in nk) and i not in found:
+            found.append(i)
+    return found
+
+
 def to_number(s):
     """'1,234,000원' 같은 문자열에서 숫자만 뽑아 float 로. 빈 값/실패는 0."""
     if s is None:
@@ -322,37 +339,44 @@ def _norm(s):
     return re.sub(r"\s+", "", str(s or "")).lower()
 
 
-def search_terms(headers, rows, seller_query="", product_query="",
-                 seller_keys=None, product_keys=None):
-    """한 순번(엑셀 1개)에서 판매 아이디 / 상품명을 찾는다.
+def search_terms(headers, rows, seller_query="", product_query="", url_query="",
+                 seller_keys=None, product_keys=None, url_keys=None):
+    """한 순번(엑셀 1개)에서 판매 아이디 / 상품명 / 상품URL 키워드를 찾는다.
 
     - 공백/대소문자를 무시하고 '포함(contains)' 방식으로 비교
-    - 지정 열을 찾지 못하면 그 항목은 '모든 열'에서 검색(전체 열 폴백)
+    - 판매아이디·상품명: 지정 열을 못 찾으면 '모든 열'에서 검색(전체 열 폴백)
+    - URL: 상품URL + 마켓상품URL '두 열 모두'를 대상으로 검색(둘 중 하나라도 포함이면 매칭).
+      URL 열을 못 찾으면 전체 열 폴백.
 
     반환 dict:
-        seller_col(str), product_col(str),
-        seller_matches(int), product_matches(int),
-        seller_samples(list[row]), product_samples(list[row])
+        seller_col, product_col, url_col(str),
+        seller_matches, product_matches, url_matches(int),
+        seller_samples, product_samples, url_samples(list[row])
     """
     seller_keys = seller_keys or SELLER_KEYS
     product_keys = product_keys or PRODUCT_KEYS
+    url_keys = url_keys or URL_KEYS
     out = {
-        "seller_col": "", "product_col": "",
-        "seller_matches": 0, "product_matches": 0,
-        "seller_samples": [], "product_samples": [],
+        "seller_col": "", "product_col": "", "url_col": "",
+        "seller_matches": 0, "product_matches": 0, "url_matches": 0,
+        "seller_samples": [], "product_samples": [], "url_samples": [],
     }
     if not headers:
         return out
 
     i_seller = find_col(headers, seller_keys) if seller_query else -1
     i_prod = find_col(headers, product_keys) if product_query else -1
+    url_cols = find_all_cols(headers, url_keys) if url_query else []
     if seller_query:
         out["seller_col"] = headers[i_seller] if i_seller >= 0 else "(전체 열 검색)"
     if product_query:
         out["product_col"] = headers[i_prod] if i_prod >= 0 else "(전체 열 검색)"
+    if url_query:
+        out["url_col"] = ", ".join(headers[i] for i in url_cols) if url_cols else "(전체 열 검색)"
 
     sq = _norm(seller_query)
     pq = _norm(product_query)
+    uq = _norm(url_query)
 
     def cell(row, idx):
         return row[idx] if 0 <= idx < len(row) else ""
@@ -374,6 +398,13 @@ def search_terms(headers, rows, seller_query="", product_query="",
                 out["product_matches"] += 1
                 if len(out["product_samples"]) < 10:
                     out["product_samples"].append(row)
+        if uq:
+            hit = any(uq in _norm(cell(row, i)) for i in url_cols) if url_cols \
+                else any(uq in _norm(c) for c in row)
+            if hit:
+                out["url_matches"] += 1
+                if len(out["url_samples"]) < 10:
+                    out["url_samples"].append(row)
     return out
 
 

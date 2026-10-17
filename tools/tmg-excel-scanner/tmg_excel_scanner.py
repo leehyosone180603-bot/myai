@@ -323,8 +323,10 @@ class App:
 
         self.find_seller_var = tk.StringVar(value=core.DEFAULT_FIND_SELLER)
         self.find_product_var = tk.StringVar(value=core.DEFAULT_FIND_PRODUCT)
+        self.find_url_var = tk.StringVar(value="")
         self.col_seller = tk.StringVar(value=core.SELLER_KEYS[0])
         self.col_product = tk.StringVar(value=core.PRODUCT_KEYS[0])
+        self.url_col_info = tk.StringVar(value="상품URL · 마켓상품URL (자동)")
 
         ttk.Label(top, text="판매 아이디 찾기:").grid(row=0, column=0, sticky="w", **pad)
         ttk.Entry(top, textvariable=self.find_seller_var, width=34).grid(row=0, column=1, sticky="we", **pad)
@@ -338,10 +340,15 @@ class App:
         self.cb_product = ttk.Combobox(top, textvariable=self.col_product, width=20)
         self.cb_product.grid(row=1, column=3, sticky="w", **pad)
 
+        ttk.Label(top, text="상품URL 키워드 찾기:").grid(row=2, column=0, sticky="w", **pad)
+        ttk.Entry(top, textvariable=self.find_url_var, width=34).grid(row=2, column=1, sticky="we", **pad)
+        ttk.Label(top, text="검색 열:").grid(row=2, column=2, sticky="w", **pad)
+        ttk.Label(top, textvariable=self.url_col_info, foreground="#357").grid(row=2, column=3, sticky="w", **pad)
+
         ttk.Label(top, foreground="#666",
                   text="※ 공백·대소문자 무시하고 '포함'으로 검색합니다. 값을 비워두면 그 항목은 찾지 않습니다. "
-                       "열을 못 찾으면 모든 열에서 검색합니다.",
-                  ).grid(row=2, column=0, columnspan=4, sticky="w", padx=6, pady=(0, 4))
+                       "상품URL 키워드는 상품URL·마켓상품URL 두 열을 함께 검색하며, 열을 못 찾으면 모든 열에서 찾습니다.",
+                  ).grid(row=3, column=0, columnspan=4, sticky="w", padx=6, pady=(0, 4))
         top.columnconfigure(1, weight=1)
 
         btns = ttk.Frame(self.tab_find)
@@ -356,12 +363,12 @@ class App:
 
         res = ttk.LabelFrame(self.tab_find, text="검색 결과 (매칭된 순번)")
         res.pack(fill="both", expand=True, padx=8, pady=(6, 8))
-        cols = ("number", "host", "seller", "product", "open")
+        cols = ("number", "host", "seller", "product", "url", "open")
         self.find_tree = ttk.Treeview(res, columns=cols, show="headings", height=16)
         for c, t, w, anc in [
-            ("number", "순번", 90, "center"), ("host", "주소(host)", 260, "w"),
-            ("seller", "판매아이디 건수", 130, "e"), ("product", "상품명 건수", 120, "e"),
-            ("open", "엑셀", 90, "center"),
+            ("number", "순번", 80, "center"), ("host", "주소(host)", 230, "w"),
+            ("seller", "판매아이디 건수", 120, "e"), ("product", "상품명 건수", 110, "e"),
+            ("url", "URL 건수", 90, "e"), ("open", "엑셀", 80, "center"),
         ]:
             self.find_tree.heading(c, text=t)
             self.find_tree.column(c, width=w, anchor=anc)
@@ -645,30 +652,37 @@ class App:
             return
         seller_q = self.find_seller_var.get().strip()
         product_q = self.find_product_var.get().strip()
-        if not seller_q and not product_q:
-            messagebox.showinfo("찾기", "판매 아이디 또는 상품명 중 하나 이상을 입력하세요.")
+        url_q = self.find_url_var.get().strip()
+        if not seller_q and not product_q and not url_q:
+            messagebox.showinfo("찾기", "판매 아이디 · 상품명 · 상품URL 키워드 중 하나 이상을 입력하세요.")
             return
         seller_keys = ([self.col_seller.get()] if self.col_seller.get().strip() else []) + core.SELLER_KEYS
         product_keys = ([self.col_product.get()] if self.col_product.get().strip() else []) + core.PRODUCT_KEYS
 
         results = []
+        url_cols_seen = ""
         for res in self.results:
             headers, rows = res.get("headers"), res.get("rows")
             if not headers:
                 continue
             r = core.search_terms(headers, rows, seller_query=seller_q, product_query=product_q,
-                                  seller_keys=seller_keys, product_keys=product_keys)
-            if r["seller_matches"] or r["product_matches"]:
+                                  url_query=url_q, seller_keys=seller_keys, product_keys=product_keys)
+            if url_q and not url_cols_seen and r["url_col"]:
+                url_cols_seen = r["url_col"]
+            if r["seller_matches"] or r["product_matches"] or r["url_matches"]:
                 host = urllib.parse.urlsplit(res["url"]).netloc
                 results.append({
                     "number": res["number"], "host": host, "url": res["url"],
                     "seller": r["seller_matches"], "product": r["product_matches"],
+                    "urlc": r["url_matches"],
                 })
-        results.sort(key=lambda x: (-(x["seller"] + x["product"]), x["number"]))
+        if url_q and url_cols_seen:
+            self.url_col_info.set(url_cols_seen)
+        results.sort(key=lambda x: (-(x["seller"] + x["product"] + x["urlc"]), x["number"]))
         self._find_results = results
-        self._render_search(results, seller_q, product_q)
+        self._render_search(results, seller_q, product_q, url_q)
 
-    def _render_search(self, results, seller_q, product_q):
+    def _render_search(self, results, seller_q, product_q, url_q):
         for iid in self.find_tree.get_children():
             self.find_tree.delete(iid)
         for r in results:
@@ -676,22 +690,23 @@ class App:
                 "tmg{}".format(r["number"]), r["host"],
                 "{:,}건".format(r["seller"]) if r["seller"] else "-",
                 "{:,}건".format(r["product"]) if r["product"] else "-",
+                "{:,}건".format(r["urlc"]) if r["urlc"] else "-",
                 "▶ 열기",
             ))
-        seller_seqs = [r["number"] for r in results if r["seller"]]
-        product_seqs = [r["number"] for r in results if r["product"]]
         parts = []
         if seller_q:
-            parts.append("판매아이디 '{}' → {}개 순번".format(seller_q, len(seller_seqs)))
+            parts.append("판매아이디 → {}개 순번".format(len([r for r in results if r["seller"]])))
         if product_q:
-            parts.append("상품명 → {}개 순번".format(len(product_seqs)))
+            parts.append("상품명 → {}개 순번".format(len([r for r in results if r["product"]])))
+        if url_q:
+            parts.append("상품URL '{}' → {}개 순번".format(url_q, len([r for r in results if r["urlc"]])))
         self.find_status.set("찾기 완료 · " + " / ".join(parts) if parts else "찾기 완료")
         self.find_export_btn.configure(state="normal" if results else "disabled")
 
     def _find_tree_click(self, event):
         if self.find_tree.identify("region", event.x, event.y) != "cell":
             return
-        if self.find_tree.identify_column(event.x) != "#5":  # 'open' 열
+        if self.find_tree.identify_column(event.x) != "#6":  # 'open' 열
             return
         iid = self.find_tree.identify_row(event.y)
         if iid:
@@ -717,11 +732,12 @@ class App:
             return
         with open(p, "w", newline="", encoding="utf-8-sig") as f:
             w = csv.writer(f)
-            w.writerow(["순번", "host", "판매아이디 건수", "상품명 건수", "주소",
-                        "찾은 판매아이디", "찾은 상품명"])
+            w.writerow(["순번", "host", "판매아이디 건수", "상품명 건수", "URL 건수", "주소",
+                        "찾은 판매아이디", "찾은 상품명", "찾은 상품URL 키워드"])
             for r in self._find_results:
-                w.writerow([r["number"], r["host"], r["seller"], r["product"], r["url"],
-                            self.find_seller_var.get().strip(), self.find_product_var.get().strip()])
+                w.writerow([r["number"], r["host"], r["seller"], r["product"], r.get("urlc", 0),
+                            r["url"], self.find_seller_var.get().strip(),
+                            self.find_product_var.get().strip(), self.find_url_var.get().strip()])
         messagebox.showinfo("저장 완료", "찾기 결과를 저장했습니다.\n{}".format(p))
 
     # -------------------------------------------------------------- exports
