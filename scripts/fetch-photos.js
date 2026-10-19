@@ -30,6 +30,14 @@ const POSTS = require(path.join(ROOT, "js", "posts.js")).POSTS;
 const KEY = process.env.PIXABAY_API_KEY || "";
 const PROVIDER = KEY ? "pixabay" : "openverse";
 
+var UA = "calcbox-photo-bot/1.0 (+https://calcbox.kr)";
+async function fetchT(url, opts, ms) {
+  const c = new AbortController();
+  const t = setTimeout(function () { c.abort(); }, ms || 15000);
+  try { return await fetch(url, Object.assign({ signal: c.signal, headers: Object.assign({ "User-Agent": UA }, (opts && opts.headers) || {}) }, opts || {})); }
+  finally { clearTimeout(t); }
+}
+
 function entryOf(slug) { return POSTS.find(function (p) { return p.id === slug; }); }
 function fileOf(url) {
   if (url.indexOf("/posts/") === 0) return url.slice(1);
@@ -41,7 +49,7 @@ function fileOf(url) {
 async function searchPixabay(q) {
   const u = "https://pixabay.com/api/?key=" + KEY + "&q=" + encodeURIComponent(q) +
     "&image_type=photo&orientation=horizontal&safesearch=true&per_page=12&order=popular";
-  const r = await fetch(u); if (!r.ok) throw new Error("pixabay " + r.status);
+  const r = await fetchT(u, {}, 12000); if (!r.ok) throw new Error("pixabay " + r.status);
   const d = await r.json();
   const hit = (d.hits || []).find(function (h) { return h.webformatWidth >= 640; }) || (d.hits || [])[0];
   if (!hit) return null;
@@ -50,7 +58,7 @@ async function searchPixabay(q) {
 async function searchOpenverse(q) {
   const u = "https://api.openverse.org/v1/images/?q=" + encodeURIComponent(q) +
     "&license=cc0,pdm&aspect_ratio=wide&size=large&mature=false&page_size=12";
-  const r = await fetch(u, { headers: { "Accept": "application/json" } });
+  const r = await fetchT(u, { headers: { "Accept": "application/json" } }, 12000);
   if (!r.ok) throw new Error("openverse " + r.status);
   const d = await r.json();
   const hit = (d.results || []).find(function (h) { return h.url; });
@@ -97,7 +105,7 @@ async function run() {
     try {
       const res = PROVIDER === "pixabay" ? await searchPixabay(q) : await searchOpenverse(q);
       if (!res) { console.log("  검색 결과 없음"); fail++; continue; }
-      const ir = await fetch(res.img); if (!ir.ok) throw new Error("download " + ir.status);
+      const ir = await fetchT(res.img, {}, 20000); if (!ir.ok) throw new Error("download " + ir.status);
       const buf = Buffer.from(await ir.arrayBuffer());
       await sharp(buf).resize({ width: 1200, withoutEnlargement: true }).jpeg({ quality: 80 }).toFile(path.join(ROOT, "img", slug + ".jpg"));
       setPostsImage(slug);
