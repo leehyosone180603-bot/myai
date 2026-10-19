@@ -254,3 +254,37 @@ img { max-width: 100%; display: block; }
 .today-luck { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .luck-chip { font-size: .8rem; font-weight: 700; padding: 5px 11px; border-radius: 999px; background: #eef1f6; }
 .score-ring { font-size: 2.2rem; font-weight: 900; }
+
+/* ===== 궁합 캐릭터·바이럴 결과 ===== */
+.gh-card { border-radius: 16px; overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow); }
+.gh-top { color: #fff; text-align: center; padding: 18px 16px 14px; background: linear-gradient(135deg, var(--c, #7048e8), rgba(0,0,0,.15)); }
+.gh-score { font-size: 2.6rem; font-weight: 900; line-height: 1; }
+.gh-score small { font-size: 1rem; font-weight: 700; }
+.gh-grade { font-size: 1.05rem; font-weight: 800; margin-top: 4px; }
+.gh-pair { font-size: .9rem; opacity: .95; margin-top: 2px; }
+.gh-body { background: #fff; padding: 18px 16px; }
+.gh-char { text-align: center; }
+.gh-char-img { width: 128px; height: 128px; margin: 0 auto; }
+.gh-title { font-size: 1.1rem; font-weight: 800; margin-top: 8px; color: var(--c, #7048e8); line-height: 1.4; }
+.gh-name { font-size: 1.25rem; font-weight: 900; margin-top: 2px; }
+.gh-desc { color: var(--muted); font-size: .92rem; margin-top: 8px; line-height: 1.6; }
+.gh-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 14px 0 4px; }
+.gh-tag { font-size: .82rem; font-weight: 800; padding: 6px 12px; border-radius: 999px; background: #f1edff; color: #5f3dc4; }
+.gh-hints { display: grid; gap: 8px; margin: 16px 0; }
+.gh-hint { padding: 11px 14px; border-radius: 10px; font-weight: 700; font-size: .92rem; }
+.gh-hint.good { background: #e9fbf0; color: #0c8a52; }
+.gh-hint.bad { background: #fff0f3; color: #d6336c; }
+.gh-detail { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px; font-size: .93rem; line-height: 1.6; }
+.gh-luck { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.gh-luck .luck-chip { background: #eef1f6; }
+.gh-share { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.gh-share button { flex: 1; min-width: 120px; padding: 12px; border-radius: 10px; font-weight: 800; font-size: .92rem; cursor: pointer; border: 1px solid var(--border); }
+.gh-share .sh-primary { background: #7048e8; color: #fff; border-color: #7048e8; }
+.gh-share .sh-primary:hover { background: #5f3dc4; }
+.gh-share .sh-sub { background: #fff; color: var(--text); }
+.gh-share .sh-sub:hover { border-color: #7048e8; color: #7048e8; }
+.gh-cta { text-align: center; color: var(--muted); font-size: .82rem; margin-top: 10px; }
+/* 9:16 스토리 카드 미리보기 */
+.story-prev { max-width: 300px; margin: 14px auto 0; border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); display: none; }
+.story-prev.show { display: block; }
+.story-prev img { width: 100%; display: block; }

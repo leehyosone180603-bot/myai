@@ -248,29 +248,130 @@
       base += (hash(a.ko + b.ko) % 7) - 3; // ±3 미세 변화(고정)
       return Math.max(42, Math.min(98, base));
     }
-    function grade(sc) {
-      if (sc >= 85) return { g: "환상의 궁합", c: "#0ca678", m: "서로를 가장 잘 보완하는 조합! 함께 있으면 시너지가 큽니다." };
-      if (sc >= 72) return { g: "좋은 궁합", c: "#3b5bdb", m: "결이 잘 맞아 편안한 사이. 작은 배려로 더 깊어집니다." };
-      if (sc >= 58) return { g: "무난한 궁합", c: "#f59f00", m: "큰 충돌은 없는 편. 서로의 속도를 맞춰가면 좋아집니다." };
-      return { g: "노력이 필요한 궁합", c: "#e64980", m: "성향이 달라 부딪힐 수 있지만, 이해하면 가장 많이 배우는 관계예요." };
+    // 점수대별 캐릭터·바이럴 결과 유형 (MATCH_RESULTS)
+    var MATCH_RESULTS = {
+      cosmic_explorers: { id: "cosmic_explorers", range: [85, 100], title: "눈빛만 봐도 통하는 별빛의 아티스트", characterName: "불꽃 뿜는 우주 탐험가", description: "서로의 부족함을 완벽하게 채워주며 함께일 때 가장 빛나는 최고의 우주적 짝꿍.", c: "#7048e8", viral: ["#우주최강케미", "#말하지않아도알아", "#통장비밀번호공유가능"], best: "황소자리", worst: "사자자리", cta: "너와 나의 별자리 궁합 캐릭터는? 지금 확인하기 ➔", color: "네온 퍼플", spot: "천문대 플라네타리움" },
+      playful_rivals: { id: "playful_rivals", range: [70, 84], title: "싸우다가도 어느새 웃고 있는 단짠단짠 커플", characterName: "밀당 마스터 냥멍이", description: "서로 달라서 더 끌리는 관계! 때로는 티격태격하지만 절대 헤어질 수 없는 매력.", c: "#f59f00", viral: ["#새벽3시까지수다가능", "#같이있으면통장위험", "#겉으론쿨한척"], best: "쌍둥이자리", worst: "전갈자리", cta: "우리 무슨 캐릭터인지 궁금해? 바로 확인하기 ➔", color: "비비드 옐로우", spot: "보드게임 카페" },
+      silent_anchors: { id: "silent_anchors", range: [50, 69], title: "말하지 않아도 편안한 마음의 안식처", characterName: "고요한 밤하늘 등대지기", description: "뜨거운 열정보다 깊은 신뢰와 안정감으로 오래도록 서로를 지켜주는 관계.", c: "#2f9e44", viral: ["#묵묵한힐링", "#고요속의평화", "#침묵도어색하지않음"], best: "처녀자리", worst: "물병자리", cta: "너와 나의 은은한 궁합 캐릭터 보러가기 ➔", color: "세이지 그린", spot: "조용한 한옥 카페" },
+      polar_alchemists: { id: "polar_alchemists", range: [0, 49], title: "알다가도 모르겠는 미지의 블랙홀", characterName: "자기장 상극의 연금술사", description: "맞추려면 노력이 필요하지만, 이해하는 순간 엄청난 시너지를 발휘하는 반전 커플.", c: "#868e96", viral: ["#만나면폭발주의", "#자석같은끌림", "#뇌구조분석필수"], best: "게자리", worst: "양자리", cta: "우리가 진짜 상극일까? 궁합 결과 확인하기 ➔", color: "크림 화이트", spot: "미술관/전시회" }
+    };
+    function pickResult(sc) {
+      for (var k in MATCH_RESULTS) { var r = MATCH_RESULTS[k]; if (sc >= r.range[0] && sc <= r.range[1]) return r; }
+      return MATCH_RESULTS.silent_anchors;
     }
+    var SHARE_URL = "https://calcbox.kr/posts/zodiac-sign.html";
+    var lastGh = null;
+
     function renderGh() {
       var a = byKo[gA.value], b = byKo[gB.value];
-      var sc = score(a, b), gr = grade(sc);
+      var sc = score(a, b), R = pickResult(sc);
+      lastGh = { a: a, b: b, sc: sc, R: R };
+      var tags = R.viral.map(function (t) { return '<span class="gh-tag">' + t + '</span>'; }).join("");
       var r = document.getElementById("gResult");
       r.innerHTML =
-        '<div class="zs-head" style="--el:' + gr.c + '"><span class="score-ring">' + sc + '<small style="font-size:1rem">점</small></span>' +
-          '<span><span class="zs-name">' + a.emoji + ' ' + a.ko + ' × ' + b.emoji + ' ' + b.ko + '</span>' +
-          '<span class="zs-sub">' + gr.g + '</span></span></div>' +
-        '<div class="zs-body">' +
-          '<div class="zs-row">' + gr.m + '</div>' +
-          '<div class="zs-row"><b>' + a.ko + '</b> (' + ELEMOJI[a.el] + a.el + ') — ' + a.p + '</div>' +
-          '<div class="zs-row"><b>' + b.ko + '</b> (' + ELEMOJI[b.el] + b.el + ') — ' + b.p + '</div>' +
-          '<p class="zs-note">※ 궁합 점수는 원소 관계와 전통적 조합을 재미로 환산한 지표입니다.</p>' +
+        '<div class="gh-card">' +
+          '<div class="gh-top" style="--c:' + R.c + '">' +
+            '<div class="gh-score">' + sc + '<small>점</small></div>' +
+            '<div class="gh-grade">' + R.title + '</div>' +
+            '<div class="gh-pair">' + a.emoji + ' ' + a.ko + '  ×  ' + b.emoji + ' ' + b.ko + '</div>' +
+          '</div>' +
+          '<div class="gh-body">' +
+            '<div class="gh-char">' +
+              '<img class="gh-char-img" src="/assets/characters/' + R.id + '.svg" alt="' + R.characterName + '">' +
+              '<div class="gh-title" style="color:' + R.c + '">' + R.title + '</div>' +
+              '<div class="gh-name">' + R.characterName + '</div>' +
+              '<div class="gh-desc">' + R.description + '</div>' +
+            '</div>' +
+            '<div class="gh-tags">' + tags + '</div>' +
+            '<div class="gh-hints">' +
+              '<div class="gh-hint good">💚 지구 끝까지 함께할 <b>' + R.best + '</b></div>' +
+              '<div class="gh-hint bad">⚡ 만나면 피 튀기는 <b>' + R.worst + '</b></div>' +
+            '</div>' +
+            '<div class="gh-detail"><b>세부 궁합</b><br>' + R.description + ' ' +
+              a.ko + '(' + ELEMOJI[a.el] + a.el + ')와 ' + b.ko + '(' + ELEMOJI[b.el] + b.el + ')의 ' +
+              (a.el === b.el ? '같은 원소 조합으로 통하는 결이 많습니다.' : (COMPLEMENT[a.el] === b.el ? '서로 보완하는 원소라 끌림이 큽니다.' : (CLASH[a.el] === b.el ? '상극 원소라 노력이 필요하지만 그만큼 배울 게 많습니다.' : '무난하게 어울리는 조합입니다.'))) +
+              '<div class="gh-luck"><span class="luck-chip">🎨 오늘의 행운 컬러 ' + R.color + '</span><span class="luck-chip">📍 추천 데이트 ' + R.spot + '</span></div>' +
+            '</div>' +
+            '<div class="gh-share">' +
+              '<button type="button" class="sh-primary" id="ghShare">친구에게 공유하고 우리 궁합 확인하기</button>' +
+              '<button type="button" class="sh-sub" id="ghCard">📸 스토리 카드 저장</button>' +
+              '<button type="button" class="sh-sub" id="ghCopy">🔗 링크 복사</button>' +
+            '</div>' +
+            '<div class="gh-cta">' + R.cta + '</div>' +
+            '<div class="story-prev" id="storyPrev"></div>' +
+          '</div>' +
         '</div>';
       r.hidden = false;
+      document.getElementById("ghShare").addEventListener("click", doShare);
+      document.getElementById("ghCard").addEventListener("click", doCard);
+      document.getElementById("ghCopy").addEventListener("click", doCopy);
     }
     document.getElementById("gBtn").addEventListener("click", renderGh);
+
+    // ── 9:16 스토리 카드(인스타 스토리/이미지 저장용) ──
+    function wrapText(ctx, text, x, y, maxW, lh) {
+      var line = "", yy = y;
+      for (var i = 0; i < text.length; i++) {
+        var t = line + text[i];
+        if (ctx.measureText(t).width > maxW && line) { ctx.fillText(line, x, yy); line = text[i]; yy += lh; }
+        else line = t;
+      }
+      ctx.fillText(line, x, yy); return yy;
+    }
+    function buildCard() {
+      var g = lastGh; if (!g) return null;
+      var W = 1080, H = 1920, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+      var x = cv.getContext("2d"), cx = W / 2;
+      var grad = x.createLinearGradient(0, 0, W, H); grad.addColorStop(0, g.R.c); grad.addColorStop(1, "#1f2430");
+      x.fillStyle = grad; x.fillRect(0, 0, W, H);
+      x.fillStyle = "rgba(255,255,255,.9)";
+      for (var i = 0; i < 40; i++) { x.globalAlpha = Math.random() * .7 + .1; x.beginPath(); x.arc(Math.random() * W, Math.random() * H, Math.random() * 3 + 1, 0, 7); x.fill(); }
+      x.globalAlpha = 1; x.textAlign = "center";
+      x.fillStyle = "#fff"; x.font = "700 46px sans-serif"; x.fillText("✨ 별자리 궁합 ✨", cx, 220);
+      // 캐릭터 얼굴
+      var fy = 520, fr = 190;
+      var fg = x.createRadialGradient(cx - 50, fy - 60, 30, cx, fy, fr); fg.addColorStop(0, "rgba(255,255,255,.95)"); fg.addColorStop(1, g.R.c);
+      x.fillStyle = fg; x.beginPath(); x.arc(cx, fy, fr, 0, 7); x.fill();
+      x.fillStyle = "#fff"; x.beginPath(); x.ellipse(cx - 58, fy - 10, 28, 34, 0, 0, 7); x.fill(); x.beginPath(); x.ellipse(cx + 58, fy - 10, 28, 34, 0, 0, 7); x.fill();
+      x.fillStyle = "#2b2d42"; x.beginPath(); x.arc(cx - 52, fy - 2, 14, 0, 7); x.fill(); x.beginPath(); x.arc(cx + 64, fy - 2, 14, 0, 7); x.fill();
+      x.strokeStyle = "#2b2d42"; x.lineWidth = 9; x.lineCap = "round"; x.beginPath(); x.arc(cx, fy + 40, 46, 0.15 * Math.PI, 0.85 * Math.PI); x.stroke();
+      // 점수·수식어
+      x.fillStyle = "#fff"; x.font = "900 150px sans-serif"; x.fillText(g.sc + "점", cx, 880);
+      x.font = "800 52px sans-serif"; wrapText(x, g.R.title, cx, 970, 900, 66);
+      x.font = "700 44px sans-serif"; x.fillStyle = "rgba(255,255,255,.95)"; x.fillText(g.R.characterName, cx, 1130);
+      x.font = "600 46px sans-serif"; x.fillText(g.a.emoji + " " + g.a.ko + "  ×  " + g.b.emoji + " " + g.b.ko, cx, 1215);
+      // 태그 칩
+      x.font = "700 38px sans-serif"; var ty = 1330;
+      g.R.viral.forEach(function (t) {
+        var w = x.measureText(t).width + 54; var bx = cx - w / 2;
+        x.fillStyle = "rgba(255,255,255,.18)"; roundRect(x, bx, ty - 42, w, 62, 31); x.fill();
+        x.fillStyle = "#fff"; x.fillText(t, cx, ty); ty += 86;
+      });
+      // 하단 CTA/URL
+      x.font = "700 40px sans-serif"; x.fillStyle = "#fff"; x.fillText("너와 나의 별자리 궁합 캐릭터는?", cx, 1700);
+      x.font = "800 44px sans-serif"; x.fillText("calcbox.kr", cx, 1770);
+      return cv;
+    }
+    function roundRect(x, bx, by, w, h, r) { x.beginPath(); x.moveTo(bx + r, by); x.arcTo(bx + w, by, bx + w, by + h, r); x.arcTo(bx + w, by + h, bx, by + h, r); x.arcTo(bx, by + h, bx, by, r); x.arcTo(bx, by, bx + w, by, r); x.closePath(); }
+    function doCard() {
+      var cv = buildCard(); if (!cv) return;
+      var url = cv.toDataURL("image/png");
+      var pv = document.getElementById("storyPrev"); pv.innerHTML = '<img src="' + url + '" alt="별자리 궁합 스토리 카드">'; pv.classList.add("show");
+      var a = document.createElement("a"); a.href = url; a.download = "별자리궁합_" + lastGh.a.ko + "x" + lastGh.b.ko + ".png"; a.click();
+    }
+    function doShare() {
+      var g = lastGh; if (!g) return;
+      var text = g.a.ko + " × " + g.b.ko + " 궁합 " + g.sc + "점! \"" + g.R.title + "\" — " + g.R.cta;
+      if (navigator.share) {
+        navigator.share({ title: "별자리 궁합", text: text, url: SHARE_URL }).catch(function () {});
+      } else { doCopy(text + " " + SHARE_URL); }
+    }
+    function doCopy(txt) {
+      var t = (typeof txt === "string") ? txt : SHARE_URL;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(t).then(function () { alert("링크를 복사했어요! 친구에게 붙여넣어 보세요."); }, function () { prompt("아래 링크를 복사하세요", t); });
+      } else { prompt("아래 링크를 복사하세요", t); }
+    }
 
     // 날짜표
     document.getElementById("zTable").innerHTML = SIGNS.map(function (s) {
