@@ -213,3 +213,26 @@ img { max-width: 100%; display: block; }
 .saju-promo-list a:hover { color: var(--primary); }
 .saju-more { color: #7048e8 !important; font-weight: 700; margin-top: 6px; }
 @media (max-width: 760px) { .saju-promo { grid-template-columns: 1fr; } }
+
+/* ===== 인터랙티브 도구 (별자리·MBTI 등) ===== */
+.tool-box { background: #f7f8fc; border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin: 4px 0 22px; }
+.tool-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.tool-row label { font-weight: 700; font-size: .95rem; }
+.tool-box select, .tool-box input { padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: .95rem; font-family: inherit; background: #fff; }
+.tool-box .tool-btn { padding: 10px 18px; background: var(--primary); color: #fff; border: 0; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: .95rem; }
+.tool-box .tool-btn:hover { background: var(--primary-dark, #2f49b0); }
+.tool-result { margin-top: 16px; }
+.tool-result[hidden] { display: none; }
+.zs-head { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 12px; color: #fff;
+  background: linear-gradient(135deg, var(--el, #7048e8), rgba(255,255,255,.18)), var(--el, #7048e8); }
+.zs-emoji { font-size: 2.4rem; line-height: 1; }
+.zs-name { font-size: 1.35rem; font-weight: 900; }
+.zs-sub { font-size: .85rem; opacity: .92; margin-top: 2px; }
+.zs-body { background: #fff; border: 1px solid var(--border); border-top: 0; border-radius: 0 0 12px 12px; padding: 16px; margin-top: -8px; }
+.zs-row { margin: 8px 0; font-size: .95rem; }
+.zs-row b { color: var(--text); }
+.zs-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.zs-chip { font-size: .82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: #eef1f6; color: var(--text); }
+.zs-chip.good { background: #e6fcf5; color: #0ca678; }
+.zs-chip.bad { background: #fff0f6; color: #e64980; }
+.zs-note { color: var(--muted); font-size: .82rem; margin-top: 12px; }
