@@ -236,3 +236,21 @@ img { max-width: 100%; display: block; }
 .zs-chip.good { background: #e6fcf5; color: #0ca678; }
 .zs-chip.bad { background: #fff0f6; color: #e64980; }
 .zs-note { color: var(--muted); font-size: .82rem; margin-top: 12px; }
+
+/* ===== 도구 탭 + 오늘의 운세 + 궁합 점수 ===== */
+.zt-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.zt-tabs button { flex: 1; padding: 10px; border: 1px solid var(--border); background: #fff; border-radius: 8px;
+  font-weight: 700; font-size: .92rem; cursor: pointer; color: var(--muted); }
+.zt-tabs button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.zt-pane[hidden] { display: none; }
+.today-box { margin-top: 14px; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.today-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.today-head b { font-size: 1rem; }
+.today-date { color: var(--muted); font-size: .82rem; }
+.today-stars { color: #f59f00; font-size: 1.05rem; letter-spacing: 1px; }
+.today-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin-top: 6px; }
+.today-grid .ti { font-size: .92rem; padding: 6px 0; border-top: 1px solid var(--border); }
+.today-grid .ti b { color: var(--primary); font-size: .82rem; display: block; }
+.today-luck { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.luck-chip { font-size: .8rem; font-weight: 700; padding: 5px 11px; border-radius: 999px; background: #eef1f6; }
+.score-ring { font-size: 2.2rem; font-weight: 900; }

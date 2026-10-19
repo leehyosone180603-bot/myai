@@ -27,7 +27,7 @@ var NAV_ORDER = ["age", "birthyear", "system", "date", "fortune", "life", "colum
 /* 글 목록: 최신 글이 배열 맨 위 */
 var POSTS = [
   { id: "mbti-compatibility", title: "MBTI 궁합 — 두 유형 궁합 보기 + 16유형 성격", summary: "내 MBTI·상대 MBTI만 고르면 궁합 등급과 한줄평이 바로. 16유형 성격·잘 맞는 유형까지 정리.", category: "fortune", date: "2026.10.19", url: "/posts/mbti-compatibility.html", image: "" },
-  { id: "zodiac-sign", title: "별자리 성격·궁합 — 생일로 내 별자리 찾기 (12별자리 운세)", summary: "생일만 넣으면 내 별자리·원소·성격과 잘 맞는/조심할 별자리, 2026 테마 운세까지 바로 확인. 12별자리 날짜표 포함.", category: "fortune", date: "2026.10.19", url: "/posts/zodiac-sign.html", image: "" },
+  { id: "zodiac-sign", title: "오늘의 별자리 운세 + 성격·궁합 — 생일로 내 별자리 찾기", summary: "생일만 넣으면 내 별자리·성격과 오늘의 운세(매일 갱신), 상대 별자리 궁합 점수까지 바로 확인.", category: "fortune", date: "2026.10.19", url: "/posts/zodiac-sign.html", image: "" },
   { id: "zodiac-year-age", title: "십이지 띠로 나이·출생연도 찾기 — 내 띠, N띠는 몇년생·몇 살?", summary: "열두 띠별 출생연도와 2026년 나이를 표로 한눈에. 띠로 나이를 가늠할 때 헷갈리는 점까지 정리했습니다.", category: "birthyear", date: "2026.08.13", url: "/posts/zodiac-year-age.html", image: "/img/zodiac-year-age.jpg" },
   { id: "elementary-school-age", title: "초등학교 입학 나이 — 몇년생이 몇 년에 입학? (2026년 기준 표)", summary: "출생연도별 초등학교 입학연도 표와 2026년 학년별 몇년생, 조기입학·유예까지 정리했습니다.", category: "birthyear", date: "2026.08.13", url: "/posts/elementary-school-age.html", image: "/img/elementary-school-age.jpg" },
   { id: "age-table-2026", title: "2026년 나이표 총정리 — 출생연도별 올해 만 나이·띠 한눈에", summary: "출생연도별 2026 만 나이·띠표. 연말연초에 왜 제일 헷갈리는지, 나이로 출생연도 역산까지.", category: "age", date: "2026.07.27", url: "/posts/age-table-2026.html", image: "/img/age-table-2026.jpg" },

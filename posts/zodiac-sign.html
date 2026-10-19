@@ -11,13 +11,13 @@
     gtag('config', 'G-JMGXSV1PJ2');
   </script>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <title>별자리 성격·궁합 — 생일로 내 별자리 찾기 (12별자리 날짜·성격·2026 운세) | 한국인계산기</title>
-  <meta name="description" content="생일(월·일)만 넣으면 내 별자리와 원소, 성격, 잘 맞는 별자리·조심할 별자리, 2026년 테마 운세까지 바로 나옵니다. 12별자리 날짜표와 성격·궁합 총정리.">
-  <meta name="keywords" content="별자리, 별자리 찾기, 별자리 성격, 별자리 궁합, 12별자리, 별자리 날짜, 2026 별자리 운세">
+  <title>별자리 운세·성격·궁합 — 오늘의 별자리 운세 + 생일로 별자리 찾기·궁합 점수 | 한국인계산기</title>
+  <meta name="description" content="생일만 넣으면 내 별자리·성격과 오늘의 별자리 운세(매일 갱신), 상대 별자리와의 궁합 점수까지 바로 나옵니다. 12별자리 날짜표·원소별 성격·궁합 총정리.">
+  <meta name="keywords" content="별자리 운세, 오늘의 별자리 운세, 별자리 성격, 별자리 궁합, 궁합 점수, 12별자리, 별자리 날짜, 2026 별자리 운세">
   <meta name="robots" content="index, follow">
   <meta name="author" content="한국인계산기">
-  <meta property="og:title" content="별자리 성격·궁합 — 생일로 내 별자리 찾기">
-  <meta property="og:description" content="생일만 넣으면 별자리·성격·궁합·2026 운세가 바로. 12별자리 날짜표와 궁합 총정리.">
+  <meta property="og:title" content="별자리 운세·성격·궁합 — 오늘의 운세 + 생일로 별자리·궁합 점수">
+  <meta property="og:description" content="생일만 넣으면 별자리·성격·오늘의 운세·궁합 점수가 바로. 12별자리 총정리.">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://calcbox.kr/posts/zodiac-sign.html">
   <meta property="og:site_name" content="한국인계산기">
@@ -26,8 +26,8 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org", "@type": "Article",
-    "headline": "별자리 성격·궁합 — 생일로 내 별자리 찾기 (12별자리 날짜·성격·2026 운세)",
-    "description": "생일(월·일)만 넣으면 내 별자리·성격·궁합·2026 테마 운세가 바로 나옵니다.",
+    "headline": "별자리 운세·성격·궁합 — 오늘의 별자리 운세 + 생일로 별자리 찾기·궁합 점수",
+    "description": "생일만 넣으면 내 별자리·성격·오늘의 운세·궁합 점수가 바로 나옵니다.",
     "datePublished": "2026-10-19", "dateModified": "2026-10-19", "inLanguage": "ko",
     "author": { "@type": "Organization", "name": "한국인계산기" },
     "publisher": { "@type": "Organization", "name": "한국인계산기", "url": "https://calcbox.kr/" },
@@ -46,21 +46,40 @@
   <main class="post-wrap">
     <nav class="crumbs"><a href="/">홈</a> · <a href="/category.html?cat=fortune">사주·운세</a></nav>
     <article class="post">
-      <h1>별자리 성격·궁합 — 생일로 내 별자리 찾기</h1>
+      <h1>별자리 운세·성격·궁합 — 오늘의 별자리 운세</h1>
       <p class="post-meta"><span class="cat-badge" style="--cat:#7048e8">🔮 사주·운세</span> · 한국인계산기</p>
 
-      <p class="lead">생일(월·일)만 넣으면 <strong>내 별자리·원소·성격</strong>과 <strong>잘 맞는 별자리·조심할 별자리</strong>, 그리고 <strong>2026년 테마 운세</strong>까지 한 번에 확인할 수 있습니다. 아래 표로 12별자리 날짜와 성격도 정리했습니다. (별자리 운세는 재미로 참고해 주세요.)</p>
+      <p class="lead">생일(월·일)만 넣으면 <strong>내 별자리·성격</strong>과 <strong>오늘의 별자리 운세</strong>(매일 갱신), 그리고 <strong>상대 별자리와의 궁합 점수</strong>까지 한 번에 확인할 수 있습니다. 아래 표로 12별자리 날짜와 성격도 정리했습니다. (별자리 운세는 재미로 참고해 주세요.)</p>
 
       <!-- 도구 -->
       <div class="tool-box">
-        <div class="tool-row">
-          <label for="zMonth">내 생일</label>
-          <select id="zMonth" aria-label="태어난 월"></select>
-          <select id="zDay" aria-label="태어난 일"></select>
-          <button type="button" class="tool-btn" id="zBtn">내 별자리 보기</button>
+        <div class="zt-tabs">
+          <button type="button" data-tab="me" class="active">내 별자리·오늘 운세</button>
+          <button type="button" data-tab="gh">별자리 궁합</button>
         </div>
-        <div class="tool-result" id="zResult" hidden></div>
+        <div class="zt-pane" id="pane-me">
+          <div class="tool-row">
+            <label for="zMonth">내 생일</label>
+            <select id="zMonth" aria-label="태어난 월"></select>
+            <select id="zDay" aria-label="태어난 일"></select>
+            <button type="button" class="tool-btn" id="zBtn">내 별자리·운세 보기</button>
+          </div>
+          <div class="tool-result" id="zResult" hidden></div>
+        </div>
+        <div class="zt-pane" id="pane-gh" hidden>
+          <div class="tool-row">
+            <label for="gA">나</label>
+            <select id="gA" aria-label="내 별자리"></select>
+            <label for="gB">상대</label>
+            <select id="gB" aria-label="상대 별자리"></select>
+            <button type="button" class="tool-btn" id="gBtn">궁합 점수 보기</button>
+          </div>
+          <div class="tool-result" id="gResult" hidden></div>
+        </div>
       </div>
+
+      <h2>오늘의 별자리 운세는 어떻게 보나요?</h2>
+      <p>위 <strong>‘내 별자리·오늘 운세’</strong>에서 생일을 넣으면 그날의 총운·애정운·금전운·직장운과 행운의 색·숫자가 나옵니다. 운세는 <strong>매일 0시에 갱신</strong>되니 아침마다 하루를 시작하며 확인해 보세요.</p>
 
       <h2>12별자리 날짜표 (양력 기준)</h2>
       <p>별자리는 태어난 <strong>양력 생일</strong>로 정합니다. 경계일(각 별자리가 바뀌는 날)에 태어났다면 해에 따라 하루 차이가 날 수 있으니 참고하세요.</p>
@@ -70,7 +89,6 @@
       </table>
 
       <h2>원소로 보는 성격 4가지</h2>
-      <p>12별자리는 <strong>불·흙·공기·물</strong> 네 원소로 묶입니다. 같은 원소끼리는 대체로 잘 통합니다.</p>
       <ul>
         <li><strong>🔥 불 (양·사자·사수)</strong> — 열정적이고 추진력 있는 리더형. 솔직하고 에너지가 넘칩니다.</li>
         <li><strong>⛰️ 흙 (황소·처녀·염소)</strong> — 현실적이고 성실한 노력형. 책임감 있고 꾸준합니다.</li>
@@ -78,18 +96,15 @@
         <li><strong>💧 물 (게·전갈·물고기)</strong> — 감정이 풍부한 공감형. 섬세하고 정이 깊습니다.</li>
       </ul>
 
-      <div class="callout">💡 생일로 <a href="/birth-year/">띠·나이</a>도 같이 궁금하다면 <a href="/posts/zodiac-year-age.html">십이지 띠로 나이 찾기</a>, 사주 원국이 궁금하면 <a href="/saju/">무료 사주풀이</a>를 확인해 보세요.</div>
-
-      <h2>별자리 궁합 — 잘 맞는 조합</h2>
-      <p>궁합은 보통 <strong>같은 원소</strong>이거나 <strong>서로를 보완하는 원소</strong>(불↔공기, 흙↔물)일 때 잘 맞는다고 봅니다. 위 도구에서 내 별자리를 확인하면 잘 맞는·조심할 별자리가 함께 나옵니다.</p>
+      <div class="callout">💡 생일로 <a href="/birth-year/">띠·나이</a>도 궁금하다면 <a href="/posts/zodiac-year-age.html">십이지 띠로 나이 찾기</a>, 성격은 <a href="/posts/mbti-compatibility.html">MBTI 궁합</a>, 타고난 기질은 <a href="/saju/">무료 사주풀이</a>로 확인해 보세요.</div>
 
       <h2>자주 묻는 질문</h2>
       <h3>Q. 별자리는 양력인가요, 음력인가요?</h3>
       <p>별자리(서양 점성술)는 <strong>양력 생일</strong>을 기준으로 합니다. 음력으로 알고 있다면 양력으로 변환한 날짜로 보세요. (참고로 <strong>띠</strong>는 동양식으로, 보통 음력·입춘 기준이라 별자리와 기준이 다릅니다.)</p>
-      <h3>Q. 경계일에 태어났어요. 두 별자리 중 뭐가 맞나요?</h3>
-      <p>별자리가 바뀌는 경계일(예: 양자리/황소자리 사이)에 태어났다면 '커스프'라고 해서 해에 따라 하루 정도 차이가 날 수 있습니다. 정확히는 태어난 연도의 절기 시각으로 갈리므로, 두 별자리 성격을 모두 참고하면 됩니다.</p>
+      <h3>Q. 궁합 점수는 어떻게 계산되나요?</h3>
+      <p>두 별자리의 <strong>원소 관계</strong>(같은 원소·보완 원소·상극 원소)와 전통적으로 잘 맞는다고 보는 조합을 반영해 점수로 환산한 것입니다. 재미로 참고하는 지표이며, 실제 관계는 서로의 노력이 가장 중요합니다.</p>
 
-      <div class="related"><strong>함께 보면 좋은 글</strong> — <a href="/posts/zodiac-year-age.html">십이지 띠로 나이 찾기</a> · <a href="/saju/">무료 사주풀이</a> · <a href="/blog/mbti-vs-saju/">MBTI vs 사주</a></div>
+      <div class="related"><strong>함께 보면 좋은 글</strong> — <a href="/posts/zodiac-year-age.html">십이지 띠로 나이 찾기</a> · <a href="/posts/mbti-compatibility.html">MBTI 궁합</a> · <a href="/saju/">무료 사주풀이</a></div>
     </article>
   </main>
 
@@ -100,45 +115,90 @@
   <script>
   (function () {
     var SIGNS = [
-      { ko: "양자리", en: "Aries", emoji: "♈", el: "불", color: "#e8590c", sm: 3, sd: 21, em: 4, ed: 19,
-        p: "열정적이고 추진력 있는 리더형. 솔직하고 도전을 즐기지만 가끔 성급합니다.", good: ["사자자리", "사수자리"], bad: ["게자리"], y: "새 도전·시작운이 강한 해. 벌여놓고 마무리하는 힘을 기르면 성과가 큽니다." },
-      { ko: "황소자리", en: "Taurus", emoji: "♉", el: "흙", color: "#2b8a3e", sm: 4, sd: 20, em: 5, ed: 20,
-        p: "현실적이고 끈기 있는 노력형. 안정과 미식을 좋아하고 한번 정하면 꾸준합니다.", good: ["처녀자리", "염소자리"], bad: ["물병자리"], y: "재물·실속운이 좋은 해. 무리한 변화보다 쌓아온 것을 키우는 게 유리합니다." },
-      { ko: "쌍둥이자리", en: "Gemini", emoji: "♊", el: "공기", color: "#1098ad", sm: 5, sd: 21, em: 6, ed: 21,
-        p: "머리 회전 빠른 소통형. 호기심 많고 재치 있지만 관심사가 자주 바뀝니다.", good: ["천칭자리", "물병자리"], bad: ["전갈자리"], y: "배움·인맥운이 열리는 해. 벌인 일을 한두 개로 좁히면 크게 됩니다." },
-      { ko: "게자리", en: "Cancer", emoji: "♋", el: "물", color: "#7048e8", sm: 6, sd: 22, em: 7, ed: 22,
-        p: "정 깊고 가정적인 공감형. 섬세하고 보호 본능이 강하지만 상처를 오래 담아둡니다.", good: ["전갈자리", "물고기자리"], bad: ["양자리"], y: "가족·내 사람과의 인연이 깊어지는 해. 감정 소모만 줄이면 안정적입니다." },
-      { ko: "사자자리", en: "Leo", emoji: "♌", el: "불", color: "#e8590c", sm: 7, sd: 23, em: 8, ed: 22,
-        p: "당당하고 주목받는 리더형. 자신감 있고 베풀기를 좋아하지만 인정 욕구가 큽니다.", good: ["양자리", "사수자리"], bad: ["황소자리"], y: "주목·성취운이 강한 해. 자존심을 세우기보다 함께 가면 더 멀리 갑니다." },
-      { ko: "처녀자리", en: "Virgo", emoji: "♍", el: "흙", color: "#2b8a3e", sm: 8, sd: 23, em: 9, ed: 22,
-        p: "꼼꼼하고 분석적인 완벽추구형. 성실하고 똑똑하지만 자신·타인에게 엄격합니다.", good: ["황소자리", "염소자리"], bad: ["사수자리"], y: "실력·건강 관리운이 좋은 해. 완벽 대신 '완성'에 집중하면 인정받습니다." },
-      { ko: "천칭자리", en: "Libra", emoji: "♎", el: "공기", color: "#1098ad", sm: 9, sd: 23, em: 10, ed: 23,
-        p: "균형 감각 뛰어난 조화형. 세련되고 공정하지만 결정을 자주 미룹니다.", good: ["쌍둥이자리", "물병자리"], bad: ["게자리"], y: "인연·협력운이 좋은 해. 우유부단만 줄이면 좋은 사람·기회가 붙습니다." },
-      { ko: "전갈자리", en: "Scorpio", emoji: "♏", el: "물", color: "#7048e8", sm: 10, sd: 24, em: 11, ed: 22,
-        p: "집중력과 통찰이 강한 몰입형. 한번 믿으면 깊지만 호불호가 분명합니다.", good: ["게자리", "물고기자리"], bad: ["쌍둥이자리"], y: "집중하면 끝을 보는 해. 의심·집착을 내려놓으면 성과와 인연이 깊어집니다." },
-      { ko: "사수자리", en: "Sagittarius", emoji: "♐", el: "불", color: "#e8590c", sm: 11, sd: 23, em: 12, ed: 21,
-        p: "자유롭고 긍정적인 모험형. 솔직하고 통이 크지만 때로 즉흥적입니다.", good: ["양자리", "사자자리"], bad: ["처녀자리"], y: "이동·확장운이 좋은 해. 큰 그림을 세우고 한 걸음씩 가면 멀리 뻗습니다." },
-      { ko: "염소자리", en: "Capricorn", emoji: "♑", el: "흙", color: "#2b8a3e", sm: 12, sd: 22, em: 1, ed: 19,
-        p: "책임감 강한 현실주의 노력형. 목표 지향적이고 성실하지만 여유가 부족합니다.", good: ["황소자리", "처녀자리"], bad: ["천칭자리"], y: "노력이 결실로 이어지는 해. 혼자 짊어지지 말고 쉬어가면 더 오래갑니다." },
-      { ko: "물병자리", en: "Aquarius", emoji: "♒", el: "공기", color: "#1098ad", sm: 1, sd: 20, em: 2, ed: 18,
-        p: "독창적이고 자유로운 개성파. 쿨하고 공정하지만 속내를 잘 안 보입니다.", good: ["쌍둥이자리", "천칭자리"], bad: ["황소자리"], y: "새 아이디어·변화운이 강한 해. 사람과의 거리만 조금 좁히면 기회가 큽니다." },
-      { ko: "물고기자리", en: "Pisces", emoji: "♓", el: "물", color: "#7048e8", sm: 2, sd: 19, em: 3, ed: 20,
-        p: "감수성 풍부한 낭만·공감형. 다정하고 상상력이 뛰어나지만 거절을 어려워합니다.", good: ["게자리", "전갈자리"], bad: ["쌍둥이자리"], y: "감성·예술·인연운이 좋은 해. 현실 감각만 더하면 꿈이 결실이 됩니다." }
+      { ko: "양자리", en: "Aries", emoji: "♈", el: "불", color: "#e8590c", sm: 3, sd: 21, em: 4, ed: 19, p: "열정적이고 추진력 있는 리더형. 솔직하고 도전을 즐기지만 가끔 성급합니다.", good: ["사자자리", "사수자리"], bad: ["게자리"], y: "새 도전·시작운이 강한 해. 벌여놓고 마무리하는 힘을 기르면 성과가 큽니다." },
+      { ko: "황소자리", en: "Taurus", emoji: "♉", el: "흙", color: "#2b8a3e", sm: 4, sd: 20, em: 5, ed: 20, p: "현실적이고 끈기 있는 노력형. 안정과 미식을 좋아하고 한번 정하면 꾸준합니다.", good: ["처녀자리", "염소자리"], bad: ["물병자리"], y: "재물·실속운이 좋은 해. 무리한 변화보다 쌓아온 것을 키우는 게 유리합니다." },
+      { ko: "쌍둥이자리", en: "Gemini", emoji: "♊", el: "공기", color: "#1098ad", sm: 5, sd: 21, em: 6, ed: 21, p: "머리 회전 빠른 소통형. 호기심 많고 재치 있지만 관심사가 자주 바뀝니다.", good: ["천칭자리", "물병자리"], bad: ["전갈자리"], y: "배움·인맥운이 열리는 해. 벌인 일을 한두 개로 좁히면 크게 됩니다." },
+      { ko: "게자리", en: "Cancer", emoji: "♋", el: "물", color: "#7048e8", sm: 6, sd: 22, em: 7, ed: 22, p: "정 깊고 가정적인 공감형. 섬세하고 보호 본능이 강하지만 상처를 오래 담아둡니다.", good: ["전갈자리", "물고기자리"], bad: ["양자리"], y: "가족·내 사람과의 인연이 깊어지는 해. 감정 소모만 줄이면 안정적입니다." },
+      { ko: "사자자리", en: "Leo", emoji: "♌", el: "불", color: "#e8590c", sm: 7, sd: 23, em: 8, ed: 22, p: "당당하고 주목받는 리더형. 자신감 있고 베풀기를 좋아하지만 인정 욕구가 큽니다.", good: ["양자리", "사수자리"], bad: ["황소자리"], y: "주목·성취운이 강한 해. 자존심을 세우기보다 함께 가면 더 멀리 갑니다." },
+      { ko: "처녀자리", en: "Virgo", emoji: "♍", el: "흙", color: "#2b8a3e", sm: 8, sd: 23, em: 9, ed: 22, p: "꼼꼼하고 분석적인 완벽추구형. 성실하고 똑똑하지만 자신·타인에게 엄격합니다.", good: ["황소자리", "염소자리"], bad: ["사수자리"], y: "실력·건강 관리운이 좋은 해. 완벽 대신 '완성'에 집중하면 인정받습니다." },
+      { ko: "천칭자리", en: "Libra", emoji: "♎", el: "공기", color: "#1098ad", sm: 9, sd: 23, em: 10, ed: 23, p: "균형 감각 뛰어난 조화형. 세련되고 공정하지만 결정을 자주 미룹니다.", good: ["쌍둥이자리", "물병자리"], bad: ["게자리"], y: "인연·협력운이 좋은 해. 우유부단만 줄이면 좋은 사람·기회가 붙습니다." },
+      { ko: "전갈자리", en: "Scorpio", emoji: "♏", el: "물", color: "#7048e8", sm: 10, sd: 24, em: 11, ed: 22, p: "집중력과 통찰이 강한 몰입형. 한번 믿으면 깊지만 호불호가 분명합니다.", good: ["게자리", "물고기자리"], bad: ["쌍둥이자리"], y: "집중하면 끝을 보는 해. 의심·집착을 내려놓으면 성과와 인연이 깊어집니다." },
+      { ko: "사수자리", en: "Sagittarius", emoji: "♐", el: "불", color: "#e8590c", sm: 11, sd: 23, em: 12, ed: 21, p: "자유롭고 긍정적인 모험형. 솔직하고 통이 크지만 때로 즉흥적입니다.", good: ["양자리", "사자자리"], bad: ["처녀자리"], y: "이동·확장운이 좋은 해. 큰 그림을 세우고 한 걸음씩 가면 멀리 뻗습니다." },
+      { ko: "염소자리", en: "Capricorn", emoji: "♑", el: "흙", color: "#2b8a3e", sm: 12, sd: 22, em: 1, ed: 19, p: "책임감 강한 현실주의 노력형. 목표 지향적이고 성실하지만 여유가 부족합니다.", good: ["황소자리", "처녀자리"], bad: ["천칭자리"], y: "노력이 결실로 이어지는 해. 혼자 짊어지지 말고 쉬어가면 더 오래갑니다." },
+      { ko: "물병자리", en: "Aquarius", emoji: "♒", el: "공기", color: "#1098ad", sm: 1, sd: 20, em: 2, ed: 18, p: "독창적이고 자유로운 개성파. 쿨하고 공정하지만 속내를 잘 안 보입니다.", good: ["쌍둥이자리", "천칭자리"], bad: ["황소자리"], y: "새 아이디어·변화운이 강한 해. 사람과의 거리만 조금 좁히면 기회가 큽니다." },
+      { ko: "물고기자리", en: "Pisces", emoji: "♓", el: "물", color: "#7048e8", sm: 2, sd: 19, em: 3, ed: 20, p: "감수성 풍부한 낭만·공감형. 다정하고 상상력이 뛰어나지만 거절을 어려워합니다.", good: ["게자리", "전갈자리"], bad: ["쌍둥이자리"], y: "감성·예술·인연운이 좋은 해. 현실 감각만 더하면 꿈이 결실이 됩니다." }
     ];
     var ELEMOJI = { "불": "🔥", "흙": "⛰️", "공기": "💨", "물": "💧" };
+    var byKo = {}; SIGNS.forEach(function (s, i) { s.idx = i; byKo[s.ko] = s; });
 
+    // ── 오늘의 운세 (날짜+별자리 시드로 매일 갱신, 하루 안에선 고정) ──
+    var POOL = {
+      total: ["흐름이 순조로워 마음먹은 일이 술술 풀리는 하루.", "작은 변화가 좋은 기회로 이어질 수 있는 날.", "서두르기보다 차분히 가면 결과가 좋습니다.", "주변의 도움으로 막혔던 일이 풀립니다.", "컨디션이 좋아 집중력이 오르는 하루.", "예상 밖의 반가운 소식이 들려올 수 있어요.", "욕심을 조금 내려놓으면 오히려 얻는 날.", "준비해온 일이 인정받기 좋은 타이밍."],
+      love: ["먼저 다가가면 분위기가 한층 가까워집니다.", "솔직한 한마디가 관계를 부드럽게 해요.", "작은 표현이 큰 호감으로 돌아옵니다.", "오래 연락 없던 인연에게서 소식이 올 수도.", "함께 있는 시간이 유독 편안한 하루.", "서운함은 담아두지 말고 가볍게 푸세요."],
+      money: ["충동구매만 참으면 지출이 안정적입니다.", "뜻밖의 작은 수입이 생길 수 있어요.", "큰 결정은 하루 미루는 게 유리합니다.", "아껴 쓴 만큼 여유가 생기는 날.", "정보를 꼼꼼히 확인하면 손해를 막습니다.", "나눌수록 돌아오는 재물운."],
+      work: ["맡은 일을 빠르게 처리해 인정받습니다.", "협업에서 좋은 아이디어가 나오는 날.", "실수만 조심하면 순조롭게 마무리됩니다.", "새 제안·시도가 좋은 평가를 받습니다.", "집중할수록 능률이 오르는 하루.", "미뤘던 일을 끝내기 좋은 타이밍."],
+      color: ["화이트", "블루", "레드", "그린", "옐로", "퍼플", "핑크", "블랙", "베이지", "오렌지"],
+      item: ["향수", "손수건", "텀블러", "이어폰", "노트", "작은 식물", "모자", "반지"]
+    };
+    function hash(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = (h * 16777619) >>> 0; } return h; }
+    function pick(arr, seed) { return arr[seed % arr.length]; }
+    function todayKey() { var d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+    function todayLabel() { var d = new Date(); var w = ["일","월","화","수","목","금","토"]; return (d.getMonth() + 1) + "월 " + d.getDate() + "일 (" + w[d.getDay()] + ")"; }
+    function fortune(sign) {
+      var base = todayKey() + "#" + sign.idx;
+      var stars = 2 + (hash(base + "s") % 4); // 2~5
+      return {
+        stars: stars,
+        total: pick(POOL.total, hash(base + "t")),
+        love: pick(POOL.love, hash(base + "l")),
+        money: pick(POOL.money, hash(base + "m")),
+        work: pick(POOL.work, hash(base + "w")),
+        color: pick(POOL.color, hash(base + "c")),
+        num: 1 + (hash(base + "n") % 45),
+        item: pick(POOL.item, hash(base + "i"))
+      };
+    }
+    function starStr(n) { return "★★★★★".slice(0, n) + "☆☆☆☆☆".slice(0, 5 - n); }
+    function todayHtml(sign) {
+      var f = fortune(sign);
+      return '<div class="today-box">' +
+        '<div class="today-head"><b>🔮 ' + sign.ko + ' 오늘의 운세</b><span class="today-date">' + todayLabel() + '</span></div>' +
+        '<div class="today-stars">총운 ' + starStr(f.stars) + '</div>' +
+        '<div class="ti" style="border:0;padding-top:2px">' + f.total + '</div>' +
+        '<div class="today-grid">' +
+          '<div class="ti"><b>💗 애정운</b>' + f.love + '</div>' +
+          '<div class="ti"><b>💰 금전운</b>' + f.money + '</div>' +
+          '<div class="ti"><b>💼 직장·학업운</b>' + f.work + '</div>' +
+          '<div class="ti"><b>🍀 한줄 조언</b>작은 것에 감사하면 운이 따릅니다.</div>' +
+        '</div>' +
+        '<div class="today-luck"><span class="luck-chip">행운의 색 ' + f.color + '</span>' +
+          '<span class="luck-chip">행운의 숫자 ' + f.num + '</span>' +
+          '<span class="luck-chip">행운의 아이템 ' + f.item + '</span></div>' +
+      '</div>';
+    }
+
+    // ── 별자리 판정 ──
     function signOf(m, d) {
       for (var i = 0; i < SIGNS.length; i++) {
         var s = SIGNS[i];
-        if (s.sm <= s.em) { // 같은 해 안
-          if ((m === s.sm && d >= s.sd) || (m === s.em && d <= s.ed) || (m > s.sm && m < s.em)) return s;
-        } else { // 연말~연초 (염소자리)
-          if ((m === s.sm && d >= s.sd) || (m === s.em && d <= s.ed) || m > s.sm || m < s.em) return s;
-        }
+        if (s.sm <= s.em) { if ((m === s.sm && d >= s.sd) || (m === s.em && d <= s.ed) || (m > s.sm && m < s.em)) return s; }
+        else { if ((m === s.sm && d >= s.sd) || (m === s.em && d <= s.ed) || m > s.sm || m < s.em) return s; }
       }
       return SIGNS[0];
     }
 
+    // ── 탭 ──
+    var tabs = document.querySelectorAll(".zt-tabs button");
+    tabs.forEach(function (b) {
+      b.addEventListener("click", function () {
+        tabs.forEach(function (x) { x.classList.remove("active"); });
+        b.classList.add("active");
+        document.getElementById("pane-me").hidden = b.getAttribute("data-tab") !== "me";
+        document.getElementById("pane-gh").hidden = b.getAttribute("data-tab") !== "gh";
+      });
+    });
+
+    // ── 생일 셀렉트 ──
     var mSel = document.getElementById("zMonth"), dSel = document.getElementById("zDay");
     for (var mo = 1; mo <= 12; mo++) mSel.innerHTML += '<option value="' + mo + '">' + mo + '월</option>';
     function fillDays() {
@@ -147,35 +207,73 @@
       for (var dd = 1; dd <= days; dd++) dSel.innerHTML += '<option value="' + dd + '">' + dd + '일</option>';
       dSel.value = Math.min(cur, days);
     }
-    mSel.addEventListener("change", fillDays);
-    fillDays();
+    mSel.addEventListener("change", fillDays); fillDays();
 
-    function render() {
+    function renderMe() {
       var s = signOf(+mSel.value, +dSel.value);
       var period = s.sm + "/" + s.sd + " ~ " + s.em + "/" + s.ed;
       var good = s.good.map(function (g) { return '<span class="zs-chip good">💛 ' + g + '</span>'; }).join("");
       var bad = s.bad.map(function (g) { return '<span class="zs-chip bad">⚡ ' + g + '</span>'; }).join("");
       var r = document.getElementById("zResult");
       r.innerHTML =
-        '<div class="zs-head" style="--el:' + s.color + '">' +
-          '<span class="zs-emoji">' + s.emoji + '</span>' +
+        '<div class="zs-head" style="--el:' + s.color + '"><span class="zs-emoji">' + s.emoji + '</span>' +
           '<span><span class="zs-name">' + s.ko + ' <small>(' + s.en + ')</small></span>' +
-          '<span class="zs-sub">' + ELEMOJI[s.el] + ' ' + s.el + ' 원소 · ' + period + '</span></span>' +
-        '</div>' +
+          '<span class="zs-sub">' + ELEMOJI[s.el] + ' ' + s.el + ' 원소 · ' + period + '</span></span></div>' +
         '<div class="zs-body">' +
           '<div class="zs-row"><b>성격</b><br>' + s.p + '</div>' +
-          '<div class="zs-row"><b>잘 맞는 별자리</b><div class="zs-chips">' + good + '</div></div>' +
+          todayHtml(s) +
+          '<div class="zs-row" style="margin-top:12px"><b>잘 맞는 별자리</b><div class="zs-chips">' + good + '</div></div>' +
           '<div class="zs-row"><b>조심할 별자리</b><div class="zs-chips">' + bad + '</div></div>' +
           '<div class="zs-row"><b>2026년 테마</b><br>' + s.y + '</div>' +
-          '<p class="zs-note">※ 별자리 성격·운세는 일반적인 경향을 재미로 정리한 것입니다. 생년월일시로 더 자세히 보려면 <a href="/saju/">무료 사주풀이</a>를 이용해 보세요.</p>' +
+          '<p class="zs-note">※ 별자리 운세는 재미로 참고해 주세요. 더 자세히는 <a href="/saju/">무료 사주풀이</a>를 이용해 보세요.</p>' +
         '</div>';
       r.hidden = false;
     }
-    document.getElementById("zBtn").addEventListener("click", render);
+    document.getElementById("zBtn").addEventListener("click", renderMe);
 
-    // 날짜표 채우기
-    var tb = document.getElementById("zTable");
-    tb.innerHTML = SIGNS.map(function (s) {
+    // ── 궁합 ──
+    var COMPLEMENT = { "불": "공기", "공기": "불", "흙": "물", "물": "흙" };
+    var CLASH = { "불": "물", "물": "불", "흙": "공기", "공기": "흙" };
+    var gA = document.getElementById("gA"), gB = document.getElementById("gB");
+    SIGNS.forEach(function (s) {
+      gA.innerHTML += '<option value="' + s.ko + '">' + s.emoji + ' ' + s.ko + '</option>';
+      gB.innerHTML += '<option value="' + s.ko + '">' + s.emoji + ' ' + s.ko + '</option>';
+    });
+    gB.selectedIndex = 4;
+    function score(a, b) {
+      var base;
+      if (a.el === b.el) base = 86; else if (COMPLEMENT[a.el] === b.el) base = 90; else if (CLASH[a.el] === b.el) base = 56; else base = 68;
+      if (a.good.indexOf(b.ko) !== -1 || b.good.indexOf(a.ko) !== -1) base += 8;
+      if (a.bad.indexOf(b.ko) !== -1 || b.bad.indexOf(a.ko) !== -1) base -= 12;
+      base += (hash(a.ko + b.ko) % 7) - 3; // ±3 미세 변화(고정)
+      return Math.max(42, Math.min(98, base));
+    }
+    function grade(sc) {
+      if (sc >= 85) return { g: "환상의 궁합", c: "#0ca678", m: "서로를 가장 잘 보완하는 조합! 함께 있으면 시너지가 큽니다." };
+      if (sc >= 72) return { g: "좋은 궁합", c: "#3b5bdb", m: "결이 잘 맞아 편안한 사이. 작은 배려로 더 깊어집니다." };
+      if (sc >= 58) return { g: "무난한 궁합", c: "#f59f00", m: "큰 충돌은 없는 편. 서로의 속도를 맞춰가면 좋아집니다." };
+      return { g: "노력이 필요한 궁합", c: "#e64980", m: "성향이 달라 부딪힐 수 있지만, 이해하면 가장 많이 배우는 관계예요." };
+    }
+    function renderGh() {
+      var a = byKo[gA.value], b = byKo[gB.value];
+      var sc = score(a, b), gr = grade(sc);
+      var r = document.getElementById("gResult");
+      r.innerHTML =
+        '<div class="zs-head" style="--el:' + gr.c + '"><span class="score-ring">' + sc + '<small style="font-size:1rem">점</small></span>' +
+          '<span><span class="zs-name">' + a.emoji + ' ' + a.ko + ' × ' + b.emoji + ' ' + b.ko + '</span>' +
+          '<span class="zs-sub">' + gr.g + '</span></span></div>' +
+        '<div class="zs-body">' +
+          '<div class="zs-row">' + gr.m + '</div>' +
+          '<div class="zs-row"><b>' + a.ko + '</b> (' + ELEMOJI[a.el] + a.el + ') — ' + a.p + '</div>' +
+          '<div class="zs-row"><b>' + b.ko + '</b> (' + ELEMOJI[b.el] + b.el + ') — ' + b.p + '</div>' +
+          '<p class="zs-note">※ 궁합 점수는 원소 관계와 전통적 조합을 재미로 환산한 지표입니다.</p>' +
+        '</div>';
+      r.hidden = false;
+    }
+    document.getElementById("gBtn").addEventListener("click", renderGh);
+
+    // 날짜표
+    document.getElementById("zTable").innerHTML = SIGNS.map(function (s) {
       return '<tr><th>' + s.emoji + ' ' + s.ko + '</th><td>' + s.sm + "월 " + s.sd + "일 ~ " + s.em + "월 " + s.ed + "일</td><td>" + ELEMOJI[s.el] + " " + s.el + "</td></tr>";
     }).join("");
   })();
