@@ -1,0 +1,47 @@
+name: 무료 사진 자동 수집
+
+on:
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "수집 범위 (new-only: 사진 없는 글만 / all: 전부 재수집)"
+        type: choice
+        options: ["new-only", "all"]
+        default: "new-only"
+      only:
+        description: "특정 슬러그만 수집(쉼표 구분, 선택사항)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install sharp
+        run: npm install sharp@0.33.5
+      - name: 사진 수집·최적화·등록
+        env:
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+        run: |
+          ARGS=""
+          if [ "${{ inputs.scope }}" = "all" ]; then ARGS="--all"; fi
+          if [ -n "${{ inputs.only }}" ]; then ARGS="--only ${{ inputs.only }}"; fi
+          node scripts/fetch-photos.js $ARGS
+      - name: 커밋·푸시
+        run: |
+          git config user.email "noreply@anthropic.com"
+          git config user.name "Claude"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "변경 사항 없음 — 커밋 생략"
+          else
+            git commit -m "무료 사진 자동 수집·등록 (fetch-photos)"
+            git push
+          fi
