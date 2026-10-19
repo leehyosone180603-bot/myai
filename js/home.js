@@ -12,9 +12,11 @@ function catBadge(slug) {
 
 /* 카드 종류: "lead"(대형), "sub"(중형), "row"(가로 리스트), "mini"(사이드바) */
 function postCard(p, variant) {
+  var c = CATEGORIES[p.category];
+  var col = c ? c.color : "#3b5bdb";
   var img = p.image
     ? '<span class="pc-thumb"><img src="' + esc(p.image) + '" alt="' + esc(p.title) + '" loading="lazy"></span>'
-    : '';
+    : '<span class="pc-thumb pc-ph" style="--cat:' + col + '"><span>' + esc(c ? c.name : "") + '</span></span>';
   if (variant === "mini") {
     return '<a class="mini-item" href="' + esc(p.url) + '">' +
       '<span class="mini-date">' + esc(p.date) + '</span>' +
@@ -89,6 +91,24 @@ function renderHome() {
 
   var rows = rest.map(function (p) { return postCard(p, "row"); }).join("");
 
+  // 도깨비 사주 앱 홍보 배너 + 사주·운세 인기 글
+  var fortunePosts = posts.filter(function (p) { return p.category === "fortune"; }).slice(0, 4);
+  var fortuneLinks = fortunePosts.map(function (p) {
+    return '<a href="' + esc(p.url) + '">' + esc(p.title) + '</a>';
+  }).join("");
+  var sajuPromo =
+    '<div class="wrap"><section class="saju-promo">' +
+      '<div class="saju-promo-main">' +
+        '<span class="saju-badge">🔮 무료 사주</span>' +
+        '<h2>도깨비 사주 — 천 년 묵은 도깨비가 봐주는 무료 사주풀이</h2>' +
+        '<p>생년월일시만 넣으면 사주 원국·오행·십성·대운까지 한눈에. 설치 없이 무료로 바로 봅니다.</p>' +
+        '<a class="saju-cta" href="/saju/">사주 무료로 보기 →</a>' +
+      '</div>' +
+      '<div class="saju-promo-list"><strong>사주·운세 인기 글</strong>' + fortuneLinks +
+        '<a class="saju-more" href="/category.html?cat=fortune">사주·운세 전체 보기 →</a>' +
+      '</div>' +
+    '</section></div>';
+
   root.innerHTML =
     '<section class="hero"><div class="wrap"><div class="hero-grid">' +
       '<div class="hero-lead">' + postCard(lead, "lead") + '</div>' +
@@ -97,6 +117,7 @@ function renderHome() {
         '<div class="hero-heads">' + heroHeads + '</div>' +
       '</div>' +
     '</div></div></section>' +
+    sajuPromo +
     (adUnit("top") ? '<div class="wrap">' + adUnit("top") + '</div>' : '') +
     '<div class="wrap"><div class="home-grid">' +
       '<div class="home-main"><h2 class="sec-title">최신 기사</h2>' + rows + '</div>' +

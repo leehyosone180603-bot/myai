@@ -187,3 +187,29 @@ img { max-width: 100%; display: block; }
   .post h1 { font-size: 1.5rem; }
   .page { padding: 22px 18px; }
 }
+
+/* ===== 썸네일 없는 카드 플레이스홀더 ===== */
+.pc-ph { display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--cat, #3b5bdb), rgba(255,255,255,.18)), var(--cat, #3b5bdb); }
+.pc-ph span { color: #fff; font-weight: 800; font-size: 1rem; letter-spacing: .02em;
+  text-shadow: 0 1px 3px rgba(0,0,0,.25); padding: 0 10px; text-align: center; }
+
+/* ===== 도깨비 사주 앱 홍보 배너 ===== */
+.saju-promo { display: grid; grid-template-columns: 1.4fr 1fr; gap: 0; border-radius: var(--radius);
+  overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--border); margin: 10px 0 2px; }
+.saju-promo-main { background: linear-gradient(135deg, #4c3b8f, #7048e8); color: #fff; padding: 26px 28px; }
+.saju-badge { display: inline-block; background: rgba(255,255,255,.2); color: #fff; font-weight: 800;
+  font-size: .78rem; padding: 4px 10px; border-radius: 999px; }
+.saju-promo-main h2 { font-size: 1.3rem; margin: 12px 0 8px; line-height: 1.35; color: #fff; border: 0; padding: 0; }
+.saju-promo-main p { font-size: .92rem; opacity: .92; margin: 0 0 16px; }
+.saju-cta { display: inline-block; background: #fff; color: #5f3dc4; font-weight: 800;
+  padding: 11px 20px; border-radius: 999px; text-decoration: none; }
+.saju-cta:hover { background: #f3f0ff; }
+.saju-promo-list { background: var(--card); padding: 20px 24px; display: flex; flex-direction: column; }
+.saju-promo-list strong { font-size: .9rem; margin-bottom: 8px; }
+.saju-promo-list a { color: var(--text); text-decoration: none; font-size: .9rem; line-height: 1.4;
+  padding: 8px 0; border-top: 1px solid var(--border); }
+.saju-promo-list a:first-of-type { border-top: 0; }
+.saju-promo-list a:hover { color: var(--primary); }
+.saju-more { color: #7048e8 !important; font-weight: 700; margin-top: 6px; }
+@media (max-width: 760px) { .saju-promo { grid-template-columns: 1fr; } }
