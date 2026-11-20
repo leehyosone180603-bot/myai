@@ -1,109 +1,11 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <!-- Google tag (gtag.js) - GA4 -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JMGXSV1PJ2"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-JMGXSV1PJ2');
-  </script>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>로또 당첨금 실수령액 - 1등 세금 얼마? 22%·33% 실수령표 | 한국인계산기</title>
-  <meta name="description" content="로또 1등에 당첨되면 세금 떼고 실제로 얼마 받을까요? 당첨금만 입력하면 22%·33% 세금을 공제한 실수령액이 바로 나옵니다. 5만원 이하 비과세, 당첨금별 실수령액 표까지 확인하세요.">
-  <meta name="keywords" content="로또실수령액, 로또당첨금세금, 복권세금, 당첨금실수령, 로또세금계산기, 22%, 33%">
-  <meta name="robots" content="index, follow">
-  <meta property="og:title" content="로또 당첨금 실수령액 - 1등 세금 얼마? 22%·33% 실수령표">
-  <meta property="og:description" content="당첨금만 입력하면 22%·33% 세금 공제 후 실수령액이 바로. 당첨금별 실수령액 표까지 정리했습니다.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://calcbox.kr/lotto-prize/">
-  <meta property="og:site_name" content="한국인계산기">
-  <link rel="canonical" href="https://calcbox.kr/lotto-prize/">
-
-  <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"로또 당첨금에 세금은 얼마인가요?","acceptedAnswer":{"@type":"Answer","text":"5만원 이하는 비과세, 5만원 초과 3억원 이하는 22%, 3억원 초과분은 33%가 부과됩니다."}},{"@type":"Question","name":"20억 당첨 시 실수령액은 얼마인가요?","acceptedAnswer":{"@type":"Answer","text":"세금 약 6억 2,700만원을 제하고 약 13억 7,300만원을 받습니다."}},{"@type":"Question","name":"5만원 이하도 세금을 내나요?","acceptedAnswer":{"@type":"Answer","text":"5만원 이하 당첨금은 비과세로 세금이 없습니다."}}]}
-  </script>
-
-  <!-- Google AdSense 게시자 ID: ca-pub-7143828779500885 -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885"
-     crossorigin="anonymous"></script>
-
-  <link rel="stylesheet" href="../style.css?v=4">
+<meta charset="utf-8">
+<title>페이지가 이동했습니다 - 한국인계산기</title>
+<link rel="canonical" href="https://healthfortune.co.kr/lotto-prize/">
+<meta http-equiv="refresh" content="0; url=https://healthfortune.co.kr/lotto-prize/">
+<script>location.replace("https://healthfortune.co.kr/lotto-prize/");</script>
 </head>
-<body>
-  <nav class="back-nav"><a href="/">← 한국인계산기 전체 계산기</a></nav>
-
-  <header class="site-header">
-    <h1>🍀 로또 당첨금 실수령액 계산기</h1>
-    <p class="subtitle">당첨금 세금 공제 후 실수령액을 미리 확인</p>
-  </header>
-
-  <div class="ad-container" aria-label="광고">
-    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7143828779500885"
-         data-ad-slot="0000000000" data-ad-format="auto" data-full-width-responsive="true"></ins>
-  </div>
-
-  <main class="container">
-    <section class="card controls">
-      <div class="control-row">
-        <label for="amountInput">당첨금액 (원)</label>
-        <input type="text" id="amountInput" placeholder="예: 2,000,000,000" inputmode="numeric" autocomplete="off">
-      </div>
-      <p class="error" id="errorMsg" role="alert"></p>
-      <button id="calcBtn" class="btn-primary" type="button">실수령액 계산하기</button>
-    </section>
-
-    <section class="card results" id="resultsCard" hidden>
-      <div class="result-hero">
-        <p class="result-sub">세후 실수령액</p>
-        <div class="big"><span id="netMain">0</span><small>원</small></div>
-        <p class="result-sub" id="rateInfo"></p>
-      </div>
-      <table class="calc-table">
-        <tbody>
-          <tr><th>당첨금액</th><td id="rGross"></td></tr>
-          <tr class="deduct"><th>제세금 합계</th><td id="rTax"></td></tr>
-          <tr class="total"><th>실수령액</th><td id="rNet"></td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section class="card info">
-      <h2>복권 당첨금 과세 기준</h2>
-      <ul>
-        <li><strong>5만원 이하</strong>: 비과세 (세금 없음)</li>
-        <li><strong>5만원 초과 ~ 3억원 이하</strong>: 22% (소득세 20% + 지방소득세 2%)</li>
-        <li><strong>3억원 초과분</strong>: 33% (소득세 30% + 지방소득세 3%)</li>
-        <li>예: 20억 당첨 시 3억까지는 22%, 나머지 17억은 33%가 적용됩니다.</li>
-      </ul>
-    </section>
-    <section class="card info faq-section">
-      <h2>자주 묻는 질문</h2>
-      <h3>Q. 로또 당첨금에 세금은 얼마인가요?</h3>
-      <p>5만원 이하는 비과세, 5만원 초과 3억원 이하는 22%, 3억원 초과분은 33%가 부과됩니다.</p>
-      <h3>Q. 20억 당첨 시 실수령액은 얼마인가요?</h3>
-      <p>세금 약 6억 2,700만원을 제하고 약 13억 7,300만원을 받습니다.</p>
-      <h3>Q. 5만원 이하도 세금을 내나요?</h3>
-      <p>5만원 이하 당첨금은 비과세로 세금이 없습니다.</p>
-    </section>
-    <section class="card info guide-section">
-      <h2>로또 당첨금 실수령액 완벽 가이드</h2>
-      <h3>복권 당첨금에도 세금이 붙습니다</h3>
-      <p>로또를 비롯한 복권 당첨금은 소득세법상 기타소득으로 분류되어 세금이 부과됩니다. 광고에 나오는 당첨금은 세전 금액이며, 실제로 손에 쥐는 돈은 세금을 뗀 실수령액입니다. 당첨 즉시 원천징수되므로 별도로 신고할 필요는 없습니다.</p>
-      <h3>당첨금 세율 구간</h3>
-      <p>과세 기준은 다음과 같습니다. <strong>5만원 이하는 비과세</strong>로 세금이 없습니다. <strong>5만원 초과 3억원 이하는 22%</strong>(소득세 20% + 지방소득세 2%), <strong>3억원 초과분은 33%</strong>(소득세 30% + 지방소득세 3%)가 적용됩니다. 3억원을 넘는 고액 당첨은 3억까지는 22%, 초과분에만 33%가 적용되는 누진 구조입니다.</p>
-      <h3>실수령액 예시</h3>
-      <p>예를 들어 1등에 20억원이 당첨되면, 3억원까지는 22%인 6,600만원, 초과 17억원에는 33%인 5억 6,100만원이 부과되어 세금 합계가 약 6억 2,700만원이 됩니다. 따라서 실수령액은 약 <strong>13억 7,300만원</strong>이 됩니다. 당첨금이 클수록 33% 구간의 비중이 커져 실효세율이 높아집니다.</p>
-      <h3>당첨 후 유의사항</h3>
-      <p>고액 당첨 시에는 신원 노출을 피하고, 지급 은행에서 안전하게 수령하는 것이 좋습니다. 당첨금은 이미 원천징수가 완료되므로 추가 소득세 신고 의무는 없지만, 이후 자산 운용이나 증여 시에는 별도의 세금 문제가 발생할 수 있으니 전문가 상담을 권장합니다. 본 계산기는 당첨금을 입력하면 세금과 실수령액을 즉시 계산해 줍니다.</p>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <nav class="footer-links"><a href="/about/">소개·문의</a> · <a href="/privacy/">개인정보처리방침</a> · <a href="/terms/">이용약관</a></nav><p>© <span id="year"></span> 한국인계산기 · 로또 당첨금 실수령액 계산기</p></footer>
-  <script src="lotto-prize.js?v=1"></script>
-</body>
+<body>이 페이지는 <a href="https://healthfortune.co.kr/lotto-prize/">https://healthfortune.co.kr/lotto-prize/</a> 로 이전되었습니다.</body>
 </html>
