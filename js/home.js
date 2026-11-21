@@ -1,128 +1,153 @@
-/* =============================================================
-   home.js — 홈(index.html) 렌더링
-   posts.js, site.js 이후에 로드됩니다.
-   컨테이너: <div id="home-root"></div>
-   ============================================================= */
-
-function catBadge(slug) {
-  var c = CATEGORIES[slug];
-  if (!c) return "";
-  return '<span class="cat-badge" style="--cat:' + c.color + '">' + esc(c.name) + '</span>';
-}
-
-/* 카드 종류: "lead"(대형), "sub"(중형), "row"(가로 리스트), "mini"(사이드바) */
-function postCard(p, variant) {
-  var c = CATEGORIES[p.category];
-  var col = c ? c.color : "#3b5bdb";
-  var img = p.image
-    ? '<span class="pc-thumb"><img src="' + esc(p.image) + '" alt="' + esc(p.title) + '" loading="lazy"></span>'
-    : '<span class="pc-thumb pc-ph" style="--cat:' + col + '"><span>' + esc(c ? c.name : "") + '</span></span>';
-  if (variant === "mini") {
-    return '<a class="mini-item" href="' + esc(p.url) + '">' +
-      '<span class="mini-date">' + esc(p.date) + '</span>' +
-      '<span class="mini-title">' + esc(p.title) + '</span></a>';
+/*
+ * 건강상자 - 홈(메인) 렌더링
+ * 히어로(대표기사 + 보조카드 2개 + 헤드라인) + 본문 2단(기사목록 + 사이드바)을
+ * POSTS 데이터로 렌더링합니다.
+ */
+(function () {
+  function byDateDesc(a, b) {
+    return (b.date || "").localeCompare(a.date || "");
   }
-  if (variant === "row") {
-    return '<a class="row-card" href="' + esc(p.url) + '">' + img +
-      '<span class="pc-body">' + catBadge(p.category) +
-        '<span class="pc-title">' + esc(p.title) + '</span>' +
-        '<span class="pc-summary">' + esc(p.summary) + '</span>' +
-        '<span class="pc-date">' + esc(p.date) + '</span>' +
-      '</span></a>';
+  function postsAll() {
+    return (window.POSTS || []).slice().sort(byDateDesc);
   }
-  // lead / sub
-  return '<a class="feat-card feat-' + variant + '" href="' + esc(p.url) + '">' + img +
-    '<span class="pc-body">' + catBadge(p.category) +
-      '<span class="pc-title">' + esc(p.title) + '</span>' +
-      (variant === "lead" ? '<span class="pc-summary">' + esc(p.summary) + '</span>' : '') +
-      '<span class="pc-date">' + esc(p.date) + '</span>' +
-    '</span></a>';
-}
-
-function renderSidebar(posts) {
-  var latest = posts.slice(0, 8).map(function (p) { return postCard(p, "mini"); }).join("");
-  var catLinks = NAV_ORDER.filter(function (s) { return CATEGORIES[s] && CATEGORIES[s].ready; })
-    .map(function (s) {
-      return '<a class="side-cat" href="/category.html?cat=' + s + '" style="--cat:' + CATEGORIES[s].color + '">' +
-        esc(CATEGORIES[s].name) + '</a>';
-    }).join("");
-  return '<aside class="home-side">' +
-    '<div class="side-box"><h3 class="side-title">📰 최신 글</h3><div class="mini-list">' + latest + '</div></div>' +
-    '<div class="side-box"><h3 class="side-title">🗂️ 카테고리</h3><div class="side-cats">' + catLinks + '</div></div>' +
-    (adUnit("sidebar") ? '<div class="side-box">' + adUnit("sidebar") + '</div>' : '') +
-    '</aside>';
-}
-
-function renderHome() {
-  var root = document.getElementById("home-root");
-  if (!root) return;
-  var posts = getPostsSorted();
-
-  // ── 검색 모드 ──
-  var q = new URLSearchParams(location.search).get("q");
-  if (q && q.trim()) {
-    var term = q.trim().toLowerCase();
-    var hits = posts.filter(function (p) {
-      return (p.title + " " + p.summary).toLowerCase().indexOf(term) !== -1;
+  function postsBy(cat) {
+    return postsAll().filter(function (p) {
+      return p.category === cat;
     });
-    var listHtml = hits.length
-      ? hits.map(function (p) { return postCard(p, "row"); }).join("")
-      : '<p class="empty">검색 결과가 없습니다. 다른 검색어로 시도해 보세요.</p>';
-    root.innerHTML =
-      '<div class="wrap">' +
-        '<h1 class="search-h1">‘' + esc(q) + '’ 검색결과 <span>' + hits.length + '건</span></h1>' +
-        '<div class="home-grid"><div class="home-main">' + listHtml + '</div>' +
-        renderSidebar(posts) + '</div>' +
-      '</div>';
-    return;
   }
 
-  // ── 일반 홈 ──
-  var lead = posts[0];
-  var subs = posts.slice(1, 3);
-  var headlines = posts.slice(3, 8);
-  var rest = posts.slice(3); // 본문 목록은 히어로(0~2) 이후 전체
+  /* 카드: 큰 대표기사 */
+  function featuredCard(p) {
+    if (!p) return "";
+    return `
+      <a class="feat" href="${p.url}">
+        ${thumbHtml(p, "thumb--feat")}
+        <h2 class="feat__title">${esc(p.title)}</h2>
+        <p class="feat__summary">${esc(p.summary)}</p>
+      </a>`;
+  }
 
-  var heroSubs = subs.map(function (p) { return postCard(p, "sub"); }).join("");
-  var heroHeads = headlines.map(function (p) {
-    return '<a class="head-item" href="' + esc(p.url) + '">' + catBadge(p.category) +
-      '<span>' + esc(p.title) + '</span></a>';
-  }).join("");
+  /* 카드: 히어로 우측 상단 (이미지 + 제목) */
+  function heroSmall(p) {
+    return `
+      <a class="hsmall" href="${p.url}">
+        ${thumbHtml(p, "thumb--hsmall")}
+        <h3 class="hsmall__title">${esc(p.title)}</h3>
+      </a>`;
+  }
 
-  var rows = rest.map(function (p) { return postCard(p, "row"); }).join("");
+  /* 카드: 헤드라인 텍스트 리스트 */
+  function headlineItem(p) {
+    return `<a class="headline" href="${p.url}">${esc(p.title)}</a>`;
+  }
 
-  // 도깨비 사주 앱 홍보 배너 + 사주·운세 인기 글
-  var fortunePosts = posts.filter(function (p) { return p.category === "fortune"; }).slice(0, 4);
-  var fortuneLinks = fortunePosts.map(function (p) {
-    return '<a href="' + esc(p.url) + '">' + esc(p.title) + '</a>';
-  }).join("");
-  var sajuPromo =
-    '<div class="wrap"><section class="saju-promo">' +
-      '<div class="saju-promo-main">' +
-        '<span class="saju-badge">🔮 무료 사주</span>' +
-        '<h2>도깨비 사주 — 천 년 묵은 도깨비가 봐주는 무료 사주풀이</h2>' +
-        '<p>생년월일시만 넣으면 사주 원국·오행·십성·대운까지 한눈에. 설치 없이 무료로 바로 봅니다.</p>' +
-        '<a class="saju-cta" href="/saju/">사주 무료로 보기 →</a>' +
-      '</div>' +
-      '<div class="saju-promo-list"><strong>사주·운세 인기 글</strong>' + fortuneLinks +
-        '<a class="saju-more" href="/category.html?cat=fortune">사주·운세 전체 보기 →</a>' +
-      '</div>' +
-    '</section></div>';
+  /* 카드: 좌측 기사목록 (썸네일+제목+요약) */
+  function listItem(p) {
+    return `
+      <a class="listitem" href="${p.url}">
+        ${thumbHtml(p, "thumb--list")}
+        <div class="listitem__body">
+          <h3 class="listitem__title">${esc(p.title)}</h3>
+          <p class="listitem__summary">${esc(p.summary)}</p>
+        </div>
+      </a>`;
+  }
 
-  root.innerHTML =
-    '<section class="hero"><div class="wrap"><div class="hero-grid">' +
-      '<div class="hero-lead">' + postCard(lead, "lead") + '</div>' +
-      '<div class="hero-side">' +
-        '<div class="hero-subs">' + heroSubs + '</div>' +
-        '<div class="hero-heads">' + heroHeads + '</div>' +
-      '</div>' +
-    '</div></div></section>' +
-    sajuPromo +
-    (adUnit("top") ? '<div class="wrap">' + adUnit("top") + '</div>' : '') +
-    '<div class="wrap"><div class="home-grid">' +
-      '<div class="home-main"><h2 class="sec-title">최신 기사</h2>' + rows + '</div>' +
-      renderSidebar(posts) +
-    '</div></div>';
-}
+  /* 사이드바: 타임라인 */
+  function timelineItem(p) {
+    const time = (p.date || "").slice(5).replace("-", ".");
+    return `
+      <a class="tl__item" href="${p.url}">
+        <span class="tl__time">${time}</span>
+        <span class="tl__dot"></span>
+        <span class="tl__title">${esc(p.title)}</span>
+      </a>`;
+  }
 
-document.addEventListener("DOMContentLoaded", renderHome);
+  /* 사이드바: 카테고리 그리드 카드 */
+  function gridCard(p) {
+    return `
+      <a class="gcard" href="${p.url}">
+        ${thumbHtml(p, "thumb--grid")}
+        <span class="gcard__title">${esc(p.title)}</span>
+      </a>`;
+  }
+
+  /* 사이드바: 태그형 리스트 */
+  function tagItem(p) {
+    return `
+      <a class="tagitem" href="${p.url}">
+        <span class="tag" style="--c:${catColor(p.category)}">${catName(p.category)}</span>
+        <span class="tagitem__title">${esc(p.title)}</span>
+      </a>`;
+  }
+
+  function render() {
+    const all = postsAll();
+    const foods = postsBy("food");
+    const infos = postsBy("info");
+
+    /* ── 히어로 ── */
+    const featured = all[0];
+    const heroRight = all.slice(1, 3);
+    const heroHeadlines = all.slice(3, 8);
+
+    const heroEl = document.getElementById("hero");
+    if (heroEl) {
+      const smalls = heroRight.length
+        ? `<div class="hero__smalls">${heroRight.map(heroSmall).join("")}</div>` : "";
+      const heads = heroHeadlines.length
+        ? `<div class="hero__headlines">${heroHeadlines.map(headlineItem).join("")}</div>` : "";
+      if (smalls || heads) {
+        heroEl.innerHTML = `
+          <div class="hero__main">${featuredCard(featured)}</div>
+          <div class="hero__side">${smalls}${heads}</div>`;
+      } else {
+        // 글이 적을 때: 대표기사를 넓게 표시
+        heroEl.classList.add("hero--single");
+        heroEl.innerHTML = `<div class="hero__main">${featuredCard(featured)}</div>`;
+      }
+    }
+
+    /* ── 본문 좌측: 광고 + 기사목록 ── */
+    const listEl = document.getElementById("main-list");
+    if (listEl) {
+      listEl.innerHTML =
+        adUnit("inList", "목록") + all.map(listItem).join("");
+    }
+
+    /* ── 사이드바: 타임라인 + 광고 + 카테고리 그리드 + 태그리스트 ── */
+    const sideEl = document.getElementById("sidebar");
+    if (sideEl) {
+      const tl = all.slice(0, 5).map(timelineItem).join("");
+      const foodGrid = foods.slice(0, 4).map(gridCard).join("");
+      const infoTags = infos.slice(0, 4).map(tagItem).join("");
+
+      const timelinePanel = all.length ? `
+        <div class="panel">
+          <div class="panel__head">최신 글 <span class="badge">NEW</span></div>
+          <div class="timeline">${tl}</div>
+          <a class="panel__more" href="/category.html?cat=info">건강정보 전체 보기 ›</a>
+        </div>` : "";
+
+      const foodPanel = foods.length ? `
+        <div class="panel">
+          <div class="panel__head">건강음식</div>
+          <div class="gridcards">${foodGrid}</div>
+        </div>` : "";
+
+      const infoPanel = infos.length ? `
+        <div class="panel">
+          <div class="panel__head">건강정보</div>
+          <div class="taglist">${infoTags}</div>
+        </div>` : "";
+
+      sideEl.innerHTML =
+        timelinePanel + adUnit("sidebar", "사이드") + foodPanel + infoPanel;
+    }
+
+    activateAds();
+  }
+
+  document.addEventListener("DOMContentLoaded", render);
+})();

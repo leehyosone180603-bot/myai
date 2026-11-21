@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
 Disallow: /tools/
+Disallow: /posts/_template.html
 
 Sitemap: https://calcbox.kr/sitemap.xml

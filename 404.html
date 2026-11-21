@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Google tag (gtag.js) - GA4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JMGXSV1PJ2"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JMGXSV1PJ2');</script>
+  <title>페이지를 찾을 수 없습니다 · 건강상자</title>
+  <meta name="description" content="요청하신 페이지를 찾을 수 없습니다.">
+  <meta name="robots" content="noindex, follow">
+  
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="건강상자">
+  <meta property="og:title" content="페이지를 찾을 수 없습니다 · 건강상자">
+  <meta property="og:description" content="요청하신 페이지를 찾을 수 없습니다.">
+  
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885"
+          crossorigin="anonymous"></script>
+</head>
+<body data-cat="">
+  <header id="site-header"></header>
+
+  <main class="wrap">
+    <div class="notfound">
+      <h1>페이지를 찾을 수 없습니다</h1>
+      <p>주소가 바뀌었거나 삭제된 페이지입니다. 건강상자의 최신 글에서 찾아보세요.</p>
+      <a class="btn" href="/">홈으로 가기</a>
+    </div>
+    <div class="content">
+      <section class="main-list" id="cat-list"></section>
+    </div>
+  </main>
+
+  <footer id="site-footer"></footer>
+
+  <script src="/js/posts.js"></script>
+  <script src="/js/site.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var el = document.getElementById("cat-list");
+      if (!el) return;
+      el.innerHTML = (window.POSTS || []).slice(0, 6).map(function (p) {
+        return '<a class="listitem" href="' + p.url + '">' + thumbHtml(p, "thumb--list") +
+          '<div class="listitem__body"><h3 class="listitem__title">' + esc(p.title) + '</h3>' +
+          '<p class="listitem__summary">' + esc(p.summary) + '</p></div></a>';
+      }).join("");
+    });
+  </script>
+</body>
+</html>

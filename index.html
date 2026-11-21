@@ -5,55 +5,59 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Google tag (gtag.js) - GA4 -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JMGXSV1PJ2"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-JMGXSV1PJ2');
-  </script>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <title>한국인계산기 — 만 나이·몇년생·띠·날짜 계산 매거진 | calcbox.kr</title>
-  <meta name="description" content="만 나이·몇년생·띠·출생연도부터 국민연금·경로우대 나이, 영업일·전역일까지. 한국인이 자주 헷갈리는 나이와 날짜 계산을 실제 검색 질문을 반영해 정리한 매거진입니다.">
-  <meta name="keywords" content="나이 계산기, 만 나이 계산기, 몇년생 계산기, 띠 계산, 출생연도, 나이표, 세는 나이, 국민연금 수급 나이, 영업일 계산, 전역일 계산">
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JMGXSV1PJ2');</script>
+  <title>건강상자 - 건강음식·건강정보를 한 상자에</title>
+  <meta name="description" content="건강상자는 제철 건강음식과 생활 속 건강정보를 경험담과 함께 알기 쉽게 정리하는 건강 블로그입니다. 먹는 법·주의할 점·병원에 가야 할 신호까지 담았습니다.">
   <meta name="robots" content="index, follow">
-  <meta name="author" content="한국인계산기">
-  <meta property="og:title" content="한국인계산기 — 나이·날짜 계산 매거진">
-  <meta property="og:description" content="만 나이·몇년생·띠·출생연도부터 영업일·전역일까지, 한국인의 나이와 날짜 계산 전문 매거진.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://calcbox.kr/">
-  <meta property="og:site_name" content="한국인계산기">
   <link rel="canonical" href="https://calcbox.kr/">
-
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="건강상자">
+  <meta property="og:title" content="건강상자 - 건강음식·건강정보를 한 상자에">
+  <meta property="og:description" content="건강상자는 제철 건강음식과 생활 속 건강정보를 경험담과 함께 알기 쉽게 정리하는 건강 블로그입니다. 먹는 법·주의할 점·병원에 가야 할 신호까지 담았습니다.">
+  <meta property="og:url" content="https://calcbox.kr/">
+  <meta property="og:image" content="https://calcbox.kr/img/og-default.jpg">
   <!-- 검색엔진 소유확인 -->
   <meta name="google-site-verification" content="TRVoYNUTZlKvUouO9Ivt6AtnmkL8eIrpXNIF9vN3-xQ">
   <meta name="naver-site-verification" content="ee1670e4315101894d8680574f5cd2443b0a976a">
-
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "name": "한국인계산기 — 나이·날짜 계산 매거진",
-    "alternateName": ["calcbox.kr", "나이 계산기", "만 나이 계산기"],
+    "name": "건강상자",
+    "alternateName": "calcbox.kr",
     "url": "https://calcbox.kr/",
     "inLanguage": "ko",
     "potentialAction": {
       "@type": "SearchAction",
-      "target": "https://calcbox.kr/?q={search_term_string}",
+      "target": "https://calcbox.kr/category.html?q={search_term_string}",
       "query-input": "required name=search_term_string"
     },
-    "publisher": { "@type": "Organization", "name": "한국인계산기", "url": "https://calcbox.kr/" }
+    "publisher": { "@type": "Organization", "name": "건강상자", "url": "https://calcbox.kr/" }
   }
   </script>
-
-  <!-- Google AdSense: ca-pub-7143828779500885 -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885" crossorigin="anonymous"></script>
-
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885"
+          crossorigin="anonymous"></script>
 </head>
-<body>
+<body data-cat="">
   <header id="site-header"></header>
 
-  <main id="home-root"></main>
+  <main class="wrap">
+    <h1 class="sr-only">건강상자 - 건강음식·건강정보</h1>
+    <!-- 히어로: 대표기사 + 보조카드 + 헤드라인 -->
+    <section class="hero" id="hero"></section>
+
+    <!-- 본문 2단: 좌(기사목록) / 우(사이드바) -->
+    <div class="content">
+      <section class="main-list" id="main-list" aria-label="전체 글"></section>
+      <aside class="sidebar" id="sidebar"></aside>
+    </div>
+  </main>
 
   <footer id="site-footer"></footer>
 

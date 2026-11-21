@@ -5,33 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Google tag (gtag.js) - GA4 -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JMGXSV1PJ2"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-JMGXSV1PJ2');
-  </script>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <title>카테고리 - 한국인계산기</title>
-  <meta name="description" content="한국인계산기 카테고리별 나이·날짜 계산 글 모음입니다.">
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JMGXSV1PJ2');</script>
+  <title>카테고리 · 건강상자</title>
+  <meta name="description" content="건강상자 카테고리별 글 모음 — 건강음식, 건강정보">
   <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://calcbox.kr/category.html">
-
-  <!-- Google AdSense: ca-pub-7143828779500885 -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885" crossorigin="anonymous"></script>
-
+  
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="건강상자">
+  <meta property="og:title" content="카테고리 · 건강상자">
+  <meta property="og:description" content="건강상자 카테고리별 글 모음 — 건강음식, 건강정보">
+  
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7143828779500885"
+          crossorigin="anonymous"></script>
 </head>
-<body>
+<body data-cat="">
   <header id="site-header"></header>
 
-  <main id="category-root"></main>
+  <main class="wrap">
+    <div class="page-head"><h1 id="cat-title">카테고리</h1><p class="search-note" id="cat-note"></p></div>
+    <div class="content">
+      <section class="main-list" id="cat-list"></section>
+      <aside class="sidebar" id="sidebar"></aside>
+    </div>
+  </main>
 
   <footer id="site-footer"></footer>
 
   <script src="/js/posts.js"></script>
   <script src="/js/site.js"></script>
-  <script src="/js/home.js"></script>
   <script src="/js/category.js"></script>
 </body>
 </html>
