@@ -59,6 +59,8 @@ def cands(slug, n, keywords):
                 break
             if h["id"] in seen or h.get("imageWidth", 0) < 1000:
                 continue
+            if "ai generated" in h.get("tags", "").lower():  # 실제 사진만 사용
+                continue
             seen.add(h["id"])
             i = len(meta)
             try:
